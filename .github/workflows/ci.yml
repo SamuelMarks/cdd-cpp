@@ -1,0 +1,39 @@
+name: CI
+on:
+  push:
+    branches: [ "master", "main" ]
+  pull_request:
+    branches: [ "master", "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Configure CMake
+      run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON
+
+    - name: Build
+      run: cmake --build build -j4
+
+    - name: Test
+      run: cd build && ctest --output-on-failure
+
+    - name: Pre-commit checks
+      run: |
+        python3 tools/test_coverage.py
+        python3 tools/doc_coverage.py src
+        
+  build_wasm:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup emsdk
+      uses: mymindstorm/setup-emsdk@v14
+
+    - name: Build WASM
+      run: |
+        emcmake cmake -B build_wasm -S . -DCMAKE_BUILD_TYPE=Release
+        emmake cmake --build build_wasm -j4
