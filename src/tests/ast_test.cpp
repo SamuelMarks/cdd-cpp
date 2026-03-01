@@ -1,8 +1,8 @@
 #include "../utils/cpp_parser.hpp"
 #include <cassert>
-#include <iostream>
-#include <fstream>
 #include <filesystem>
+#include <fstream>
+#include <iostream>
 
 namespace cdd_cpp::utils {
 void test_cpp_parser() {
@@ -38,7 +38,7 @@ void test_cpp_parser() {
   assert(spec.components->schemas.has_value());
   assert(spec.components->schemas->contains("TestClass"));
   assert(spec.components->schemas->contains("TestStruct"));
-  
+
   std::filesystem::remove_all("test_tmp_dir");
   std::cout << "test_cpp_parser passed.\n";
 }

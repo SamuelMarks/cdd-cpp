@@ -32,15 +32,15 @@ void test_to_docs_json() {
       }
     }
   })";
-  FILE* f = fopen("test_spec.json", "w");
+  FILE *f = fopen("test_spec.json", "w");
   if (f) {
-      fwrite(json_spec.c_str(), 1, json_spec.size(), f);
-      fclose(f);
+    fwrite(json_spec.c_str(), 1, json_spec.size(), f);
+    fclose(f);
   }
 
   std::string res = exec("./cdd-cpp to_docs_json -i test_spec.json");
   if (res.empty() || res.find("not found") != std::string::npos) {
-      res = exec("../build/cdd-cpp to_docs_json -i test_spec.json"); // fallback
+    res = exec("../build/cdd-cpp to_docs_json -i test_spec.json"); // fallback
   }
 
   assert(res.find("\"imports\"") != std::string::npos);
@@ -48,9 +48,11 @@ void test_to_docs_json() {
   assert(res.find("\"wrapper_end\"") != std::string::npos);
   assert(res.find("\"snippet\"") != std::string::npos);
 
-  std::string res_no = exec("./cdd-cpp to_docs_json --no-imports --no-wrapping -i test_spec.json");
+  std::string res_no = exec(
+      "./cdd-cpp to_docs_json --no-imports --no-wrapping -i test_spec.json");
   if (res_no.empty() || res_no.find("not found") != std::string::npos) {
-      res_no = exec("../build/cdd-cpp to_docs_json --no-imports --no-wrapping -i test_spec.json");
+    res_no = exec("../build/cdd-cpp to_docs_json --no-imports --no-wrapping -i "
+                  "test_spec.json");
   }
 
   assert(res_no.find("\"imports\"") == std::string::npos);

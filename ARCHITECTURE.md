@@ -1,4 +1,3 @@
-
 # cdd-cpp Architecture
 
 <!-- BADGES_START -->
@@ -53,7 +52,7 @@ graph TD
     IR --> E5
 ```
 
-<!-- INSTRUCTION TO LLM: If this specific repo is explicitly Client-only or Server-only based on the `Bidirectional`, gracefully adjust the descriptions below to emphasize its specific role. -->
+<!-- INSTRUCTION TO LLM: If this specific repo is explicitly Client-only or Server-only based on the `Bidirectional (Parse C++ to OpenAPI, Emit C++ from OpenAPI)`, gracefully adjust the descriptions below to emphasize its specific role. -->
 
 ## 🧩 Core Components
 

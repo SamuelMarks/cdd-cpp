@@ -670,7 +670,7 @@ void emit_PathItem(utils::JsonWriter &jw, const PathItem &obj) {
   if (obj.additionalOperations) {
     jw.key("additionalOperations");
     jw.start_object();
-    for (const auto& [k, v] : *obj.additionalOperations) {
+    for (const auto &[k, v] : *obj.additionalOperations) {
       jw.key(k);
       emit_Operation(jw, v);
     }

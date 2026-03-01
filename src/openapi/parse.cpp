@@ -281,48 +281,61 @@ static Schema parse_Schema(simdjson::dom::object obj) {
 
   res.multipleOf = get_optional_bool(obj, "multipleOf"); // wait it's double
   simdjson::dom::element el_double;
-  if (obj["multipleOf"].get(el_double) == simdjson::SUCCESS && el_double.type() == simdjson::dom::element_type::DOUBLE) {
-      res.multipleOf = el_double.get_double().value();
+  if (obj["multipleOf"].get(el_double) == simdjson::SUCCESS &&
+      el_double.type() == simdjson::dom::element_type::DOUBLE) {
+    res.multipleOf = el_double.get_double().value();
   }
-  if (obj["maximum"].get(el_double) == simdjson::SUCCESS && el_double.type() == simdjson::dom::element_type::DOUBLE) {
-      res.maximum = el_double.get_double().value();
+  if (obj["maximum"].get(el_double) == simdjson::SUCCESS &&
+      el_double.type() == simdjson::dom::element_type::DOUBLE) {
+    res.maximum = el_double.get_double().value();
   }
-  if (obj["exclusiveMaximum"].get(el_double) == simdjson::SUCCESS && el_double.type() == simdjson::dom::element_type::DOUBLE) {
-      res.exclusiveMaximum = el_double.get_double().value();
+  if (obj["exclusiveMaximum"].get(el_double) == simdjson::SUCCESS &&
+      el_double.type() == simdjson::dom::element_type::DOUBLE) {
+    res.exclusiveMaximum = el_double.get_double().value();
   }
-  if (obj["minimum"].get(el_double) == simdjson::SUCCESS && el_double.type() == simdjson::dom::element_type::DOUBLE) {
-      res.minimum = el_double.get_double().value();
+  if (obj["minimum"].get(el_double) == simdjson::SUCCESS &&
+      el_double.type() == simdjson::dom::element_type::DOUBLE) {
+    res.minimum = el_double.get_double().value();
   }
-  if (obj["exclusiveMinimum"].get(el_double) == simdjson::SUCCESS && el_double.type() == simdjson::dom::element_type::DOUBLE) {
-      res.exclusiveMinimum = el_double.get_double().value();
+  if (obj["exclusiveMinimum"].get(el_double) == simdjson::SUCCESS &&
+      el_double.type() == simdjson::dom::element_type::DOUBLE) {
+    res.exclusiveMinimum = el_double.get_double().value();
   }
-  
+
   simdjson::dom::element el_int;
-  if (obj["maxLength"].get(el_int) == simdjson::SUCCESS && el_int.type() == simdjson::dom::element_type::INT64) {
-      res.maxLength = el_int.get_int64().value();
+  if (obj["maxLength"].get(el_int) == simdjson::SUCCESS &&
+      el_int.type() == simdjson::dom::element_type::INT64) {
+    res.maxLength = el_int.get_int64().value();
   }
-  if (obj["minLength"].get(el_int) == simdjson::SUCCESS && el_int.type() == simdjson::dom::element_type::INT64) {
-      res.minLength = el_int.get_int64().value();
+  if (obj["minLength"].get(el_int) == simdjson::SUCCESS &&
+      el_int.type() == simdjson::dom::element_type::INT64) {
+    res.minLength = el_int.get_int64().value();
   }
-  if (obj["maxItems"].get(el_int) == simdjson::SUCCESS && el_int.type() == simdjson::dom::element_type::INT64) {
-      res.maxItems = el_int.get_int64().value();
+  if (obj["maxItems"].get(el_int) == simdjson::SUCCESS &&
+      el_int.type() == simdjson::dom::element_type::INT64) {
+    res.maxItems = el_int.get_int64().value();
   }
-  if (obj["minItems"].get(el_int) == simdjson::SUCCESS && el_int.type() == simdjson::dom::element_type::INT64) {
-      res.minItems = el_int.get_int64().value();
+  if (obj["minItems"].get(el_int) == simdjson::SUCCESS &&
+      el_int.type() == simdjson::dom::element_type::INT64) {
+    res.minItems = el_int.get_int64().value();
   }
-  if (obj["maxContains"].get(el_int) == simdjson::SUCCESS && el_int.type() == simdjson::dom::element_type::INT64) {
-      res.maxContains = el_int.get_int64().value();
+  if (obj["maxContains"].get(el_int) == simdjson::SUCCESS &&
+      el_int.type() == simdjson::dom::element_type::INT64) {
+    res.maxContains = el_int.get_int64().value();
   }
-  if (obj["minContains"].get(el_int) == simdjson::SUCCESS && el_int.type() == simdjson::dom::element_type::INT64) {
-      res.minContains = el_int.get_int64().value();
+  if (obj["minContains"].get(el_int) == simdjson::SUCCESS &&
+      el_int.type() == simdjson::dom::element_type::INT64) {
+    res.minContains = el_int.get_int64().value();
   }
-  if (obj["maxProperties"].get(el_int) == simdjson::SUCCESS && el_int.type() == simdjson::dom::element_type::INT64) {
-      res.maxProperties = el_int.get_int64().value();
+  if (obj["maxProperties"].get(el_int) == simdjson::SUCCESS &&
+      el_int.type() == simdjson::dom::element_type::INT64) {
+    res.maxProperties = el_int.get_int64().value();
   }
-  if (obj["minProperties"].get(el_int) == simdjson::SUCCESS && el_int.type() == simdjson::dom::element_type::INT64) {
-      res.minProperties = el_int.get_int64().value();
+  if (obj["minProperties"].get(el_int) == simdjson::SUCCESS &&
+      el_int.type() == simdjson::dom::element_type::INT64) {
+    res.minProperties = el_int.get_int64().value();
   }
-  
+
   res.pattern = get_optional_string(obj, "pattern");
   res.uniqueItems = get_optional_bool(obj, "uniqueItems");
   res.required = parse_vector_string(obj, "required");
@@ -360,19 +373,21 @@ static Encoding parse_Encoding(simdjson::dom::object obj) {
     }
     res.headers = m;
   }
-  
+
   simdjson::dom::element el_itemSchema;
   if (obj["itemSchema"].get(el_itemSchema) == simdjson::SUCCESS &&
       el_itemSchema.type() == simdjson::dom::element_type::OBJECT) {
-    res.itemSchema = std::make_shared<Schema>(parse_Schema(el_itemSchema.get_object()));
+    res.itemSchema =
+        std::make_shared<Schema>(parse_Schema(el_itemSchema.get_object()));
   }
-  
+
   simdjson::dom::element el_itemEncoding;
   if (obj["itemEncoding"].get(el_itemEncoding) == simdjson::SUCCESS &&
       el_itemEncoding.type() == simdjson::dom::element_type::OBJECT) {
-    res.itemEncoding = std::make_shared<Encoding>(parse_Encoding(el_itemEncoding.get_object()));
+    res.itemEncoding = std::make_shared<Encoding>(
+        parse_Encoding(el_itemEncoding.get_object()));
   }
-  
+
   simdjson::dom::element el_prefixEncoding;
   if (obj["prefixEncoding"].get(el_prefixEncoding) == simdjson::SUCCESS &&
       el_prefixEncoding.type() == simdjson::dom::element_type::ARRAY) {
@@ -415,19 +430,21 @@ static MediaType parse_MediaType(simdjson::dom::object obj) {
     }
     res.encoding = m;
   }
-  
+
   simdjson::dom::element el_itemSchema;
   if (obj["itemSchema"].get(el_itemSchema) == simdjson::SUCCESS &&
       el_itemSchema.type() == simdjson::dom::element_type::OBJECT) {
-    res.itemSchema = std::make_shared<Schema>(parse_Schema(el_itemSchema.get_object()));
+    res.itemSchema =
+        std::make_shared<Schema>(parse_Schema(el_itemSchema.get_object()));
   }
-  
+
   simdjson::dom::element el_itemEncoding;
   if (obj["itemEncoding"].get(el_itemEncoding) == simdjson::SUCCESS &&
       el_itemEncoding.type() == simdjson::dom::element_type::OBJECT) {
-    res.itemEncoding = std::make_shared<Encoding>(parse_Encoding(el_itemEncoding.get_object()));
+    res.itemEncoding = std::make_shared<Encoding>(
+        parse_Encoding(el_itemEncoding.get_object()));
   }
-  
+
   simdjson::dom::element el_prefixEncoding;
   if (obj["prefixEncoding"].get(el_prefixEncoding) == simdjson::SUCCESS &&
       el_prefixEncoding.type() == simdjson::dom::element_type::ARRAY) {
@@ -818,7 +835,8 @@ static PathItem parse_PathItem(simdjson::dom::object obj) {
     auto m = std::make_shared<std::map<std::string, Operation>>();
     for (auto field : el_addOps.get_object()) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
-        (*m)[std::string(field.key)] = parse_Operation(field.value.get_object());
+        (*m)[std::string(field.key)] =
+            parse_Operation(field.value.get_object());
     }
     res.additionalOperations = m;
   }
@@ -944,7 +962,8 @@ static Components parse_Components(simdjson::dom::object obj) {
     auto m = std::make_shared<std::map<std::string, MediaType>>();
     for (auto field : el_mediaTypes.get_object()) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
-        (*m)[std::string(field.key)] = parse_MediaType(field.value.get_object());
+        (*m)[std::string(field.key)] =
+            parse_MediaType(field.value.get_object());
     }
     res.mediaTypes = m;
   }

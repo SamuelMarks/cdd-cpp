@@ -29,11 +29,11 @@ void test_emit();
 namespace cdd_cpp::utils {
 void test_http();
 void test_cpp_parser();
-}
+} // namespace cdd_cpp::utils
 namespace cdd_cpp::cli {
 void test_to_docs_json();
 void test_sync();
-}
+} // namespace cdd_cpp::cli
 namespace cdd_cpp::openapi::upgraders {
 void test_upgraders();
 }

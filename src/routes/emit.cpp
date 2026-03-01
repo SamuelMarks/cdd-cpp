@@ -3,7 +3,7 @@
 
 namespace cdd_cpp::routes {
 
-std::string emit(const openapi::OpenAPI& spec) {
+std::string emit(const openapi::OpenAPI &spec) {
   std::stringstream ss;
   ss << "#pragma once\n";
   ss << "#include <string>\n";
@@ -13,15 +13,17 @@ std::string emit(const openapi::OpenAPI& spec) {
 
   ss << "    class Router {\n";
   ss << "    public:\n";
-  ss << "        using Handler = std::function<std::string(const std::string&)>;\n\n";
+  ss << "        using Handler = std::function<std::string(const "
+        "std::string&)>;\n\n";
 
   if (spec.paths.has_value() && !spec.paths->empty()) {
     for (const auto &[path, item] : spec.paths.value()) {
       auto emit_method = [&](const std::string &method,
                              const std::optional<openapi::Operation> &op) {
-        if (!op.has_value()) return;
+        if (!op.has_value())
+          return;
         std::string func_name = op->operationId.value_or("handler");
-        ss << "        void on_" << method << "_" << func_name 
+        ss << "        void on_" << method << "_" << func_name
            << "(const std::string& path, Handler handler) {\n";
         ss << "            routes[\"" << method << " \" + path] = handler;\n";
         ss << "        }\n\n";

@@ -1,22 +1,20 @@
-
-cdd-LANGUAGE
+cdd-cpp
 ============
 
 [![License](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI/CD](https://github.com/offscale/cdd-cpp/workflows/CI/badge.svg)](https://github.com/offscale/cdd-cpp/actions)
-![Test Coverage](https://img.shields.io/badge/coverage-100.00%25-brightgreen.svg)
-![Doc Coverage](https://img.shields.io/badge/docs-100.00%25-brightgreen.svg)
+![Test Coverage](https://img.shields.io/badge/Test_Coverage-Unknown-blue) ![Doc Coverage](https://img.shields.io/badge/Doc_Coverage-Unknown-blue)
 
 OpenAPI ↔ C++. This is one compiler in a suite, all focussed on the same task: Compiler Driven Development (CDD).
 
 Each compiler is written in its target language, is whitespace and comment sensitive, and has both an SDK and CLI.
 
 The CLI—at a minimum—has:
-- `cdd-LANGUAGE --help`
-- `cdd-LANGUAGE --version`
-- `cdd-LANGUAGE from_openapi -i spec.json`
-- `cdd-LANGUAGE to_openapi -f path/to/code`
-- `cdd-LANGUAGE to_docs_json --no-imports --no-wrapping -i spec.json`
+- `cdd-cpp --help`
+- `cdd-cpp --version`
+- `cdd-cpp from_openapi -i spec.json`
+- `cdd-cpp to_openapi -f path/to/code`
+- `cdd-cpp to_docs_json --no-imports --no-wrapping -i spec.json`
 
 The goal of this project is to enable rapid application development without tradeoffs. Tradeoffs of Protocol Buffers / Thrift etc. are an untouchable "generated" directory and package, compile-time and/or runtime overhead. Tradeoffs of Java or JavaScript for everything are: overhead in hardware access, offline mode, ML inefficiency, and more. And neither of these alterantive approaches are truly integrated into your target system, test frameworks, and bigger abstractions you build in your app. Tradeoffs in CDD are code duplication (but CDD handles the synchronisation for you).
 
@@ -32,42 +30,56 @@ The `cdd-cpp` compiler leverages a unified architecture to support various facet
 
 ## 📦 Installation
 
-<!-- INSTRUCTION TO LLM: Insert specific installation instructions, package managers, and prerequisites here based on the `Requires a C++17 compliant compiler, CMake 3.14+, and Doxygen. Build from source:
-```bash
-make install_base
-make build
-# Binary is located in custom_bin/cdd-cpp
-```` context. -->
+Requires CMake 3.15+ and a C++20 compiler.\n\n```bash\nmake build\n```
 
 ## 🛠 Usage
 
 ### Command Line Interface
 
 ```bash
-# Generate C++ Client from OpenAPI spec
-./custom_bin/cdd-cpp from_openapi -i spec.json
+CDD CLI (Code-Driven Development)
+Usage:
+  cdd-cpp --help
+  cdd-cpp --version
+  cdd-cpp to_openapi -f <path/to/code> [-o <spec.json>]
+  cdd-cpp to_docs_json [--no-imports] [--no-wrapping] -i <spec.json> [-o <docs.json>]
+  cdd-cpp from_openapi to_sdk_cli -i <spec.json> -o <target_directory>
+  cdd-cpp from_openapi to_sdk_cli --input-dir <specs_dir> -o <target_directory>
+  cdd-cpp from_openapi to_sdk -i <spec.json> -o <target_directory>
+  cdd-cpp from_openapi to_sdk --input-dir <specs_dir> -o <target_directory>
+  cdd-cpp from_openapi to_server -i <spec.json> -o <target_directory>
+  cdd-cpp from_openapi to_server --input-dir <specs_dir> -o <target_directory>
+  cdd-cpp serve_json_rpc --port <port> --listen <host>
 
-# Parse C++ project and output OpenAPI spec
-./custom_bin/cdd-cpp to_openapi -f src/
+Commands:
+  sync         : Bi-directional sync of code directory and OpenAPI spec.
+  from_openapi : Parses an OpenAPI spec and emits C++ code.
+  to_openapi   : Parses C++ code and emits an OpenAPI spec.
+  to_docs_json : Generates JSON documentation for API calls.
+  serve_json_rpc: Starts JSON-RPC server.
+
+```
+
+```bash
+./cdd-cpp to_openapi -f src/
+./cdd-cpp from_openapi to_sdk_cli -i spec.json -o out/
 ```
 
 ### Programmatic SDK / Library
 
 ```cpp
-#include "openapi/parse.hpp"
-#include "classes/emit_client.hpp"
+#include "cdd_cpp/openapi/parse.hpp"
+#include "cdd_cpp/classes/emit_cli.hpp"
 
-// Read OpenAPI spec and emit a C++ Client
 int main() {
-    auto spec = cdd_cpp::openapi::parse(R"({"openapi":"3.2.0"})");
-    std::string code = cdd_cpp::classes::emit_client(spec);
-    return 0;
+  auto spec = cdd_cpp::openapi::parse("{\"openapi\": \"3.2.0\"}");
+  std::string code = cdd_cpp::classes::emit_cli(spec);
 }
 ```
 
 ## Design choices
 
-We opted for a custom lightweight AST parser tailored for C++ structures typical in APIs rather than linking heavy compilers like Clang/LLVM. This dramatically speeds up cross-platform builds and enables simpler compilation to WebAssembly (WASM).
+We use AST parsing instead of reflection because C++ reflection is not natively available yet. By statically parsing headers/source files, we can generate idiomatic API clients and CLIs.
 
 ## 🏗 Supported Conversions for C++
 
@@ -77,13 +89,13 @@ We opted for a custom lightweight AST parser tailored for C++ structures typical
 |---------|--------------|-----------|
 | OpenAPI (JSON/YAML) | ✅ | ✅ |
 | `C++` Models / Structs / Types | ✅ | ✅ |
-| `C++` Server Routes / Endpoints | ✅ | ✅ |
-| `C++` API Clients / SDKs | ✅ | ✅ |
+| `C++` Server Routes / Endpoints | [ ] | [ ] |
+| `C++` API Clients / SDKs | [ ] | ✅ |
 | `C++` ORM / DB Schemas | [ ] | [ ] |
-| `C++` CLI Argument Parsers | [ ] | [ ] |
+| `C++` CLI Argument Parsers | [ ] | ✅ |
 | `C++` Docstrings / Comments | ✅ | ✅ |
 
-<!-- INSTRUCTION TO LLM: Check the boxes above (`✅`) based on the `{SUPPORTED_CONVERSIONS}` context provided. -->
+
 
 ---
 

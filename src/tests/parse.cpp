@@ -66,7 +66,6 @@ void test_parse() {
   assert(spec.components->mediaTypes != nullptr);
   assert(spec.components->mediaTypes->contains("application/json"));
 
-  
   // Test JSON Schema Draft 2020-12 features
   std::string schema_json = R"({
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -84,12 +83,13 @@ void test_parse() {
     "multipleOf": 1.5,
     "maxItems": 10
   })";
-  
+
   simdjson::dom::parser parser;
   simdjson::dom::element doc;
   auto error = parser.parse(schema_json).get(doc);
   assert(error == simdjson::SUCCESS);
-  // We can't call parse_Schema directly as it's static, so we'll test via OpenAPI wrapper
+  // We can't call parse_Schema directly as it's static, so we'll test via
+  // OpenAPI wrapper
   std::string spec_with_schema = R"({
     "openapi": "3.2.0",
     "info": {"title": "T", "version": "1"},
@@ -114,11 +114,12 @@ void test_parse() {
       }
     }
   })";
-  
+
   OpenAPI spec_schema = parse(spec_with_schema);
   assert(spec_schema.components.has_value());
-  auto& schema = spec_schema.components->schemas->at("MySchema");
-  assert(schema.schema_dialect == "https://json-schema.org/draft/2020-12/schema");
+  auto &schema = spec_schema.components->schemas->at("MySchema");
+  assert(schema.schema_dialect ==
+         "https://json-schema.org/draft/2020-12/schema");
   assert(schema.id == "https://example.com/schema");
   assert(schema.type == "object");
   assert(schema.deprecated == true);
@@ -166,11 +167,15 @@ void test_parse() {
   assert(spec_latest.tags->at(0).name == "User");
   assert(spec_latest.tags->at(0).parent == "Core");
   assert(spec_latest.tags->at(0).kind == "entity");
-  assert(spec_latest.components.has_value() && spec_latest.components->schemas.has_value());
+  assert(spec_latest.components.has_value() &&
+         spec_latest.components->schemas.has_value());
   assert(spec_latest.components->schemas->at("Pet").discriminator.has_value());
-  assert(spec_latest.components->schemas->at("Pet").discriminator->propertyName == "petType");
-  assert(spec_latest.components->schemas->at("Pet").discriminator->defaultMapping == "#/components/schemas/Dog");
-  
+  assert(
+      spec_latest.components->schemas->at("Pet").discriminator->propertyName ==
+      "petType");
+  assert(spec_latest.components->schemas->at("Pet")
+             .discriminator->defaultMapping == "#/components/schemas/Dog");
+
   std::cout << "OpenAPI 3.2.0 specific parser features passed.\n";
 
   std::cout << "test_parse passed.\n";

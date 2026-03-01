@@ -1,4 +1,4 @@
-.PHONY: install_base install_deps build_docs build test run help all default build_wasm
+.PHONY: build_docker run_docker install_base install_deps build_docs build test run help all default build_wasm
 
 default: help
 all: help
@@ -25,7 +25,9 @@ help:
 	@echo "  make build_docs [dir] : build the API docs and put them in 'dir' directory (default: docs)"
 	@echo "  make build [dir]      : build the CLI binary into 'dir' (default: custom_bin)"
 	@echo "  make test         : run tests locally"
-	@echo "  make run [...]    : run the CLI with optional args"\n	@echo "  make build_wasm   : build the project to WASM"
+	@echo "  make run [...]    : run the CLI with optional args"
+	@echo "  make build_wasm   : build the project to WASM\n  @echo "  make build_docker : build docker images"\n  @echo "  make run_docker   : run docker test""
+
 
 install_base:
 	sudo apt-get update && sudo apt-get install -y build-essential cmake pkg-config curl doxygen
@@ -66,3 +68,15 @@ build_wasm:
 	@cp build_wasm/cdd-cpp* $(BIN_DIR)/ 2>/dev/null || true
 clean:
 	rm -rf build build_wasm custom_bin docs
+
+build_docker:
+	docker build -t cdd-cpp-alpine -f alpine.Dockerfile .
+	docker build -t cdd-cpp-debian -f debian.Dockerfile .
+
+run_docker: build_docker
+	docker run -d -p 8082:8082 --name cdd-cpp-test cdd-cpp-alpine
+	sleep 2
+	curl -X POST http://localhost:8082/rpc -H "Content-Type: application/json" -d '{"jsonrpc": "2.0", "method": "--version", "id": 1}'
+	docker stop cdd-cpp-test
+	docker rm cdd-cpp-test
+	docker rmi cdd-cpp-alpine cdd-cpp-debian
