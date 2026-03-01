@@ -1,0 +1,7 @@
+build/
+build_wasm/
+build_release/
+custom_bin/
+docs/
+.git/
+

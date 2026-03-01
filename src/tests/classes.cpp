@@ -28,23 +28,23 @@ void test_emit() {
   spec.info.version = "1.0";
   spec.components = openapi::Components{};
   spec.components->schemas = std::map<std::string, openapi::Schema>{};
-  
+
   openapi::Schema s;
   s.type = "object";
   s.description = "Test description";
   s.properties = std::make_shared<std::map<std::string, openapi::Schema>>();
-  
+
   openapi::Schema p;
   p.type = "string";
   s.properties->insert({"name", p});
-  
+
   spec.components->schemas->insert({"TestStruct", s});
-  
+
   std::string code = emit(spec);
   assert(code.find("struct TestStruct") != std::string::npos);
   assert(code.find("std::string name;") != std::string::npos);
   assert(code.find("@description Test description") != std::string::npos);
-  
+
   std::cout << "classes::test_emit passed.\n";
 }
 } // namespace cdd_cpp::classes

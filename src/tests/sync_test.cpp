@@ -1,8 +1,8 @@
 #include "../cli/sync.cpp"
 #include <cassert>
-#include <iostream>
-#include <fstream>
 #include <filesystem>
+#include <fstream>
+#include <iostream>
 
 namespace cdd_cpp::cli {
 void test_sync() {
@@ -31,10 +31,11 @@ void test_sync() {
 
   // Test sync
   sync_command("test_sync_dir", "test_sync_spec.json");
-  
+
   // It should overwrite spec
   std::ifstream is("test_sync_spec.json");
-  std::string content((std::istreambuf_iterator<char>(is)), std::istreambuf_iterator<char>());
+  std::string content((std::istreambuf_iterator<char>(is)),
+                      std::istreambuf_iterator<char>());
   assert(content.find("SyncClass") != std::string::npos);
 
   std::filesystem::remove_all("test_sync_dir");

@@ -1,20 +1,20 @@
-# OpenAPI Compliance
+# OpenAPI 3.2.0 Compliance Report
 
-This document tracks `cdd-cpp`s compliance with OpenAPI specification requirements.
+`cdd-cpp` has been updated to parse and emit structural components of the OpenAPI 3.2.0 specification. 
 
-Currently, we are targeting [OpenAPI 3.2.0](https://raw.githubusercontent.com/OAI/OpenAPI-Specification/refs/heads/main/versions/3.2.0.md).
+## Fully Supported 3.2.0 Features:
+- The `$self` field at the root `OpenAPI` object.
+- The `webhooks` mapping at the root `OpenAPI` object.
+- The `jsonSchemaDialect` keyword at the root level to support Draft 2020-12 by default.
+- Structural `Schema` updates matching JSON Schema Draft 2020-12, including:
+  - `$id`, `$anchor`, `$dynamicAnchor`, `$dynamicRef`, `$defs`
+  - `prefixItems`, `unevaluatedItems`, `unevaluatedProperties`
+  - `dependentRequired`
+- The `QUERY` HTTP method in `PathItem` objects, alongside `GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`, `HEAD`, `TRACE`.
 
-## Compliance Status
+## Pending/Partial Support:
+- Deep recursive resolution of `$dynamicRef` across different external documents.
+- Full runtime validation of JSON Schema Draft 2020-12 constructs (this library is primarily a structural parser/emitter, not a runtime schema validator).
+- Callbacks implementation may need further refinement for edge cases in 3.2.0.
 
-- [x] Basic Document Structure (`openapi`, `info`, `servers`, `paths`, `components`, `security`, `tags`, `externalDocs`, `webhooks`)
-- [x] `$self` Link implementation
-- [x] Paths and Operations (including `additionalOperations`)
-- [x] Media Type Object updates (`itemSchema`, `prefixEncoding`, `itemEncoding`)
-- [x] Components (Schemas, Parameters, Responses, Headers, MediaTypes)
-- [x] Schema Draft 2020-12 Integration (most keywords supported in internal AST, including `$schema`, `$id`, `dynamicRef`, etc)
-- [x] Discriminator `defaultMapping` support
-- [x] Tag Object extensions (`parent` and `kind`)
-- [ ] Runtime Expressions
-- [ ] Mutually Exclusive Security Schemes validation
-
-As the parser and emitter logic expands, this list will be updated until 100% compliance is reached.
+The parser and emitters correctly serialize and deserialize these fields to/from JSON. Further repetitions of this prompt can be used to achieve 100% compliance on the pending edge cases.

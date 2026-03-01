@@ -1,30 +1,16 @@
 # Publishing cdd-cpp
 
-For C++ packages, the most common distribution methods are system package managers, **vcpkg**, or **Conan**. Since cdd-cpp provides a standalone CLI, it can also be distributed via GitHub Releases.
+## C++ Package Managers (Conan/vcpkg)
+C++ doesn't have a single dominant package registry, but `Conan` and `vcpkg` are the most popular. 
+To publish `cdd-cpp`:
+1. **Conan**: Create a `conanfile.py`, define the build requirements and CMake build step, and run `conan create .` then `conan upload`.
+2. **vcpkg**: Submit a port to the `microsoft/vcpkg` repository via PR containing a `vcpkg.json` and `portfile.cmake`.
 
-## Binary Releases
-We use GitHub Actions to build binaries for Windows, Linux, and macOS. Upon a new tag, binaries are attached to the release.
-
-## Publishing to Conan (ConanCenter)
-To upload this library to ConanCenter (the most popular location for C++ packages):
-1. Create a conanfile.py defining the package build steps.
-2. Submit a Pull Request to the conan-center-index repository on GitHub.
-3. Once merged, users can install it via `conan install cdd-cpp/1.0.0@`.
-
-## Publishing to vcpkg
-To upload this library to the vcpkg registry:
-1. Create a vcpkg.json manifest and a portfile.cmake.
-2. Submit a Pull Request to the microsoft/vcpkg repository.
-3. Once merged, users can install it via `vcpkg install cdd-cpp`.
-
-## Publishing Documentation
-To generate and serve docs locally (producing a local folder for static serving):
-```bash
-make build_docs docs_out
-cd docs_out/html
-python3 -m http.server
-```
-
-To upload docs to the most popular location (GitHub Pages or ReadTheDocs):
-- **GitHub Pages**: Set up a GitHub Action to deploy the generated `docs_out/html` folder to the `gh-pages` branch.
-- **ReadTheDocs**: Link your repository to ReadTheDocs and configure it to run Doxygen and Breathe/Sphinx.
+## Documentation Publishing
+1. Generate the local HTML documentation folder:
+   ```bash
+   make build_docs docs/
+   ```
+   This generates a `docs/html/` directory using Doxygen.
+2. **Your Own Server**: Sync the `docs/html/` folder to your server (e.g., using `rsync` or AWS S3).
+3. **Most Popular Location (GitHub Pages)**: Commit the `docs/html/` folder to a `gh-pages` branch, or use a GitHub Action (`peaceiris/actions-gh-pages`) to automatically deploy the generated Doxygen folder to GitHub Pages.

@@ -12,16 +12,16 @@ void test_emit() {
   spec.info.title = "Test";
   spec.info.version = "1.0";
   spec.paths = std::map<std::string, openapi::PathItem>{};
-  
+
   openapi::PathItem item;
   openapi::Operation op;
   op.operationId = "testRoute";
   item.get = op;
   spec.paths->insert({"/api/v1/test", item});
-  
+
   std::string code = emit(spec);
   assert(code.find("on_GET_testRoute") != std::string::npos);
-  
+
   std::cout << "routes::test_emit passed.\n";
 }
 } // namespace cdd_cpp::routes

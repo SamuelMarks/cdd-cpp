@@ -9,3 +9,17 @@ build/
 *.patch
 *.rej
 /build_wasm/
+
+# Generated artifacts and scratch files
+TO_DOCS_JSON.md
+cdd_docs_prompt.md
+fix2.py
+gen_docs.py
+generate_docs.py
+generate_other_docs.py
+spec_param.json
+test_cli_dir/
+test_cli_dir2/
+test_gen_cli/
+test_generated_cli_editable.cpp
+test_regex.cpp

@@ -2,6 +2,7 @@ name: CI
 on:
   push:
     branches: [ "master", "main" ]
+    tags: [ "v*" ]
   pull_request:
     branches: [ "master", "main" ]
 
@@ -24,16 +25,38 @@ jobs:
       run: |
         python3 tools/test_coverage.py
         python3 tools/doc_coverage.py src
-        
+
+    - name: Release Build
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        cmake -B build_release -S . -DCMAKE_BUILD_TYPE=Release
+        cmake --build build_release -j4
+        mkdir -p custom_bin
+        cp build_release/cdd-cpp custom_bin/
+
+    - name: Upload Binary Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: custom_bin/cdd-cpp
+
   build_wasm:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
 
     - name: Setup emsdk
-      uses: mymindstorm/setup-emsdk@v14
+      uses: mymindstorm/setup-emsdk@v1
 
     - name: Build WASM
       run: |
         emcmake cmake -B build_wasm -S . -DCMAKE_BUILD_TYPE=Release
         emmake cmake --build build_wasm -j4
+        mkdir -p custom_bin
+        cp build_wasm/cdd-cpp.* custom_bin/ 2>/dev/null || true
+
+    - name: Upload WASM Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: custom_bin/cdd-cpp.*

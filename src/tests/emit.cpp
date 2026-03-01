@@ -92,11 +92,13 @@ void test_emit() {
 
   OpenAPI spec_3 = parse(json_3_2_0);
   std::string out_3 = emit(spec_3);
-  
-  assert(out_3.find("\"$self\":\"https://example.com/openapi.json\"") != std::string::npos);
+
+  assert(out_3.find("\"$self\":\"https://example.com/openapi.json\"") !=
+         std::string::npos);
   assert(out_3.find("\"parent\":\"Core\"") != std::string::npos);
   assert(out_3.find("\"kind\":\"entity\"") != std::string::npos);
-  assert(out_3.find("\"defaultMapping\":\"#/components/schemas/Dog\"") != std::string::npos);
+  assert(out_3.find("\"defaultMapping\":\"#/components/schemas/Dog\"") !=
+         std::string::npos);
 
   std::cout << "test_emit passed.\n";
 }

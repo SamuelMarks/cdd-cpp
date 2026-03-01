@@ -8,7 +8,7 @@
 
 namespace cdd_cpp::utils {
 
-  /// @brief Auto-generated doc.
+/// @brief Auto-generated doc.
 class JsonWriter {
   std::stringstream ss;
   bool first = true;
@@ -100,6 +100,10 @@ public:
   }
 
   /// @brief Auto-generated doc.
+  void null_value() {
+    ss << "null";
+    first = false;
+  }
   void value(const std::string &v) {
     escape_string(v);
     first = false;
