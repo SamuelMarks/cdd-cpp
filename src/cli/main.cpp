@@ -1,3 +1,4 @@
+#include "../classes/emit_cli.hpp"
 #include "../classes/emit_client.hpp"
 #include "../mocks/emit.hpp"
 #include "../openapi/emit.hpp"
@@ -19,7 +20,7 @@ void print_help() {
             << "Usage:\n"
             << "  cdd-cpp --help\n"
             << "  cdd-cpp --version\n"
-            << "  cdd-cpp from_openapi -i <spec.json>\n"
+            << "  cdd-cpp from_openapi -i <spec.json> [--type <client|cli>]\n"
             << "  cdd-cpp to_openapi -f <path/to/code>\n"
             << "  cdd-cpp to_mocks -i <spec.json>\n"
             << "  cdd-cpp upgrade -i <spec.json> [--in-place] [-o <out.json>] "
@@ -87,10 +88,13 @@ int main(int argc, char **argv) {
 
   else if (command == "from_openapi") {
     std::string input;
+    std::string type = "client";
     for (int i = 2; i < argc; ++i) {
       std::string arg = argv[i];
       if ((arg == "-i" || arg == "--input") && i + 1 < argc) {
         input = argv[++i];
+      } else if ((arg == "-t" || arg == "--type") && i + 1 < argc) {
+        type = argv[++i];
       }
     }
     if (input.empty()) {
@@ -98,15 +102,20 @@ int main(int argc, char **argv) {
       return 1;
     }
 
-    std::cout << "Generating client from " << input << "...\n";
+    std::cout << "Generating " << type << " from " << input << "...\n";
     try {
       std::string content = read_file(input);
       std::string upgraded_spec =
           openapi::upgraders::upgrade_to_latest(content);
       auto spec = openapi::parse(upgraded_spec);
-      std::string client_code = classes::emit_client(spec);
-
-      std::cout << client_code << "\n";
+      
+      if (type == "cli") {
+        std::string cli_code = classes::emit_cli(spec);
+        std::cout << cli_code << "\n";
+      } else {
+        std::string client_code = classes::emit_client(spec);
+        std::cout << client_code << "\n";
+      }
     } catch (const std::exception &e) {
       std::cerr << "Error: " << e.what() << "\n";
       return 1;

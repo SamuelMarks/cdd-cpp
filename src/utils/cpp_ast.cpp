@@ -12,7 +12,7 @@ CppAST parse_cpp(const std::string &source) {
   // Since building a full whitespace-aware parser from scratch in C++ using regex is very hard,
   // we capture blocks and attach previous whitespace/comments as leading trivia.
   // This is a minimal approximation.
-  std::regex class_regex(R"((?:(/\*\*?[^*]*\*/)\s*)?(?:struct|class)\s+(\w+)\s*\{([^}]*)\})");
+  std::regex class_regex(R"((?:(/\*(?:.|\n)*?\*/)\s*)?(?:struct|class)\s+(\w+)\s*\{([^}]*)\})");
   std::sregex_iterator cls_it(source.begin(), source.end(), class_regex);
   std::sregex_iterator end;
 
@@ -42,7 +42,7 @@ CppAST parse_cpp(const std::string &source) {
     cls_it++;
   }
 
-  std::regex func_regex(R"((?:(/\*\*?[^*]*\*/)\s*)?(?:inline\s+|virtual\s+|static\s+)*(\w+(?:::\w+)*(?:<\w+>)?)\s+(\w+)\s*\(([^)]*)\)\s*(?:\{([^}]*)\}|;))");
+  std::regex func_regex(R"((?:(/\*(?:.|\n)*?\*/)\s*)?(?:inline\s+|virtual\s+|static\s+)*(\w+(?:::\w+)*(?:<\w+>)?)\s+(\w+)\s*\(([^)]*)\)\s*(?:\{([^}]*)\}|;))");
   std::sregex_iterator fn_it(source.begin(), source.end(), func_regex);
 
   while (fn_it != end) {

@@ -162,9 +162,16 @@ openapi::OpenAPI parse_cpp_project(const std::string &folder_path) {
           if (!fn.params.empty()) {
             op.parameters = std::vector<openapi::Parameter>{};
             for (const auto &p : fn.params) {
+              if (p.type == "Client&" || p.type == "cdd_cli::Client&" || p.type == "Client") {
+                  continue;
+              }
               openapi::Parameter param;
               param.name = p.name;
-              param.in = "query";
+              if (route_path.find("{" + p.name + "}") != std::string::npos) {
+                  param.in = "path";
+              } else {
+                  param.in = "query";
+              }
               param.required = true;
               openapi::Schema ps;
               auto [t, f] = map_cpp_type_to_openapi(p.type);
