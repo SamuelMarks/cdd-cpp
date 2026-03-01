@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e
+
+# Run tests
+echo "Running tests..."
+make test || { echo "Tests failed. Commit aborted."; exit 1; }
+
+# Calculate coverage
+echo "Calculating coverage..."
+test_cov=$(python3 tools/test_coverage.py || echo "0")
+doc_cov=$(python3 tools/doc_coverage.py src || echo "0")
+
+# Update README badges
+python3 tools/update_badges.py "$test_cov" "$doc_cov"
+
+# Add README to the commit if it was updated
+git add README.md
+
+echo "Pre-commit checks passed."

@@ -1,0 +1,11 @@
+build
+.vscode
+.idea
+openapi_versions
+3.2.0.md
+custom_bin/
+build/
+*.orig
+*.patch
+*.rej
+/build_wasm/
