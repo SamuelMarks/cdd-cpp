@@ -46,7 +46,7 @@ endif()
 # Define Library
 set(CDD_LIB_SRCS
     src/functions/parse.cpp src/functions/emit.cpp
-    src/classes/parse.cpp src/classes/emit.cpp src/classes/emit_client.cpp
+    src/classes/parse.cpp src/classes/emit.cpp src/classes/emit_client.cpp src/classes/emit_cli.cpp
     src/docstrings/parse.cpp src/docstrings/emit.cpp
     src/routes/parse.cpp src/routes/emit.cpp
     src/mocks/parse.cpp src/mocks/emit.cpp
