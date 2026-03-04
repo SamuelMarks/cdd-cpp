@@ -1,9 +1,23 @@
 cmake_minimum_required(VERSION 3.15)
 project(cdd_cpp VERSION 0.0.1 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Extreme checks
+if(MSVC)
+    set(EXTREME_FLAGS /W4 /WX /fsanitize=address)
+    set(EXTREME_LINK_FLAGS /fsanitize=address)
+else()
+    set(EXTREME_FLAGS -Wall -Wextra -Wpedantic -Werror -Wno-maybe-uninitialized -Wno-missing-field-initializers -fsanitize=address,undefined -g -fno-omit-frame-pointer)
+    set(EXTREME_LINK_FLAGS -fsanitize=address,undefined)
+endif()
+
+function(enable_extreme_checks target)
+    target_compile_options(${target} PRIVATE ${EXTREME_FLAGS})
+    target_link_options(${target} PRIVATE ${EXTREME_LINK_FLAGS})
+endfunction()
 
 # Options for dependencies
 option(USE_VCPKG "Use vcpkg for dependencies" OFF)
@@ -15,6 +29,7 @@ endif()
 if (USE_VCPKG)
     find_package(simdjson CONFIG REQUIRED)
     find_package(CURL REQUIRED)
+    find_package(PostgreSQL REQUIRED)
 else()
     include(FetchContent)
     
@@ -41,6 +56,25 @@ else()
         set(CURL_USE_LIBSSH2 OFF CACHE BOOL "" FORCE)
         FetchContent_MakeAvailable(curl)
     endif()
+
+    find_package(PostgreSQL QUIET)
+    if(NOT PostgreSQL_FOUND)
+        if(POLICY CMP0135)
+            cmake_policy(SET CMP0135 NEW)
+        endif()
+        FetchContent_Declare(
+            postgresql
+            URL "https://ftp.postgresql.org/pub/source/v15.5/postgresql-15.5.tar.bz2"
+        )
+        FetchContent_GetProperties(postgresql)
+        if(NOT postgresql_POPULATED)
+            FetchContent_Populate(postgresql)
+            add_library(PostgreSQL::PostgreSQL INTERFACE IMPORTED)
+            set_target_properties(PostgreSQL::PostgreSQL PROPERTIES
+                INTERFACE_INCLUDE_DIRECTORIES "${postgresql_SOURCE_DIR}/src/interfaces/libpq;${postgresql_SOURCE_DIR}/src/include"
+            )
+        endif()
+    endif()
 endif()
 
 # Define Library
@@ -51,12 +85,14 @@ set(CDD_LIB_SRCS
     src/routes/parse.cpp src/routes/emit.cpp
     src/mocks/parse.cpp src/mocks/emit.cpp
     src/utils/http.cpp src/utils/cpp_ast.cpp src/utils/cpp_parser.cpp src/google_discovery/parse.cpp src/openapi/parse.cpp src/openapi/emit.cpp src/openapi/upgraders/upgrader.cpp
+    src/orm/emit.cpp
 )
 
 add_library(cdd_lib ${CDD_LIB_SRCS})
 target_include_directories(cdd_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+enable_extreme_checks(cdd_lib)
 
-target_link_libraries(cdd_lib PUBLIC simdjson simdjson::simdjson)
+target_link_libraries(cdd_lib PUBLIC simdjson simdjson::simdjson PostgreSQL::PostgreSQL)
 if(USE_VCPKG)
     target_link_libraries(cdd_lib PUBLIC CURL::libcurl)
 else()
@@ -70,10 +106,12 @@ endif()
 # CLI
 add_executable(cdd-cpp src/cli/main.cpp src/cli/sync.cpp)
 target_link_libraries(cdd-cpp PRIVATE cdd_lib)
+enable_extreme_checks(cdd-cpp)
 
 # Tests
-add_executable(cdd-tests src/tests/main.cpp src/tests/parse.cpp src/tests/emit.cpp src/tests/upgrader_test.cpp src/tests/google_discovery.cpp src/tests/classes.cpp src/tests/emit_client_test.cpp src/tests/functions.cpp src/tests/docstrings.cpp src/tests/routes.cpp src/tests/mocks.cpp src/tests/http.cpp src/tests/cli.cpp)
+add_executable(cdd-tests src/tests/main.cpp src/tests/parse.cpp src/tests/emit.cpp src/tests/upgrader_test.cpp src/tests/google_discovery.cpp src/tests/classes.cpp src/tests/emit_client_test.cpp src/tests/functions.cpp src/tests/docstrings.cpp src/tests/routes.cpp src/tests/mocks.cpp src/tests/http.cpp src/tests/cli.cpp src/tests/orm.cpp)
 target_link_libraries(cdd-tests PRIVATE cdd_lib)
+enable_extreme_checks(cdd-tests)
 
 # Testing config
 enable_testing()

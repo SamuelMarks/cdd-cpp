@@ -30,7 +30,7 @@ map_cpp_type_to_openapi(const std::string &type) {
   return {"object", ""};
 }
 
-openapi::OpenAPI parse_cpp_project(const std::string &folder_path) {
+openapi::OpenAPI parse_cpp_project(const std::string &folder_path) noexcept {
   openapi::OpenAPI spec;
   spec.openapi = "3.2.0";
   spec.info.title = "Generated API from C++";
@@ -72,7 +72,8 @@ openapi::OpenAPI parse_cpp_project(const std::string &folder_path) {
             openapi::Schema ps;
             auto [t, f] = map_cpp_type_to_openapi(fld.type);
             if (t == "object") {
-              ps.ref = openapi::Reference{"#/components/schemas/" + fld.type};
+              ps.ref =
+                  openapi::Reference{.ref = "#/components/schemas/" + fld.type};
             } else if (t == "array") {
               ps.type = "array";
               openapi::Schema items;
@@ -82,8 +83,8 @@ openapi::OpenAPI parse_cpp_project(const std::string &folder_path) {
                 std::string inner = fld.type.substr(start + 1, end - start - 1);
                 auto [it, f_it] = map_cpp_type_to_openapi(inner);
                 if (it == "object") {
-                  items.ref =
-                      openapi::Reference{"#/components/schemas/" + inner};
+                  items.ref = openapi::Reference{
+                      .ref = "#/components/schemas/" + inner};
                 } else {
                   items.type = it;
                   if (!f_it.empty())
@@ -193,8 +194,8 @@ openapi::OpenAPI parse_cpp_project(const std::string &folder_path) {
 
             if (t == "object") {
               openapi::Schema s;
-              s.ref =
-                  openapi::Reference{"#/components/schemas/" + fn.return_type};
+              s.ref = openapi::Reference{.ref = "#/components/schemas/" +
+                                                fn.return_type};
               mt.schema = s;
             } else if (t == "array") {
               openapi::Schema s;
@@ -207,8 +208,8 @@ openapi::OpenAPI parse_cpp_project(const std::string &folder_path) {
                     fn.return_type.substr(start + 1, end - start - 1);
                 auto [it, f_it] = map_cpp_type_to_openapi(inner);
                 if (it == "object") {
-                  items.ref =
-                      openapi::Reference{"#/components/schemas/" + inner};
+                  items.ref = openapi::Reference{
+                      .ref = "#/components/schemas/" + inner};
                 } else {
                   items.type = it;
                   if (!f_it.empty())

@@ -863,7 +863,7 @@ void emit_OpenAPI(utils::JsonWriter &jw, const OpenAPI &obj) {
   jw.end_object();
 }
 
-std::string emit(const OpenAPI &openapi) {
+std::string emit(const OpenAPI &openapi) noexcept {
   utils::JsonWriter jw;
   emit_OpenAPI(jw, openapi);
   return jw.str();

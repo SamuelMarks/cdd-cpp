@@ -1036,11 +1036,11 @@ static OpenAPI parse_OpenAPI(simdjson::dom::object obj) {
   return res;
 }
 
-OpenAPI parse(const std::string &input) {
+std::expected<OpenAPI, std::string> parse(const std::string &input) noexcept {
   simdjson::dom::parser parser;
   simdjson::dom::element doc = parser.parse(input);
   if (doc.type() != simdjson::dom::element_type::OBJECT)
-    throw std::runtime_error("OpenAPI doc must be an object");
+    return std::unexpected("OpenAPI doc must be an object");
   return parse_OpenAPI(doc.get_object());
 }
 } // namespace cdd_cpp::openapi

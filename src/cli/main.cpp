@@ -5,6 +5,8 @@
 #include "../openapi/parse.hpp"
 #include "../openapi/upgraders/upgrader.hpp"
 #include <cstdlib>
+#include <expected>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -48,12 +50,17 @@ void print_help(std::ostream &out) {
 
 void print_version(std::ostream &out) { out << "cdd-cpp version 0.0.1\n"; }
 
-std::string read_file(const std::string &path) {
-  std::ifstream fs(path);
-  if (!fs)
-    throw std::runtime_error("Could not open file: " + path);
-  return std::string(std::istreambuf_iterator<char>(fs),
-                     std::istreambuf_iterator<char>());
+std::expected<std::string, std::string>
+read_file(const std::string &path) noexcept {
+  try {
+    std::ifstream fs(path);
+    if (!fs)
+      return std::unexpected("Could not open file: " + path);
+    return std::string(std::istreambuf_iterator<char>(fs),
+                       std::istreambuf_iterator<char>());
+  } catch (const std::exception &e) {
+    return std::unexpected(std::string("Exception reading file: ") + e.what());
+  }
 }
 
 std::string get_arg_or_env(const std::string &val, const std::string &env_var,
@@ -155,70 +162,78 @@ int main_impl(int argc, char **argv, std::ostream &out, std::ostream &err) {
       return 1;
     }
 
-    try {
-      std::string content = "";
-      if (!input.empty()) {
-        content = read_file(input);
-      } else {
-        content = "{\"openapi\": \"3.2.0\"}";
-      }
-
-      std::string upgraded_spec =
-          openapi::upgraders::upgrade_to_latest(content);
-      auto spec = openapi::parse(upgraded_spec);
-
-      std::string code = "";
-      std::string filename = "generated.cpp";
-      if (subcommand == "to_sdk_cli") {
-        code = classes::emit_cli(spec);
-        filename = "generated_cli.cpp";
-      } else if (subcommand == "to_sdk") {
-        code = classes::emit_client(spec);
-        filename = "generated_client.hpp";
-      } else if (subcommand == "to_server") {
-        code = "// Server implementation placeholder\n";
-        filename = "generated_server.cpp";
-      } else {
-        err << "Unknown subcommand: " << subcommand << "\n";
+    std::string content = "";
+    if (!input.empty()) {
+      auto content_res = read_file(input);
+      if (!content_res) {
+        err << "Error: " << content_res.error() << "\n";
         return 1;
       }
+      content = *content_res;
+    } else {
+      content = "{\"openapi\": \"3.2.0\"}";
+    }
 
-      std::string out_path = output + "/" + filename;
-      std::ofstream out_file(out_path);
-      if (!out_file) {
-        err << "Could not open output file: " << out_path << "\n";
-        return 1;
-      }
-      out_file << code;
-      out << "Successfully generated " << out_path << "\n";
-
-      if (!no_installable_package) {
-        std::string cmake_path = output + "/CMakeLists.txt";
-        std::ofstream cmake_file(cmake_path);
-        cmake_file << "cmake_minimum_required(VERSION 3.15)\n"
-                   << "project(generated_project LANGUAGES CXX)\n"
-                   << "set(CMAKE_CXX_STANDARD 20)\n"
-                   << "add_executable(generated_bin " << filename << ")\n";
-      }
-
-      if (!no_github_actions) {
-        std::string wf_dir = output + "/.github/workflows";
-        system(("mkdir -p " + wf_dir).c_str());
-        std::string ci_path = wf_dir + "/ci.yml";
-        std::ofstream ci_file(ci_path);
-        ci_file << "name: CI\n"
-                << "on: [push]\n"
-                << "jobs:\n"
-                << "  build:\n"
-                << "    runs-on: ubuntu-latest\n"
-                << "    steps:\n"
-                << "      - uses: actions/checkout@v3\n"
-                << "      - run: cmake . && make\n";
-      }
-
-    } catch (const std::exception &e) {
-      err << "Error: " << e.what() << "\n";
+    auto upgraded_spec_res = openapi::upgraders::upgrade_to_latest(content);
+    if (!upgraded_spec_res) {
+      err << "Error: " << upgraded_spec_res.error() << "\n";
       return 1;
+    }
+    auto spec_res = openapi::parse(*upgraded_spec_res);
+    if (!spec_res) {
+      err << "Error: " << spec_res.error() << "\n";
+      return 1;
+    }
+    auto spec = *spec_res;
+
+    std::string code = "";
+    std::string filename = "generated.cpp";
+    if (subcommand == "to_sdk_cli") {
+      code = classes::emit_cli(spec);
+      filename = "generated_cli.cpp";
+    } else if (subcommand == "to_sdk") {
+      code = classes::emit_client(spec);
+      filename = "generated_client.hpp";
+    } else if (subcommand == "to_server") {
+      code = "// Server implementation placeholder\n";
+      filename = "generated_server.cpp";
+    } else {
+      err << "Unknown subcommand: " << subcommand << "\n";
+      return 1;
+    }
+
+    std::string out_path = output + "/" + filename;
+    std::ofstream out_file(out_path);
+    if (!out_file) {
+      err << "Could not open output file: " << out_path << "\n";
+      return 1;
+    }
+    out_file << code;
+    out << "Successfully generated " << out_path << "\n";
+
+    if (!no_installable_package) {
+      std::string cmake_path = output + "/CMakeLists.txt";
+      std::ofstream cmake_file(cmake_path);
+      cmake_file << "cmake_minimum_required(VERSION 3.15)\n"
+                 << "project(generated_project LANGUAGES CXX)\n"
+                 << "set(CMAKE_CXX_STANDARD 20)\n"
+                 << "add_executable(generated_bin " << filename << ")\n";
+    }
+
+    if (!no_github_actions) {
+      std::string wf_dir = output + "/.github/workflows";
+      std::error_code ec;
+      std::filesystem::create_directories(wf_dir, ec);
+      std::string ci_path = wf_dir + "/ci.yml";
+      std::ofstream ci_file(ci_path);
+      ci_file << "name: CI\n"
+              << "on: [push]\n"
+              << "jobs:\n"
+              << "  build:\n"
+              << "    runs-on: ubuntu-latest\n"
+              << "    steps:\n"
+              << "      - uses: actions/checkout@v3\n"
+              << "      - run: cmake . && make\n";
     }
 
   } else if (command == "to_openapi") {
@@ -239,18 +254,13 @@ int main_impl(int argc, char **argv, std::ostream &out, std::ostream &err) {
       err << "Missing -f <path/to/code>\n";
       return 1;
     }
-    try {
-      auto spec = utils::parse_cpp_project(folder);
-      std::string spec_str = openapi::emit(spec);
-      if (output.empty()) {
-        out << spec_str << "\n";
-      } else {
-        std::ofstream fs(output);
-        fs << spec_str << "\n";
-      }
-    } catch (const std::exception &e) {
-      err << "Error: " << e.what() << "\n";
-      return 1;
+    auto spec = utils::parse_cpp_project(folder);
+    std::string spec_str = openapi::emit(spec);
+    if (output.empty()) {
+      out << spec_str << "\n";
+    } else {
+      std::ofstream fs(output);
+      fs << spec_str << "\n";
     }
   } else if (command == "serve_json_rpc") {
     std::string port = "8080";
@@ -294,74 +304,78 @@ int main_impl(int argc, char **argv, std::ostream &out, std::ostream &err) {
       return 1;
     }
 
-    try {
-      std::string content = read_file(input_file);
-      auto spec = openapi::parse(content);
-
-      utils::JsonWriter jw;
-      jw.start_array();
-      jw.start_object();
-      jw.key_value("language", "cpp");
-      jw.key("operations");
-      jw.start_array();
-
-      if (spec.paths.has_value() && !spec.paths->empty()) {
-        for (const auto &[path, pi] : spec.paths.value()) {
-          auto add_op = [&](const std::string &method,
-                            const std::optional<openapi::Operation> &op) {
-            if (!op.has_value())
-              return;
-            jw.start_object();
-            jw.key_value("method", method);
-            jw.key_value("path", path);
-            if (op->operationId.has_value()) {
-              jw.key_value("operationId", op->operationId.value());
-            }
-            jw.key("code");
-            jw.start_object();
-
-            if (!no_imports) {
-              jw.key_value("imports",
-                           "#include <iostream>\n#include <cdd_client.hpp>");
-            }
-            if (!no_wrapping) {
-              jw.key_value("wrapper_start",
-                           "int main() {\n    cdd_cpp::Client client;\n");
-            }
-
-            std::string op_name = op->operationId.value_or("request");
-            jw.key_value("snippet", "    auto res = client." + op_name +
-                                        "();\n    out << res << \"\\n\";");
-
-            if (!no_wrapping) {
-              jw.key_value("wrapper_end", "    return 0;\n}");
-            }
-            jw.end_object();
-            jw.end_object();
-          };
-
-          add_op("GET", pi.get);
-          add_op("POST", pi.post);
-          add_op("PUT", pi.put);
-          add_op("DELETE", pi.delete_op);
-          add_op("PATCH", pi.patch);
-        }
-      }
-
-      jw.end_array();
-      jw.end_object();
-      jw.end_array();
-
-      if (output_file.empty()) {
-        out << jw.str() << "\n";
-      } else {
-        std::ofstream fs(output_file);
-        fs << jw.str() << "\n";
-      }
-
-    } catch (const std::exception &e) {
-      err << "Error: " << e.what() << "\n";
+    auto content_res = read_file(input_file);
+    if (!content_res) {
+      err << "Error: " << content_res.error() << "\n";
       return 1;
+    }
+    std::string content = *content_res;
+    auto spec_res = openapi::parse(content);
+    if (!spec_res) {
+      err << "Error: " << spec_res.error() << "\n";
+      return 1;
+    }
+    auto spec = *spec_res;
+
+    utils::JsonWriter jw;
+    jw.start_array();
+    jw.start_object();
+    jw.key_value("language", "cpp");
+    jw.key("operations");
+    jw.start_array();
+
+    if (spec.paths.has_value() && !spec.paths->empty()) {
+      for (const auto &[path, pi] : spec.paths.value()) {
+        auto add_op = [&](const std::string &method,
+                          const std::optional<openapi::Operation> &op) {
+          if (!op.has_value())
+            return;
+          jw.start_object();
+          jw.key_value("method", method);
+          jw.key_value("path", path);
+          if (op->operationId.has_value()) {
+            jw.key_value("operationId", op->operationId.value());
+          }
+          jw.key("code");
+          jw.start_object();
+
+          if (!no_imports) {
+            jw.key_value("imports",
+                         "#include <iostream>\n#include <cdd_client.hpp>");
+          }
+          if (!no_wrapping) {
+            jw.key_value("wrapper_start",
+                         "int main() {\n    cdd_cpp::Client client;\n");
+          }
+
+          std::string op_name = op->operationId.value_or("request");
+          jw.key_value("snippet", "    auto res = client." + op_name +
+                                      "();\n    out << res << \"\\n\";");
+
+          if (!no_wrapping) {
+            jw.key_value("wrapper_end", "    return 0;\n}");
+          }
+          jw.end_object();
+          jw.end_object();
+        };
+
+        add_op("GET", pi.get);
+        add_op("POST", pi.post);
+        add_op("PUT", pi.put);
+        add_op("DELETE", pi.delete_op);
+        add_op("PATCH", pi.patch);
+      }
+    }
+
+    jw.end_array();
+    jw.end_object();
+    jw.end_array();
+
+    if (output_file.empty()) {
+      out << jw.str() << "\n";
+    } else {
+      std::ofstream fs(output_file);
+      fs << jw.str() << "\n";
     }
   } else {
     err << "Unknown command: " << command << "\n";
@@ -439,12 +453,14 @@ int main(int argc, char **argv) {
       std::string id_str = "null";
       if (doc["id"].type() == simdjson::dom::element_type::INT64) {
         int64_t id_val;
-        doc["id"].get(id_val);
-        jw.key_value("id", std::to_string(id_val));
+        if (doc["id"].get(id_val) == simdjson::SUCCESS) {
+          jw.key_value("id", std::to_string(id_val));
+        }
       } else if (doc["id"].type() == simdjson::dom::element_type::STRING) {
         std::string_view id_val;
-        auto err = doc["id"].get(id_val);
-        jw.key_value("id", std::string(id_val));
+        if (doc["id"].get(id_val) == simdjson::SUCCESS) {
+          jw.key_value("id", std::string(id_val));
+        }
       } else {
         jw.key("id");
         jw.null_value(); // simplified

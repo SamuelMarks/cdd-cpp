@@ -23,3 +23,6 @@ test_cli_dir2/
 test_gen_cli/
 test_generated_cli_editable.cpp
 test_regex.cpp
+test_fetch/
+test_fetch.cmake
+__pycache__/

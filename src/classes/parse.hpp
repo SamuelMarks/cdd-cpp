@@ -4,5 +4,5 @@
 
 namespace cdd_cpp::classes {
 /// Parse a C++ Client SDK and return an OpenAPI specification
-openapi::OpenAPI parse(const std::string &input);
+openapi::OpenAPI parse(const std::string &input) noexcept;
 } // namespace cdd_cpp::classes

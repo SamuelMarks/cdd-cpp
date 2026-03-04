@@ -2,12 +2,12 @@
 #include <sstream>
 
 namespace cdd_cpp::classes {
-std::string emit_client(const openapi::OpenAPI &spec) {
+std::string emit_client(const openapi::OpenAPI &spec) noexcept {
   std::stringstream ss;
 
   ss << "#pragma once\n";
+  ss << "#include <expected>\n";
   ss << "#include <string>\n";
-  ss << "#include <stdexcept>\n";
   ss << "#include <optional>\n";
   ss << "#include <curl/curl.h>\n";
   ss << "#include <simdjson.h>\n\n";
@@ -51,8 +51,9 @@ std::string emit_client(const openapi::OpenAPI &spec) {
           return;
         std::string func_name = op->operationId.value_or("request");
 
-        ss << "        std::string " << func_name << "() {\n";
-        ss << "            if (!curl) throw std::runtime_error(\"Curl not "
+        ss << "        std::expected<std::string, std::string> " << func_name
+           << "() noexcept {\n";
+        ss << "            if (!curl) return std::unexpected(\"Curl not "
               "initialized\");\n";
         ss << "            std::string readBuffer;\n";
         ss << "            std::string full_url = base_url + \"" << path
@@ -71,8 +72,8 @@ std::string emit_client(const openapi::OpenAPI &spec) {
               "&readBuffer);\n";
         ss << "            CURLcode res = curl_easy_perform(curl);\n";
         ss << "            if(res != CURLE_OK) {\n";
-        ss << "                throw "
-              "std::runtime_error(curl_easy_strerror(res));\n";
+        ss << "                return "
+              "std::unexpected(curl_easy_strerror(res));\n";
         ss << "            }\n";
         ss << "            return readBuffer;\n";
         ss << "        }\n\n";

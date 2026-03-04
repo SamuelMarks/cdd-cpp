@@ -47,6 +47,6 @@ struct CppAST {
 /// @brief Auto-generated doc.
 CppAST parse_cpp(const std::string &source);
 /// @brief Auto-generated doc.
-std::string emit_cpp(const CppAST &ast);
+std::string emit_cpp(const CppAST &ast) noexcept;
 
 } // namespace cdd_cpp::utils

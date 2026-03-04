@@ -4,7 +4,7 @@
 
 namespace cdd_cpp::classes {
 
-openapi::OpenAPI parse(const std::string &input) {
+openapi::OpenAPI parse(const std::string &input) noexcept {
   openapi::OpenAPI spec;
   spec.openapi = "3.2.0";
   spec.info.title = "Parsed API Client";

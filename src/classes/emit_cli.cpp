@@ -46,14 +46,14 @@ static std::string escape_string(const std::string &s) {
   return out;
 }
 
-std::string emit_cli(const openapi::OpenAPI &spec) {
+std::string emit_cli(const openapi::OpenAPI &spec) noexcept {
   std::stringstream ss;
 
+  ss << "#include <expected>\n";
   ss << "#include <iostream>\n";
   ss << "#include <string>\n";
   ss << "#include <vector>\n";
   ss << "#include <map>\n";
-  ss << "#include <stdexcept>\n";
   ss << "#include <optional>\n";
   ss << "#include <curl/curl.h>\n";
   ss << "#include <simdjson.h>\n\n";
@@ -88,9 +88,10 @@ std::string emit_cli(const openapi::OpenAPI &spec) {
   ss << "            curl_global_cleanup();\n";
   ss << "        }\n\n";
 
-  ss << "        std::string request(const std::string& method, const "
-        "std::string& path, const std::string& body = \"\") {\n";
-  ss << "            if (!curl) throw std::runtime_error(\"Curl not "
+  ss << "        std::expected<std::string, std::string> request(const "
+        "std::string& method, const "
+        "std::string& path, const std::string& body = \"\") noexcept {\n";
+  ss << "            if (!curl) return std::unexpected(\"Curl not "
         "initialized\");\n";
   ss << "            std::string readBuffer;\n";
   ss << "            std::string full_url = base_url + path;\n";
@@ -112,7 +113,7 @@ std::string emit_cli(const openapi::OpenAPI &spec) {
   ss << "            CURLcode res = curl_easy_perform(curl);\n";
   ss << "            if(headers) curl_slist_free_all(headers);\n";
   ss << "            if(res != CURLE_OK) {\n";
-  ss << "                throw std::runtime_error(curl_easy_strerror(res));\n";
+  ss << "                return std::unexpected(curl_easy_strerror(res));\n";
   ss << "            }\n";
   ss << "            return readBuffer;\n";
   ss << "        }\n";
@@ -222,7 +223,8 @@ std::string emit_cli(const openapi::OpenAPI &spec) {
          << escape_string(n->path.value()) << "\n";
       ss << " */\n";
 
-      ss << "std::string handle_" << op_id << "(cdd_cli::Client& client";
+      ss << "std::expected<std::string, std::string> handle_" << op_id
+         << "(cdd_cli::Client& client";
 
       bool has_body = n->op->requestBody.has_value();
       if (n->op->parameters.has_value()) {
@@ -235,7 +237,7 @@ std::string emit_cli(const openapi::OpenAPI &spec) {
       if (has_body) {
         ss << ", std::string body";
       }
-      ss << ") {\n";
+      ss << ") noexcept {\n";
 
       ss << "    std::string path = \"" << escape_string(n->path.value())
          << "\";\n";
@@ -381,8 +383,7 @@ std::string emit_cli(const openapi::OpenAPI &spec) {
 
       ss << "        case " << node_ids[n] << ": {\n";
 
-      ss << "            try {\n";
-      ss << "                std::string res = handle_" << op_id << "(client";
+      ss << "            auto res = handle_" << op_id << "(client";
 
       bool has_body = n->op->requestBody.has_value();
       if (n->op->parameters.has_value()) {
@@ -405,12 +406,12 @@ std::string emit_cli(const openapi::OpenAPI &spec) {
       }
 
       ss << ");\n";
-      ss << "                std::cout << res << \"\n\";\n";
-      ss << "            } catch (const std::exception& e) {\n";
-      ss << "                std::cerr << \"Request failed: \" << e.what() << "
-            "\"\n\";\n";
+      ss << "            if (!res) {\n";
+      ss << "                std::cerr << \"Request failed: \" << res.error() "
+            "<< \"\\n\";\n";
       ss << "                return 1;\n";
       ss << "            }\n";
+      ss << "            std::cout << *res << \"\\n\";\n";
       ss << "            break;\n";
       ss << "        }\n";
     }

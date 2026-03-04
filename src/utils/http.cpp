@@ -1,6 +1,6 @@
 #include "http.hpp"
 #include <curl/curl.h>
-#include <stdexcept>
+#include <expected>
 
 namespace cdd_cpp::utils {
 
@@ -10,7 +10,8 @@ static size_t WriteCallback(void *contents, size_t size, size_t nmemb,
   return size * nmemb;
 }
 
-std::string http_get(const std::string &url) {
+std::expected<std::string, std::string>
+http_get(const std::string &url) noexcept {
   CURL *curl;
   CURLcode res;
   std::string readBuffer;
@@ -23,7 +24,7 @@ std::string http_get(const std::string &url) {
     res = curl_easy_perform(curl);
     curl_easy_cleanup(curl);
     if (res != CURLE_OK) {
-      throw std::runtime_error("curl_easy_perform() failed");
+      return std::unexpected("curl_easy_perform() failed");
     }
   }
   return readBuffer;
