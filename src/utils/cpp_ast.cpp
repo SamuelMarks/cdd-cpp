@@ -7,7 +7,7 @@ namespace cdd_cpp::utils {
 // Extremely simplified parse_cpp to support whitespace & comment extraction.
 // In a full compiler, we'd use Clang tooling or a proper recursive descent
 // parser.
-CppAST parse_cpp(const std::string &source) {
+CppAST parse_cpp(const std::string &source) noexcept {
   CppAST ast;
 
   // Since building a full whitespace-aware parser from scratch in C++ using

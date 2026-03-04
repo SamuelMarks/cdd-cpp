@@ -3,7 +3,7 @@
 
 namespace cdd_cpp::google_discovery {
 
-openapi::Schema convert_schema(simdjson::dom::element el) {
+openapi::Schema convert_schema(simdjson::dom::element el) noexcept {
   openapi::Schema out;
   if (el.is_object()) {
     auto obj = el.get_object();
@@ -184,7 +184,7 @@ void process_resources(simdjson::dom::object resources,
   }
 }
 
-std::vector<openapi::OpenAPI> parse(const std::string &input) {
+std::vector<openapi::OpenAPI> parse(const std::string &input) noexcept {
   simdjson::dom::parser parser;
   auto doc = parser.parse(input);
   auto root = doc.get_object();

@@ -21,7 +21,9 @@ void test_emit_client() {
   assert(generated.find(
              "curl_easy_setopt(curl, CURLOPT_URL, full_url.c_str());") !=
          std::string::npos);
-  assert(generated.find("std::string getPet()") != std::string::npos);
+  assert(generated.find(
+             "std::expected<std::string, std::string> getPet() noexcept") !=
+         std::string::npos);
   assert(generated.find("base_url + \"/pet\"") != std::string::npos);
 
   std::cout << "classes::test_emit_client passed.\n";

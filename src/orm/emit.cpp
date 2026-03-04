@@ -3,7 +3,7 @@
 
 namespace cdd_cpp::orm {
 
-std::string map_type_to_postgres(const std::string &type) {
+std::string map_type_to_postgres(const std::string &type) noexcept {
   if (type == "string")
     return "TEXT";
   if (type == "integer")
@@ -15,7 +15,7 @@ std::string map_type_to_postgres(const std::string &type) {
   return "TEXT";
 }
 
-std::string map_type_to_cpp(const std::string &type) {
+std::string map_type_to_cpp(const std::string &type) noexcept {
   if (type == "string")
     return "std::string";
   if (type == "integer")

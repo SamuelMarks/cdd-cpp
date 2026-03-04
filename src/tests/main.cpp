@@ -1,45 +1,45 @@
 namespace cdd_cpp::orm {
-void test_emit();
+void test_emit() noexcept;
 } // namespace cdd_cpp::orm
 
 namespace cdd_cpp::google_discovery {
-void test_parse();
+void test_parse() noexcept;
 }
 namespace cdd_cpp::openapi {
-void test_parse();
-void test_emit();
+void test_parse() noexcept;
+void test_emit() noexcept;
 } // namespace cdd_cpp::openapi
 namespace cdd_cpp::classes {
-void test_parse();
-void test_emit();
-void test_emit_client();
+void test_parse() noexcept;
+void test_emit() noexcept;
+void test_emit_client() noexcept;
 } // namespace cdd_cpp::classes
 namespace cdd_cpp::functions {
-void test_parse();
-void test_emit();
+void test_parse() noexcept;
+void test_emit() noexcept;
 } // namespace cdd_cpp::functions
 namespace cdd_cpp::docstrings {
-void test_parse();
-void test_emit();
+void test_parse() noexcept;
+void test_emit() noexcept;
 } // namespace cdd_cpp::docstrings
 namespace cdd_cpp::routes {
-void test_parse();
-void test_emit();
+void test_parse() noexcept;
+void test_emit() noexcept;
 } // namespace cdd_cpp::routes
 namespace cdd_cpp::mocks {
-void test_parse();
-void test_emit();
+void test_parse() noexcept;
+void test_emit() noexcept;
 } // namespace cdd_cpp::mocks
 namespace cdd_cpp::utils {
-void test_http();
-void test_cpp_parser();
+void test_http() noexcept;
+void test_cpp_parser() noexcept;
 } // namespace cdd_cpp::utils
 namespace cdd_cpp::cli {
-void test_to_docs_json();
-void test_sync();
+void test_to_docs_json() noexcept;
+void test_sync() noexcept;
 } // namespace cdd_cpp::cli
 namespace cdd_cpp::openapi::upgraders {
-void test_upgraders();
+void test_upgraders() noexcept;
 }
 
 #include <iostream>

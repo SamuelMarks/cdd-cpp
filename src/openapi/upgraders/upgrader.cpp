@@ -10,10 +10,13 @@
 
 namespace cdd_cpp::openapi::upgraders {
 
-void process_schema_3_0(simdjson::dom::object schema, utils::JsonWriter &jw);
-void process_element_3_0(simdjson::dom::element el, utils::JsonWriter &jw);
+void process_schema_3_0(simdjson::dom::object schema,
+                        utils::JsonWriter &jw) noexcept;
+void process_element_3_0(simdjson::dom::element el,
+                         utils::JsonWriter &jw) noexcept;
 
-void process_schema_3_0(simdjson::dom::object schema, utils::JsonWriter &jw) {
+void process_schema_3_0(simdjson::dom::object schema,
+                        utils::JsonWriter &jw) noexcept {
   jw.start_object();
   double min_val = 0;
   bool has_min = false;
@@ -77,7 +80,8 @@ void process_schema_3_0(simdjson::dom::object schema, utils::JsonWriter &jw) {
   jw.end_object();
 }
 
-void process_element_3_0(simdjson::dom::element el, utils::JsonWriter &jw) {
+void process_element_3_0(simdjson::dom::element el,
+                         utils::JsonWriter &jw) noexcept {
   switch (el.type()) {
   case simdjson::dom::element_type::ARRAY: {
     jw.start_array();
@@ -149,7 +153,7 @@ std::string upgrade_openapi_3(simdjson::dom::object root,
   return jw.str();
 }
 
-std::string upgrade_swagger_1_2(simdjson::dom::object root) {
+std::string upgrade_swagger_1_2(simdjson::dom::object root) noexcept {
   utils::JsonWriter jw;
   jw.start_object();
   jw.key_value("openapi", "3.2.0");
@@ -242,7 +246,7 @@ std::string upgrade_swagger_1_2(simdjson::dom::object root) {
   return jw.str();
 }
 
-std::string upgrade_swagger_2_0(simdjson::dom::object root) {
+std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
   utils::JsonWriter jw;
   jw.start_object();
   jw.key_value("openapi", "3.2.0");

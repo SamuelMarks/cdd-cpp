@@ -4,5 +4,5 @@
 
 namespace cdd_cpp::docstrings {
 /// Parse docstrings from string
-void parse(const std::string &input);
+void parse(const std::string &input) noexcept;
 } // namespace cdd_cpp::docstrings

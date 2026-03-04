@@ -19,7 +19,7 @@ std::string emit_client(const openapi::OpenAPI &spec) noexcept {
   ss << "        CURL* curl;\n\n";
 
   ss << "        static size_t WriteCallback(void* contents, size_t size, "
-        "size_t nmemb, void* userp) {\n";
+        "size_t nmemb, void* userp) noexcept {\n";
   ss << "            ((std::string*)userp)->append((char*)contents, size * "
         "nmemb);\n";
   ss << "            return size * nmemb;\n";
@@ -33,12 +33,12 @@ std::string emit_client(const openapi::OpenAPI &spec) noexcept {
   }
 
   ss << "        Client(const std::string& url = \"" << default_url
-     << "\") : base_url(url) {\n";
+     << "\") noexcept : base_url(url) {\n";
   ss << "            curl_global_init(CURL_GLOBAL_DEFAULT);\n";
   ss << "            curl = curl_easy_init();\n";
   ss << "        }\n\n";
 
-  ss << "        ~Client() {\n";
+  ss << "        ~Client() noexcept {\n";
   ss << "            if(curl) curl_easy_cleanup(curl);\n";
   ss << "            curl_global_cleanup();\n";
   ss << "        }\n\n";

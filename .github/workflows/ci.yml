@@ -46,7 +46,7 @@ jobs:
     - uses: actions/checkout@v6
 
     - name: Setup emsdk
-      uses: mymindstorm/setup-emsdk@v1
+      uses: mymindstorm/setup-emsdk@v14
 
     - name: Build WASM
       run: |
