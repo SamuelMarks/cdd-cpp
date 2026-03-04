@@ -1,9 +1,21 @@
-# WASM Build Support
-`cdd-cpp` supports compiling to WebAssembly using Emscripten. This allows running the parser and emitter logic within a web browser or a unified CLI tool without requiring native installations.
-## Prerequisites
-- Emscripten SDK (`emsdk`). The `make` tasks assume it is available at `../emsdk` or via your system`s `emcc`.
-## Building
+# WASM Support
+
+The `cdd-cpp` project supports WebAssembly (WASM) compilation via Emscripten.
+
+## Capabilities
+
+| Feature | Supported | Details |
+|---------|-----------|---------|
+| WASM | Yes | Implemented using emscripten (`emcmake`). |
+| JSON-RPC | Yes | Can run as a server or inside a browser environment. |
+| AST Parsing | Yes | C++ Parsing works inside WASM using a unified implementation. |
+
+## Build Instructions
+
+If you have `emsdk` installed one directory above the current working directory, you can build the WASM version by running:
+
 ```bash
 make build_wasm
 ```
-This will produce `cdd-cpp.js` and `cdd-cpp.wasm` in the `custom_bin/` directory.
+
+This will produce the required `.js` and `.wasm` files.

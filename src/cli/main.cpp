@@ -18,7 +18,7 @@
 
 using namespace cdd_cpp;
 
-void print_help(std::ostream &out) {
+void print_help(std::ostream &out) noexcept {
   out << "CDD CLI (Code-Driven Development)\n"
       << "Usage:\n"
       << "  cdd-cpp --help\n"
@@ -48,23 +48,22 @@ void print_help(std::ostream &out) {
       << "  serve_json_rpc: Starts JSON-RPC server.\n";
 }
 
-void print_version(std::ostream &out) { out << "cdd-cpp version 0.0.1\n"; }
+void print_version(std::ostream &out) noexcept { out << "cdd-cpp version 0.0.1\n"; }
 
 std::expected<std::string, std::string>
 read_file(const std::string &path) noexcept {
-  try {
-    std::ifstream fs(path);
-    if (!fs)
-      return std::unexpected("Could not open file: " + path);
-    return std::string(std::istreambuf_iterator<char>(fs),
-                       std::istreambuf_iterator<char>());
-  } catch (const std::exception &e) {
-    return std::unexpected(std::string("Exception reading file: ") + e.what());
-  }
+  std::ifstream fs(path);
+  if (!fs)
+    return std::unexpected("Could not open file: " + path);
+  std::string content((std::istreambuf_iterator<char>(fs)),
+                      std::istreambuf_iterator<char>());
+  if (fs.bad())
+    return std::unexpected("Error reading file: " + path);
+  return content;
 }
 
 std::string get_arg_or_env(const std::string &val, const std::string &env_var,
-                           const std::string &def = "") {
+                           const std::string &def = "") noexcept {
   if (!val.empty())
     return val;
   if (const char *env_p = std::getenv(env_var.c_str()))
@@ -72,7 +71,7 @@ std::string get_arg_or_env(const std::string &val, const std::string &env_var,
   return def;
 }
 
-bool get_bool_arg_or_env(bool val, const std::string &env_var) {
+bool get_bool_arg_or_env(bool val, const std::string &env_var) noexcept {
   if (val)
     return true;
   if (const char *env_p = std::getenv(env_var.c_str())) {
@@ -86,7 +85,7 @@ namespace cdd_cpp::cli {
 void sync_command(const std::string &code_dir, const std::string &spec_file);
 }
 
-int main_impl(int argc, char **argv, std::ostream &out, std::ostream &err) {
+int main_impl(int argc, char **argv, std::ostream &out, std::ostream &err) noexcept {
   if (argc < 2) {
     print_help(out);
     return 1;
@@ -391,7 +390,7 @@ int main_impl(int argc, char **argv, std::ostream &out, std::ostream &err) {
 
 std::mutex g_cout_mutex;
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv) noexcept {
   if (argc >= 2 && std::string(argv[1]) == "serve_json_rpc") {
     std::string port = "8080";
     std::string listen_host = "127.0.0.1";

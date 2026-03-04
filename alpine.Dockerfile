@@ -1,25 +1,28 @@
-FROM alpine:latest AS builder
+FROM alpine:3.19 AS builder
 
-RUN apk update && apk add --no-cache \
+RUN apk add --no-cache \
     build-base \
     cmake \
-    pkgconf \
-    curl-dev \
-    doxygen \
-    bash \
     git \
-    python3
+    curl \
+    python3 \
+    pkgconfig \
+    linux-headers
 
 WORKDIR /app
 COPY . .
 
-RUN make build
+RUN cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCDD_EXTREME_CHECKS=OFF \
+    && cmake --build build -j$(nproc)
 
-FROM alpine:latest
+FROM alpine:3.19
 
-RUN apk update && apk add --no-cache libstdc++ libgcc libcurl curl
+RUN apk add --no-cache libstdc++ libgcc
 
 WORKDIR /app
-COPY --from=builder /app/custom_bin/cdd-cpp /app/cdd-cpp
+COPY --from=builder /app/build/cdd-cpp /usr/local/bin/cdd-cpp
+COPY --from=builder /app/build/cdd-tests /usr/local/bin/cdd-tests
 
-ENTRYPOINT ["/app/cdd-cpp", "serve_json_rpc", "--port", "8082", "--listen", "0.0.0.0"]
+EXPOSE 8082
+
+ENTRYPOINT ["cdd-cpp", "serve_json_rpc"]

@@ -50,8 +50,8 @@ jobs:
 
     - name: Build WASM
       run: |
-        emcmake cmake -B build_wasm -S . -DCMAKE_BUILD_TYPE=Release
-        emmake cmake --build build_wasm -j4
+        emcmake cmake -B build_wasm -S . -DCMAKE_BUILD_TYPE=Release -DCDD_EXTREME_CHECKS=OFF
+        cmake --build build_wasm -j4
         mkdir -p custom_bin
         cp build_wasm/cdd-cpp.* custom_bin/ 2>/dev/null || true
 

@@ -1,16 +1,23 @@
-# Publishing cdd-cpp
+# Publish Guide
 
-## C++ Package Managers (Conan/vcpkg)
-C++ doesn't have a single dominant package registry, but `Conan` and `vcpkg` are the most popular. 
-To publish `cdd-cpp`:
-1. **Conan**: Create a `conanfile.py`, define the build requirements and CMake build step, and run `conan create .` then `conan upload`.
-2. **vcpkg**: Submit a port to the `microsoft/vcpkg` repository via PR containing a `vcpkg.json` and `portfile.cmake`.
+To publish `cdd-cpp` to C++ package registries, we recommend utilizing **vcpkg** or **Conan**.
 
-## Documentation Publishing
-1. Generate the local HTML documentation folder:
-   ```bash
-   make build_docs docs/
-   ```
-   This generates a `docs/html/` directory using Doxygen.
-2. **Your Own Server**: Sync the `docs/html/` folder to your server (e.g., using `rsync` or AWS S3).
-3. **Most Popular Location (GitHub Pages)**: Commit the `docs/html/` folder to a `gh-pages` branch, or use a GitHub Action (`peaceiris/actions-gh-pages`) to automatically deploy the generated Doxygen folder to GitHub Pages.
+## Vcpkg
+
+1. Generate a `vcpkg.json` file pointing to the repository and correct versions.
+2. Open a Pull Request on the main [vcpkg ports repository](https://github.com/microsoft/vcpkg).
+
+## GitHub Releases
+
+We publish pre-built binaries (including WASM) directly to GitHub Releases. The CI/CD pipeline does this automatically on tag creation.
+
+## Documentation
+
+To generate and serve local documentation:
+
+```bash
+make build_docs
+python -m http.server -d docs
+```
+
+To publish docs online, push them to the `gh-pages` branch using a GitHub Action.
