@@ -4,14 +4,23 @@ project(cdd_cpp VERSION 0.0.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+add_definitions(-DCPPHTTPLIB_NO_EXCEPTIONS)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+option(CDD_EXTREME_CHECKS "Enable extreme checks (sanitizers)" ON)
 
 # Extreme checks
-if(MSVC)
-    set(EXTREME_FLAGS /W4 /WX /fsanitize=address)
-    set(EXTREME_LINK_FLAGS /fsanitize=address)
+if(CDD_EXTREME_CHECKS)
+    if(MSVC)
+        set(EXTREME_FLAGS /W4 /WX /fsanitize=address)
+        set(EXTREME_LINK_FLAGS /fsanitize=address)
+    else()
+        set(EXTREME_FLAGS -Wall -Wextra -Wpedantic -Werror -Wno-maybe-uninitialized -Wno-missing-field-initializers -fsanitize=address,undefined -g -fno-omit-frame-pointer)
+        set(EXTREME_LINK_FLAGS -fsanitize=address,undefined)
+    endif()
 else()
-    set(EXTREME_FLAGS -Wall -Wextra -Wpedantic -Werror -Wno-maybe-uninitialized -Wno-missing-field-initializers -fsanitize=address,undefined -g -fno-omit-frame-pointer)
-    set(EXTREME_LINK_FLAGS -fsanitize=address,undefined)
+    set(EXTREME_FLAGS "")
+    set(EXTREME_LINK_FLAGS "")
 endif()
 
 function(enable_extreme_checks target)
@@ -88,7 +97,7 @@ set(CDD_LIB_SRCS
     src/orm/emit.cpp
 )
 
-add_library(cdd_lib ${CDD_LIB_SRCS})
+add_library(cdd_lib STATIC ${CDD_LIB_SRCS})
 target_include_directories(cdd_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 enable_extreme_checks(cdd_lib)
 

@@ -1,31 +1,26 @@
-FROM debian:latest AS builder
+FROM debian:12-slim AS builder
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
-    pkg-config \
-    libcurl4-openssl-dev \
-    doxygen \
-    curl \
     git \
+    curl \
     python3 \
-    ca-certificates \
+    pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY . .
 
-RUN make build
+RUN cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DCDD_EXTREME_CHECKS=OFF \
+    && cmake --build build -j$(nproc)
 
-FROM debian:latest
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libcurl4 \
-    curl \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+FROM debian:12-slim
 
 WORKDIR /app
-COPY --from=builder /app/custom_bin/cdd-cpp /app/cdd-cpp
+COPY --from=builder /app/build/cdd-cpp /usr/local/bin/cdd-cpp
+COPY --from=builder /app/build/cdd-tests /usr/local/bin/cdd-tests
 
-ENTRYPOINT ["/app/cdd-cpp", "serve_json_rpc", "--port", "8082", "--listen", "0.0.0.0"]
+EXPOSE 8082
+
+ENTRYPOINT ["cdd-cpp", "serve_json_rpc"]
