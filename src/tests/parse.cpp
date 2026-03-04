@@ -41,7 +41,10 @@ void test_parse() {
             }
         })";
 
-  OpenAPI spec = parse(json);
+  auto spec_res = parse(json);
+  if (!spec_res)
+    throw std::runtime_error(spec_res.error());
+  OpenAPI spec = *spec_res;
   assert(spec.openapi == "3.2.0");
   assert(spec.paths.has_value());
   assert(spec.paths->contains("/test"));
@@ -86,8 +89,7 @@ void test_parse() {
 
   simdjson::dom::parser parser;
   simdjson::dom::element doc;
-  auto error = parser.parse(schema_json).get(doc);
-  assert(error == simdjson::SUCCESS);
+  assert(parser.parse(schema_json).get(doc) == simdjson::SUCCESS);
   // We can't call parse_Schema directly as it's static, so we'll test via
   // OpenAPI wrapper
   std::string spec_with_schema = R"({
@@ -115,9 +117,13 @@ void test_parse() {
     }
   })";
 
-  OpenAPI spec_schema = parse(spec_with_schema);
+  auto spec_schema_res = parse(spec_with_schema);
+  if (!spec_schema_res)
+    throw std::runtime_error(spec_schema_res.error());
+  OpenAPI spec_schema = *spec_schema_res;
   assert(spec_schema.components.has_value());
   auto &schema = spec_schema.components->schemas->at("MySchema");
+  (void)schema;
   assert(schema.schema_dialect ==
          "https://json-schema.org/draft/2020-12/schema");
   assert(schema.id == "https://example.com/schema");
@@ -161,7 +167,10 @@ void test_parse() {
     }
   })";
 
-  OpenAPI spec_latest = parse(spec_3_2_0);
+  auto spec_latest_res = parse(spec_3_2_0);
+  if (!spec_latest_res)
+    throw std::runtime_error(spec_latest_res.error());
+  OpenAPI spec_latest = *spec_latest_res;
   assert(spec_latest.self_link == "https://example.com/openapi.json");
   assert(spec_latest.tags.has_value() && spec_latest.tags->size() == 1);
   assert(spec_latest.tags->at(0).name == "User");

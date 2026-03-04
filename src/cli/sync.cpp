@@ -20,11 +20,9 @@ void sync_command(const std::string &code_dir, const std::string &spec_file) {
   if (fs) {
     std::string content((std::istreambuf_iterator<char>(fs)),
                         std::istreambuf_iterator<char>());
-    try {
-      auto file_spec = openapi::parse(content);
-      merged_spec.info = file_spec.info; // Keep original info
-    } catch (...) {
-      // ignore parse errors if it's broken, will overwrite
+    auto file_spec_res = openapi::parse(content);
+    if (file_spec_res) {
+      merged_spec.info = file_spec_res->info; // Keep original info
     }
   }
 

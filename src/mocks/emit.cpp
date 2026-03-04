@@ -2,7 +2,7 @@
 #include <sstream>
 
 namespace cdd_cpp::mocks {
-std::string emit(const openapi::OpenAPI &spec) {
+std::string emit(const openapi::OpenAPI &spec) noexcept {
   std::stringstream ss;
 
   ss << "#pragma once\n";

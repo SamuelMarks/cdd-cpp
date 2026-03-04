@@ -1,3 +1,7 @@
+namespace cdd_cpp::orm {
+void test_emit();
+} // namespace cdd_cpp::orm
+
 namespace cdd_cpp::google_discovery {
 void test_parse();
 }
@@ -61,6 +65,7 @@ int main() {
   cdd_cpp::utils::test_cpp_parser();
   cdd_cpp::openapi::upgraders::test_upgraders();
   cdd_cpp::google_discovery::test_parse();
+  cdd_cpp::orm::test_emit();
   std::cout << "All tests passed with 100% simulated coverage.\n";
   return 0;
 }

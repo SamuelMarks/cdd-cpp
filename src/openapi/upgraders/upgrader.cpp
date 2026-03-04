@@ -21,6 +21,8 @@ void process_schema_3_0(simdjson::dom::object schema, utils::JsonWriter &jw) {
   bool has_max = false;
   bool exclusive_min = false;
   bool exclusive_max = false;
+  (void)has_min;
+  (void)has_max;
 
   simdjson::dom::element el;
   if (schema["minimum"].get(el) == simdjson::SUCCESS) {
@@ -562,34 +564,35 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) {
   return jw.str();
 }
 
-std::string upgrade_to_latest(const std::string &json_spec) {
+std::expected<std::string, std::string>
+upgrade_to_latest(const std::string &json_spec) noexcept {
   simdjson::dom::parser parser;
   simdjson::dom::element doc;
   if (parser.parse(json_spec).get(doc) != simdjson::SUCCESS ||
       doc.type() != simdjson::dom::element_type::OBJECT) {
-    throw std::runtime_error("Invalid JSON document");
+    return std::unexpected("Invalid JSON document");
   }
 
   simdjson::dom::object root;
   if (doc.get(root) != simdjson::SUCCESS) {
-    throw std::runtime_error("Invalid root object");
+    return std::unexpected("Invalid root object");
   }
 
   simdjson::dom::element version_el;
   if (root["swagger"].get(version_el) == simdjson::SUCCESS) {
     std::string_view v_view;
     if (version_el.get(v_view) != simdjson::SUCCESS)
-      throw std::runtime_error("Invalid swagger version format");
+      return std::unexpected("Invalid swagger version format");
     std::string v(v_view);
     if (v == "1.2" || v == "1.1" || v == "1.0")
       return upgrade_swagger_1_2(root);
     if (v == "2.0")
       return upgrade_swagger_2_0(root);
-    throw std::runtime_error("Unknown swagger version: " + v);
+    return std::unexpected("Unknown swagger version: " + v);
   } else if (root["openapi"].get(version_el) == simdjson::SUCCESS) {
     std::string_view v_view;
     if (version_el.get(v_view) != simdjson::SUCCESS)
-      throw std::runtime_error("Invalid openapi version format");
+      return std::unexpected("Invalid openapi version format");
     std::string v(v_view);
     if (v.starts_with("3.0") || v.starts_with("3.1")) {
       return upgrade_openapi_3(root, v);
@@ -597,13 +600,13 @@ std::string upgrade_to_latest(const std::string &json_spec) {
     if (v.starts_with("3.2")) {
       return json_spec; // Already latest
     }
-    throw std::runtime_error("Unknown openapi version: " + v);
+    return std::unexpected("Unknown openapi version: " + v);
   } else if (root["swaggerVersion"].get(version_el) ==
              simdjson::SUCCESS) { // Swagger 1.2 root
     return upgrade_swagger_1_2(root);
   }
 
-  throw std::runtime_error(
+  return std::unexpected(
       "Could not detect OpenAPI/Swagger version in document");
 }
 

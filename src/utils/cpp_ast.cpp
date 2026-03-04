@@ -85,7 +85,7 @@ CppAST parse_cpp(const std::string &source) {
   return ast;
 }
 
-std::string emit_cpp(const CppAST &ast) {
+std::string emit_cpp(const CppAST &ast) noexcept {
   std::ostringstream out;
   out << ast.file_trivia.leading;
 

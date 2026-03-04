@@ -45,7 +45,10 @@ void test_emit() {
             }
         })";
 
-  OpenAPI spec = parse(json);
+  auto spec_res = parse(json);
+  if (!spec_res)
+    throw std::runtime_error(spec_res.error());
+  OpenAPI spec = *spec_res;
   std::string out = emit(spec);
 
   assert(out.find("\"openapi\":\"3.2.0\"") != std::string::npos);
@@ -90,7 +93,10 @@ void test_emit() {
     }
   })";
 
-  OpenAPI spec_3 = parse(json_3_2_0);
+  auto spec_3_res = parse(json_3_2_0);
+  if (!spec_3_res)
+    throw std::runtime_error(spec_3_res.error());
+  OpenAPI spec_3 = *spec_3_res;
   std::string out_3 = emit(spec_3);
 
   assert(out_3.find("\"$self\":\"https://example.com/openapi.json\"") !=

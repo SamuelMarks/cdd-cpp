@@ -40,7 +40,7 @@ class JsonWriter {
         ss << "\\t";
         break;
       default:
-        if ('\x00' <= c && c <= '\x1f') {
+        if (static_cast<unsigned char>(c) <= 0x1f) {
           ss << "\\u" << std::hex << std::setw(4) << std::setfill('0') << (int)c
              << std::dec;
         } else {
@@ -104,6 +104,7 @@ public:
     ss << "null";
     first = false;
   }
+  /// @brief Write string value
   void value(const std::string &v) {
     escape_string(v);
     first = false;

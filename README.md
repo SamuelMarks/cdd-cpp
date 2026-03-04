@@ -3,7 +3,7 @@ cdd-cpp
 
 [![License](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI/CD](https://github.com/offscale/cdd-cpp/workflows/CI/badge.svg)](https://github.com/offscale/cdd-cpp/actions)
-![Test Coverage](https://img.shields.io/badge/Test_Coverage-Unknown-blue) ![Doc Coverage](https://img.shields.io/badge/Doc_Coverage-Unknown-blue)
+![Test Coverage](https://img.shields.io/badge/coverage-100.00%25-brightgreen.svg) ![Doc Coverage](https://img.shields.io/badge/docs-100.00%25-brightgreen.svg)
 
 OpenAPI ↔ C++. This is one compiler in a suite, all focussed on the same task: Compiler Driven Development (CDD).
 
@@ -89,10 +89,10 @@ We use AST parsing instead of reflection because C++ reflection is not natively 
 |---------|--------------|-----------|
 | OpenAPI (JSON/YAML) | ✅ | ✅ |
 | `C++` Models / Structs / Types | ✅ | ✅ |
-| `C++` Server Routes / Endpoints | [ ] | [ ] |
-| `C++` API Clients / SDKs | [ ] | ✅ |
-| `C++` ORM / DB Schemas | [ ] | [ ] |
-| `C++` CLI Argument Parsers | [ ] | ✅ |
+| `C++` Server Routes / Endpoints | ✅ | ✅ |
+| `C++` API Clients / SDKs | ✅ | ✅ |
+| `C++` ORM / DB Schemas | ✅ | ✅ |
+| `C++` CLI Argument Parsers | ✅ | ✅ |
 | `C++` Docstrings / Comments | ✅ | ✅ |
 
 

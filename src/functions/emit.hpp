@@ -3,5 +3,5 @@
 
 namespace cdd_cpp::functions {
 /// Emit functions to string
-std::string emit();
+std::string emit() noexcept;
 } // namespace cdd_cpp::functions

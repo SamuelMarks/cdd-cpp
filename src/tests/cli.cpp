@@ -1,19 +1,20 @@
 #include <array>
 #include <cassert>
 #include <cstdlib>
+#include <expected>
 #include <iostream>
 #include <memory>
 #include <string>
 
 namespace cdd_cpp::cli {
-std::string exec(const char *cmd) {
+std::expected<std::string, std::string> exec(const char *cmd) noexcept {
   std::array<char, 128> buffer;
   std::string result;
   auto pclose_wrapper = [](FILE *f) { pclose(f); };
   std::unique_ptr<FILE, decltype(pclose_wrapper)> pipe(popen(cmd, "r"),
                                                        pclose_wrapper);
   if (!pipe) {
-    throw std::runtime_error("popen() failed!");
+    return std::unexpected("popen() failed!");
   }
   while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
     result += buffer.data();
@@ -38,9 +39,13 @@ void test_to_docs_json() {
     fclose(f);
   }
 
-  std::string res = exec("./cdd-cpp to_docs_json -i test_spec.json");
+  auto res_exp = exec("./cdd-cpp to_docs_json -i test_spec.json");
+  std::string res = res_exp ? *res_exp : "";
   if (res.empty() || res.find("not found") != std::string::npos) {
-    res = exec("../build/cdd-cpp to_docs_json -i test_spec.json"); // fallback
+    auto fb =
+        exec("../build/cdd-cpp to_docs_json -i test_spec.json"); // fallback
+    if (fb)
+      res = *fb;
   }
 
   assert(res.find("\"imports\"") != std::string::npos);
@@ -48,11 +53,14 @@ void test_to_docs_json() {
   assert(res.find("\"wrapper_end\"") != std::string::npos);
   assert(res.find("\"snippet\"") != std::string::npos);
 
-  std::string res_no = exec(
+  auto res_no_exp = exec(
       "./cdd-cpp to_docs_json --no-imports --no-wrapping -i test_spec.json");
+  std::string res_no = res_no_exp ? *res_no_exp : "";
   if (res_no.empty() || res_no.find("not found") != std::string::npos) {
-    res_no = exec("../build/cdd-cpp to_docs_json --no-imports --no-wrapping -i "
-                  "test_spec.json");
+    auto fb = exec("../build/cdd-cpp to_docs_json --no-imports --no-wrapping "
+                   "-i test_spec.json");
+    if (fb)
+      res_no = *fb;
   }
 
   assert(res_no.find("\"imports\"") == std::string::npos);

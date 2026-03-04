@@ -23,8 +23,9 @@ openapi::Schema convert_schema(simdjson::dom::element el) {
     }
     simdjson::dom::element ref_el;
     if (obj["$ref"].get(ref_el) == simdjson::SUCCESS && ref_el.is_string()) {
-      out.ref = openapi::Reference{"#/components/schemas/" +
-                                   std::string(ref_el.get_string().value())};
+      out.ref =
+          openapi::Reference{.ref = "#/components/schemas/" +
+                                    std::string(ref_el.get_string().value())};
     }
     simdjson::dom::element items_el;
     if (obj["items"].get(items_el) == simdjson::SUCCESS) {
@@ -117,8 +118,9 @@ void process_methods(simdjson::dom::object methods,
         reqBody.content = std::map<std::string, openapi::MediaType>{};
         openapi::MediaType mt;
         openapi::Schema s;
-        s.ref = openapi::Reference{"#/components/schemas/" +
-                                   std::string(ref_el.get_string().value())};
+        s.ref =
+            openapi::Reference{.ref = "#/components/schemas/" +
+                                      std::string(ref_el.get_string().value())};
         mt.schema = s;
         reqBody.content.insert({"application/json", mt});
         op.requestBody = reqBody;
@@ -137,8 +139,9 @@ void process_methods(simdjson::dom::object methods,
         r200.content = std::map<std::string, openapi::MediaType>{};
         openapi::MediaType mt;
         openapi::Schema s;
-        s.ref = openapi::Reference{"#/components/schemas/" +
-                                   std::string(ref_el.get_string().value())};
+        s.ref =
+            openapi::Reference{.ref = "#/components/schemas/" +
+                                      std::string(ref_el.get_string().value())};
         mt.schema = s;
         r200.content->insert({"application/json", mt});
       }
