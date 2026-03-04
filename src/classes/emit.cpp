@@ -3,7 +3,7 @@
 
 namespace cdd_cpp::classes {
 
-std::string map_type(const openapi::Schema &schema) {
+std::string map_type(const openapi::Schema &schema) noexcept {
   if (schema.ref.has_value()) {
     std::string ref = schema.ref.value().ref;
     size_t last_slash = ref.find_last_of('/');

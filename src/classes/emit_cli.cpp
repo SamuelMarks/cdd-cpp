@@ -15,7 +15,8 @@ struct CliNode {
   std::optional<std::string> path;
   std::optional<openapi::Operation> op;
 
-  std::shared_ptr<CliNode> get_or_create_child(const std::string &child_name) {
+  std::shared_ptr<CliNode>
+  get_or_create_child(const std::string &child_name) noexcept {
     if (!children.count(child_name)) {
       children[child_name] = std::make_shared<CliNode>();
       children[child_name]->name = child_name;
@@ -24,12 +25,12 @@ struct CliNode {
   }
 };
 
-static void sanitize_string(std::string &str) {
+static void sanitize_string(std::string &str) noexcept {
   std::replace(str.begin(), str.end(), '-', '_');
   std::replace(str.begin(), str.end(), ' ', '_');
 }
 
-static std::string escape_string(const std::string &s) {
+static std::string escape_string(const std::string &s) noexcept {
   std::string out;
   for (char c : s) {
     if (c == '"')

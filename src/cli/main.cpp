@@ -48,7 +48,9 @@ void print_help(std::ostream &out) noexcept {
       << "  serve_json_rpc: Starts JSON-RPC server.\n";
 }
 
-void print_version(std::ostream &out) noexcept { out << "cdd-cpp version 0.0.1\n"; }
+void print_version(std::ostream &out) noexcept {
+  out << "cdd-cpp version 0.0.1\n";
+}
 
 std::expected<std::string, std::string>
 read_file(const std::string &path) noexcept {
@@ -82,10 +84,12 @@ bool get_bool_arg_or_env(bool val, const std::string &env_var) noexcept {
 }
 
 namespace cdd_cpp::cli {
-void sync_command(const std::string &code_dir, const std::string &spec_file);
+void sync_command(const std::string &code_dir,
+                  const std::string &spec_file) noexcept;
 }
 
-int main_impl(int argc, char **argv, std::ostream &out, std::ostream &err) noexcept {
+int main_impl(int argc, char **argv, std::ostream &out,
+              std::ostream &err) noexcept {
   if (argc < 2) {
     print_help(out);
     return 1;

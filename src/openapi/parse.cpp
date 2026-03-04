@@ -82,35 +82,35 @@ parse_security(simdjson::dom::object obj, std::string_view key) {
   return std::nullopt;
 }
 
-static Reference parse_Reference(simdjson::dom::object obj);
-static Contact parse_Contact(simdjson::dom::object obj);
-static License parse_License(simdjson::dom::object obj);
-static Info parse_Info(simdjson::dom::object obj);
-static ServerVariable parse_ServerVariable(simdjson::dom::object obj);
-static Server parse_Server(simdjson::dom::object obj);
+static Reference parse_Reference(simdjson::dom::object obj) noexcept;
+static Contact parse_Contact(simdjson::dom::object obj) noexcept;
+static License parse_License(simdjson::dom::object obj) noexcept;
+static Info parse_Info(simdjson::dom::object obj) noexcept;
+static ServerVariable parse_ServerVariable(simdjson::dom::object obj) noexcept;
+static Server parse_Server(simdjson::dom::object obj) noexcept;
 static ExternalDocumentation
-parse_ExternalDocumentation(simdjson::dom::object obj);
-static Tag parse_Tag(simdjson::dom::object obj);
-static Discriminator parse_Discriminator(simdjson::dom::object obj);
-static XML parse_XML(simdjson::dom::object obj);
-static Schema parse_Schema(simdjson::dom::object obj);
-static Example parse_Example(simdjson::dom::object obj);
-static Encoding parse_Encoding(simdjson::dom::object obj);
-static MediaType parse_MediaType(simdjson::dom::object obj);
-static Header parse_Header(simdjson::dom::object obj);
-static RequestBody parse_RequestBody(simdjson::dom::object obj);
-static Link parse_Link(simdjson::dom::object obj);
-static Response parse_Response(simdjson::dom::object obj);
-static Parameter parse_Parameter(simdjson::dom::object obj);
-static OAuthFlow parse_OAuthFlow(simdjson::dom::object obj);
-static OAuthFlows parse_OAuthFlows(simdjson::dom::object obj);
-static SecurityScheme parse_SecurityScheme(simdjson::dom::object obj);
-static Operation parse_Operation(simdjson::dom::object obj);
-static PathItem parse_PathItem(simdjson::dom::object obj);
-static Components parse_Components(simdjson::dom::object obj);
-static OpenAPI parse_OpenAPI(simdjson::dom::object obj);
+parse_ExternalDocumentation(simdjson::dom::object obj) noexcept;
+static Tag parse_Tag(simdjson::dom::object obj) noexcept;
+static Discriminator parse_Discriminator(simdjson::dom::object obj) noexcept;
+static XML parse_XML(simdjson::dom::object obj) noexcept;
+static Schema parse_Schema(simdjson::dom::object obj) noexcept;
+static Example parse_Example(simdjson::dom::object obj) noexcept;
+static Encoding parse_Encoding(simdjson::dom::object obj) noexcept;
+static MediaType parse_MediaType(simdjson::dom::object obj) noexcept;
+static Header parse_Header(simdjson::dom::object obj) noexcept;
+static RequestBody parse_RequestBody(simdjson::dom::object obj) noexcept;
+static Link parse_Link(simdjson::dom::object obj) noexcept;
+static Response parse_Response(simdjson::dom::object obj) noexcept;
+static Parameter parse_Parameter(simdjson::dom::object obj) noexcept;
+static OAuthFlow parse_OAuthFlow(simdjson::dom::object obj) noexcept;
+static OAuthFlows parse_OAuthFlows(simdjson::dom::object obj) noexcept;
+static SecurityScheme parse_SecurityScheme(simdjson::dom::object obj) noexcept;
+static Operation parse_Operation(simdjson::dom::object obj) noexcept;
+static PathItem parse_PathItem(simdjson::dom::object obj) noexcept;
+static Components parse_Components(simdjson::dom::object obj) noexcept;
+static OpenAPI parse_OpenAPI(simdjson::dom::object obj) noexcept;
 
-static Reference parse_Reference(simdjson::dom::object obj) {
+static Reference parse_Reference(simdjson::dom::object obj) noexcept {
   Reference res;
   res.ref = get_optional_string(obj, "$ref").value_or("");
   res.summary = get_optional_string(obj, "summary");
@@ -118,7 +118,7 @@ static Reference parse_Reference(simdjson::dom::object obj) {
   return res;
 }
 
-static Contact parse_Contact(simdjson::dom::object obj) {
+static Contact parse_Contact(simdjson::dom::object obj) noexcept {
   Contact res;
   res.name = get_optional_string(obj, "name");
   res.url = get_optional_string(obj, "url");
@@ -126,7 +126,7 @@ static Contact parse_Contact(simdjson::dom::object obj) {
   return res;
 }
 
-static License parse_License(simdjson::dom::object obj) {
+static License parse_License(simdjson::dom::object obj) noexcept {
   License res;
   res.name = get_optional_string(obj, "name").value_or("");
   res.identifier = get_optional_string(obj, "identifier");
@@ -134,7 +134,7 @@ static License parse_License(simdjson::dom::object obj) {
   return res;
 }
 
-static Info parse_Info(simdjson::dom::object obj) {
+static Info parse_Info(simdjson::dom::object obj) noexcept {
   Info res;
   res.title = get_optional_string(obj, "title").value_or("");
   res.summary = get_optional_string(obj, "summary");
@@ -154,7 +154,7 @@ static Info parse_Info(simdjson::dom::object obj) {
   return res;
 }
 
-static ServerVariable parse_ServerVariable(simdjson::dom::object obj) {
+static ServerVariable parse_ServerVariable(simdjson::dom::object obj) noexcept {
   ServerVariable res;
   res.enum_values = parse_vector_string(obj, "enum");
   res.default_value = get_optional_string(obj, "default").value_or("");
@@ -162,7 +162,7 @@ static ServerVariable parse_ServerVariable(simdjson::dom::object obj) {
   return res;
 }
 
-static Server parse_Server(simdjson::dom::object obj) {
+static Server parse_Server(simdjson::dom::object obj) noexcept {
   Server res;
   res.url = get_optional_string(obj, "url").value_or("");
   res.description = get_optional_string(obj, "description");
@@ -182,14 +182,14 @@ static Server parse_Server(simdjson::dom::object obj) {
 }
 
 static ExternalDocumentation
-parse_ExternalDocumentation(simdjson::dom::object obj) {
+parse_ExternalDocumentation(simdjson::dom::object obj) noexcept {
   ExternalDocumentation res;
   res.description = get_optional_string(obj, "description");
   res.url = get_optional_string(obj, "url").value_or("");
   return res;
 }
 
-static Tag parse_Tag(simdjson::dom::object obj) {
+static Tag parse_Tag(simdjson::dom::object obj) noexcept {
   Tag res;
   res.name = get_optional_string(obj, "name").value_or("");
   res.description = get_optional_string(obj, "description");
@@ -204,7 +204,7 @@ static Tag parse_Tag(simdjson::dom::object obj) {
   return res;
 }
 
-static Discriminator parse_Discriminator(simdjson::dom::object obj) {
+static Discriminator parse_Discriminator(simdjson::dom::object obj) noexcept {
   Discriminator res;
   res.propertyName = get_optional_string(obj, "propertyName").value_or("");
   res.mapping = parse_map_string(obj, "mapping");
@@ -212,7 +212,7 @@ static Discriminator parse_Discriminator(simdjson::dom::object obj) {
   return res;
 }
 
-static XML parse_XML(simdjson::dom::object obj) {
+static XML parse_XML(simdjson::dom::object obj) noexcept {
   XML res;
   res.name = get_optional_string(obj, "name");
   res.namespace_url = get_optional_string(obj, "namespace");
@@ -222,7 +222,7 @@ static XML parse_XML(simdjson::dom::object obj) {
   return res;
 }
 
-static Schema parse_Schema(simdjson::dom::object obj) {
+static Schema parse_Schema(simdjson::dom::object obj) noexcept {
   Schema res;
   res.type = get_optional_string(obj, "type");
   res.description = get_optional_string(obj, "description");
@@ -343,7 +343,7 @@ static Schema parse_Schema(simdjson::dom::object obj) {
   return res;
 }
 
-static Example parse_Example(simdjson::dom::object obj) {
+static Example parse_Example(simdjson::dom::object obj) noexcept {
   Example res;
   res.summary = get_optional_string(obj, "summary");
   res.description = get_optional_string(obj, "description");
@@ -357,7 +357,7 @@ static Example parse_Example(simdjson::dom::object obj) {
   return res;
 }
 
-static Encoding parse_Encoding(simdjson::dom::object obj) {
+static Encoding parse_Encoding(simdjson::dom::object obj) noexcept {
   Encoding res;
   res.contentType = get_optional_string(obj, "contentType");
   res.style = get_optional_string(obj, "style");
@@ -402,7 +402,7 @@ static Encoding parse_Encoding(simdjson::dom::object obj) {
   return res;
 }
 
-static MediaType parse_MediaType(simdjson::dom::object obj) {
+static MediaType parse_MediaType(simdjson::dom::object obj) noexcept {
   MediaType res;
   simdjson::dom::element el_schema;
   if (obj["schema"].get(el_schema) == simdjson::SUCCESS &&
@@ -459,7 +459,7 @@ static MediaType parse_MediaType(simdjson::dom::object obj) {
   return res;
 }
 
-static Header parse_Header(simdjson::dom::object obj) {
+static Header parse_Header(simdjson::dom::object obj) noexcept {
   Header res;
   res.description = get_optional_string(obj, "description");
   res.required = get_optional_bool(obj, "required").value_or(false);
@@ -503,7 +503,7 @@ static Header parse_Header(simdjson::dom::object obj) {
   return res;
 }
 
-static RequestBody parse_RequestBody(simdjson::dom::object obj) {
+static RequestBody parse_RequestBody(simdjson::dom::object obj) noexcept {
   RequestBody res;
   res.description = get_optional_string(obj, "description");
   simdjson::dom::element el_content;
@@ -525,7 +525,7 @@ static RequestBody parse_RequestBody(simdjson::dom::object obj) {
   return res;
 }
 
-static Link parse_Link(simdjson::dom::object obj) {
+static Link parse_Link(simdjson::dom::object obj) noexcept {
   Link res;
   res.operationRef = get_optional_string(obj, "operationRef");
   res.operationId = get_optional_string(obj, "operationId");
@@ -545,7 +545,7 @@ static Link parse_Link(simdjson::dom::object obj) {
   return res;
 }
 
-static Response parse_Response(simdjson::dom::object obj) {
+static Response parse_Response(simdjson::dom::object obj) noexcept {
   Response res;
   res.description = get_optional_string(obj, "description").value_or("");
   simdjson::dom::element el_headers;
@@ -586,7 +586,7 @@ static Response parse_Response(simdjson::dom::object obj) {
   return res;
 }
 
-static Parameter parse_Parameter(simdjson::dom::object obj) {
+static Parameter parse_Parameter(simdjson::dom::object obj) noexcept {
   Parameter res;
   res.name = get_optional_string(obj, "name").value_or("");
   res.in = get_optional_string(obj, "in").value_or("");
@@ -632,7 +632,7 @@ static Parameter parse_Parameter(simdjson::dom::object obj) {
   return res;
 }
 
-static OAuthFlow parse_OAuthFlow(simdjson::dom::object obj) {
+static OAuthFlow parse_OAuthFlow(simdjson::dom::object obj) noexcept {
   OAuthFlow res;
   res.authorizationUrl = get_optional_string(obj, "authorizationUrl");
   res.tokenUrl = get_optional_string(obj, "tokenUrl");
@@ -641,7 +641,7 @@ static OAuthFlow parse_OAuthFlow(simdjson::dom::object obj) {
   return res;
 }
 
-static OAuthFlows parse_OAuthFlows(simdjson::dom::object obj) {
+static OAuthFlows parse_OAuthFlows(simdjson::dom::object obj) noexcept {
   OAuthFlows res;
   simdjson::dom::element el_implicit;
   if (obj["implicit"].get(el_implicit) == simdjson::SUCCESS &&
@@ -666,7 +666,7 @@ static OAuthFlows parse_OAuthFlows(simdjson::dom::object obj) {
   return res;
 }
 
-static SecurityScheme parse_SecurityScheme(simdjson::dom::object obj) {
+static SecurityScheme parse_SecurityScheme(simdjson::dom::object obj) noexcept {
   SecurityScheme res;
   res.type = get_optional_string(obj, "type").value_or("");
   res.description = get_optional_string(obj, "description");
@@ -688,7 +688,7 @@ static SecurityScheme parse_SecurityScheme(simdjson::dom::object obj) {
   return res;
 }
 
-static Operation parse_Operation(simdjson::dom::object obj) {
+static Operation parse_Operation(simdjson::dom::object obj) noexcept {
   Operation res;
   res.tags = parse_vector_string(obj, "tags");
   res.summary = get_optional_string(obj, "summary");
@@ -758,7 +758,7 @@ static Operation parse_Operation(simdjson::dom::object obj) {
   return res;
 }
 
-static PathItem parse_PathItem(simdjson::dom::object obj) {
+static PathItem parse_PathItem(simdjson::dom::object obj) noexcept {
   PathItem res;
   res.ref = get_optional_string(obj, "$ref");
   res.summary = get_optional_string(obj, "summary");
@@ -844,7 +844,7 @@ static PathItem parse_PathItem(simdjson::dom::object obj) {
   return res;
 }
 
-static Components parse_Components(simdjson::dom::object obj) {
+static Components parse_Components(simdjson::dom::object obj) noexcept {
   Components res;
   simdjson::dom::element el_schemas;
   if (obj["schemas"].get(el_schemas) == simdjson::SUCCESS &&
@@ -971,7 +971,7 @@ static Components parse_Components(simdjson::dom::object obj) {
   return res;
 }
 
-static OpenAPI parse_OpenAPI(simdjson::dom::object obj) {
+static OpenAPI parse_OpenAPI(simdjson::dom::object obj) noexcept {
   OpenAPI res;
   res.openapi = get_optional_string(obj, "openapi").value_or("");
   res.self_link = get_optional_string(obj, "$self");

@@ -45,7 +45,7 @@ struct CppAST {
 };
 
 /// @brief Auto-generated doc.
-CppAST parse_cpp(const std::string &source);
+CppAST parse_cpp(const std::string &source) noexcept;
 /// @brief Auto-generated doc.
 std::string emit_cpp(const CppAST &ast) noexcept;
 

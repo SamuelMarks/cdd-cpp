@@ -3,35 +3,38 @@
 
 namespace cdd_cpp::openapi {
 
-void emit_Reference(utils::JsonWriter &jw, const Reference &obj);
-void emit_Contact(utils::JsonWriter &jw, const Contact &obj);
-void emit_License(utils::JsonWriter &jw, const License &obj);
-void emit_Info(utils::JsonWriter &jw, const Info &obj);
-void emit_ServerVariable(utils::JsonWriter &jw, const ServerVariable &obj);
-void emit_Server(utils::JsonWriter &jw, const Server &obj);
+void emit_Reference(utils::JsonWriter &jw, const Reference &obj) noexcept;
+void emit_Contact(utils::JsonWriter &jw, const Contact &obj) noexcept;
+void emit_License(utils::JsonWriter &jw, const License &obj) noexcept;
+void emit_Info(utils::JsonWriter &jw, const Info &obj) noexcept;
+void emit_ServerVariable(utils::JsonWriter &jw,
+                         const ServerVariable &obj) noexcept;
+void emit_Server(utils::JsonWriter &jw, const Server &obj) noexcept;
 void emit_ExternalDocumentation(utils::JsonWriter &jw,
-                                const ExternalDocumentation &obj);
-void emit_Tag(utils::JsonWriter &jw, const Tag &obj);
-void emit_Discriminator(utils::JsonWriter &jw, const Discriminator &obj);
-void emit_XML(utils::JsonWriter &jw, const XML &obj);
-void emit_Schema(utils::JsonWriter &jw, const Schema &obj);
-void emit_Example(utils::JsonWriter &jw, const Example &obj);
-void emit_Encoding(utils::JsonWriter &jw, const Encoding &obj);
-void emit_MediaType(utils::JsonWriter &jw, const MediaType &obj);
-void emit_Header(utils::JsonWriter &jw, const Header &obj);
-void emit_RequestBody(utils::JsonWriter &jw, const RequestBody &obj);
-void emit_Link(utils::JsonWriter &jw, const Link &obj);
-void emit_Response(utils::JsonWriter &jw, const Response &obj);
-void emit_Parameter(utils::JsonWriter &jw, const Parameter &obj);
-void emit_OAuthFlow(utils::JsonWriter &jw, const OAuthFlow &obj);
-void emit_OAuthFlows(utils::JsonWriter &jw, const OAuthFlows &obj);
-void emit_SecurityScheme(utils::JsonWriter &jw, const SecurityScheme &obj);
-void emit_Operation(utils::JsonWriter &jw, const Operation &obj);
-void emit_PathItem(utils::JsonWriter &jw, const PathItem &obj);
-void emit_Components(utils::JsonWriter &jw, const Components &obj);
-void emit_OpenAPI(utils::JsonWriter &jw, const OpenAPI &obj);
+                                const ExternalDocumentation &obj) noexcept;
+void emit_Tag(utils::JsonWriter &jw, const Tag &obj) noexcept;
+void emit_Discriminator(utils::JsonWriter &jw,
+                        const Discriminator &obj) noexcept;
+void emit_XML(utils::JsonWriter &jw, const XML &obj) noexcept;
+void emit_Schema(utils::JsonWriter &jw, const Schema &obj) noexcept;
+void emit_Example(utils::JsonWriter &jw, const Example &obj) noexcept;
+void emit_Encoding(utils::JsonWriter &jw, const Encoding &obj) noexcept;
+void emit_MediaType(utils::JsonWriter &jw, const MediaType &obj) noexcept;
+void emit_Header(utils::JsonWriter &jw, const Header &obj) noexcept;
+void emit_RequestBody(utils::JsonWriter &jw, const RequestBody &obj) noexcept;
+void emit_Link(utils::JsonWriter &jw, const Link &obj) noexcept;
+void emit_Response(utils::JsonWriter &jw, const Response &obj) noexcept;
+void emit_Parameter(utils::JsonWriter &jw, const Parameter &obj) noexcept;
+void emit_OAuthFlow(utils::JsonWriter &jw, const OAuthFlow &obj) noexcept;
+void emit_OAuthFlows(utils::JsonWriter &jw, const OAuthFlows &obj) noexcept;
+void emit_SecurityScheme(utils::JsonWriter &jw,
+                         const SecurityScheme &obj) noexcept;
+void emit_Operation(utils::JsonWriter &jw, const Operation &obj) noexcept;
+void emit_PathItem(utils::JsonWriter &jw, const PathItem &obj) noexcept;
+void emit_Components(utils::JsonWriter &jw, const Components &obj) noexcept;
+void emit_OpenAPI(utils::JsonWriter &jw, const OpenAPI &obj) noexcept;
 
-void emit_Reference(utils::JsonWriter &jw, const Reference &obj) {
+void emit_Reference(utils::JsonWriter &jw, const Reference &obj) noexcept {
   jw.start_object();
   jw.key_value("$ref", obj.ref);
   jw.key_optional("summary", obj.summary);
@@ -39,7 +42,7 @@ void emit_Reference(utils::JsonWriter &jw, const Reference &obj) {
   jw.end_object();
 }
 
-void emit_Contact(utils::JsonWriter &jw, const Contact &obj) {
+void emit_Contact(utils::JsonWriter &jw, const Contact &obj) noexcept {
   jw.start_object();
   jw.key_optional("name", obj.name);
   jw.key_optional("url", obj.url);
@@ -47,7 +50,7 @@ void emit_Contact(utils::JsonWriter &jw, const Contact &obj) {
   jw.end_object();
 }
 
-void emit_License(utils::JsonWriter &jw, const License &obj) {
+void emit_License(utils::JsonWriter &jw, const License &obj) noexcept {
   jw.start_object();
   jw.key_value("name", obj.name);
   jw.key_optional("identifier", obj.identifier);
@@ -55,7 +58,7 @@ void emit_License(utils::JsonWriter &jw, const License &obj) {
   jw.end_object();
 }
 
-void emit_Info(utils::JsonWriter &jw, const Info &obj) {
+void emit_Info(utils::JsonWriter &jw, const Info &obj) noexcept {
   jw.start_object();
   jw.key_value("title", obj.title);
   jw.key_optional("summary", obj.summary);
@@ -73,7 +76,8 @@ void emit_Info(utils::JsonWriter &jw, const Info &obj) {
   jw.end_object();
 }
 
-void emit_ServerVariable(utils::JsonWriter &jw, const ServerVariable &obj) {
+void emit_ServerVariable(utils::JsonWriter &jw,
+                         const ServerVariable &obj) noexcept {
   jw.start_object();
   if (obj.enum_values.has_value() && !obj.enum_values->empty()) {
     jw.key("enum");
@@ -87,7 +91,7 @@ void emit_ServerVariable(utils::JsonWriter &jw, const ServerVariable &obj) {
   jw.end_object();
 }
 
-void emit_Server(utils::JsonWriter &jw, const Server &obj) {
+void emit_Server(utils::JsonWriter &jw, const Server &obj) noexcept {
   jw.start_object();
   jw.key_value("url", obj.url);
   jw.key_optional("description", obj.description);
@@ -105,14 +109,14 @@ void emit_Server(utils::JsonWriter &jw, const Server &obj) {
 }
 
 void emit_ExternalDocumentation(utils::JsonWriter &jw,
-                                const ExternalDocumentation &obj) {
+                                const ExternalDocumentation &obj) noexcept {
   jw.start_object();
   jw.key_optional("description", obj.description);
   jw.key_value("url", obj.url);
   jw.end_object();
 }
 
-void emit_Tag(utils::JsonWriter &jw, const Tag &obj) {
+void emit_Tag(utils::JsonWriter &jw, const Tag &obj) noexcept {
   jw.start_object();
   jw.key_value("name", obj.name);
   jw.key_optional("description", obj.description);
@@ -124,7 +128,8 @@ void emit_Tag(utils::JsonWriter &jw, const Tag &obj) {
   }
   jw.end_object();
 }
-void emit_Discriminator(utils::JsonWriter &jw, const Discriminator &obj) {
+void emit_Discriminator(utils::JsonWriter &jw,
+                        const Discriminator &obj) noexcept {
   jw.start_object();
   jw.key_value("propertyName", obj.propertyName);
   if (obj.mapping.has_value() && !obj.mapping->empty()) {
@@ -139,7 +144,7 @@ void emit_Discriminator(utils::JsonWriter &jw, const Discriminator &obj) {
   jw.end_object();
 }
 
-void emit_XML(utils::JsonWriter &jw, const XML &obj) {
+void emit_XML(utils::JsonWriter &jw, const XML &obj) noexcept {
   jw.start_object();
   jw.key_optional("name", obj.name);
   jw.key_optional("namespace", obj.namespace_url);
@@ -151,7 +156,7 @@ void emit_XML(utils::JsonWriter &jw, const XML &obj) {
   jw.end_object();
 }
 
-void emit_Schema(utils::JsonWriter &jw, const Schema &obj) {
+void emit_Schema(utils::JsonWriter &jw, const Schema &obj) noexcept {
   jw.start_object();
   jw.key_optional("type", obj.type);
   jw.key_optional("description", obj.description);
@@ -185,7 +190,7 @@ void emit_Schema(utils::JsonWriter &jw, const Schema &obj) {
   jw.end_object();
 }
 
-void emit_Example(utils::JsonWriter &jw, const Example &obj) {
+void emit_Example(utils::JsonWriter &jw, const Example &obj) noexcept {
   jw.start_object();
   jw.key_optional("summary", obj.summary);
   jw.key_optional("description", obj.description);
@@ -199,7 +204,7 @@ void emit_Example(utils::JsonWriter &jw, const Example &obj) {
   jw.end_object();
 }
 
-void emit_Encoding(utils::JsonWriter &jw, const Encoding &obj) {
+void emit_Encoding(utils::JsonWriter &jw, const Encoding &obj) noexcept {
   jw.start_object();
   jw.key_optional("contentType", obj.contentType);
   jw.key_optional("style", obj.style);
@@ -256,7 +261,7 @@ void emit_Encoding(utils::JsonWriter &jw, const Encoding &obj) {
   jw.end_object();
 }
 
-void emit_MediaType(utils::JsonWriter &jw, const MediaType &obj) {
+void emit_MediaType(utils::JsonWriter &jw, const MediaType &obj) noexcept {
   jw.start_object();
   if (obj.schema.has_value()) {
     jw.key("schema");
@@ -300,7 +305,7 @@ void emit_MediaType(utils::JsonWriter &jw, const MediaType &obj) {
   jw.end_object();
 }
 
-void emit_Header(utils::JsonWriter &jw, const Header &obj) {
+void emit_Header(utils::JsonWriter &jw, const Header &obj) noexcept {
   jw.start_object();
   jw.key_optional("description", obj.description);
   if (obj.required)
@@ -345,7 +350,7 @@ void emit_Header(utils::JsonWriter &jw, const Header &obj) {
   jw.end_object();
 }
 
-void emit_RequestBody(utils::JsonWriter &jw, const RequestBody &obj) {
+void emit_RequestBody(utils::JsonWriter &jw, const RequestBody &obj) noexcept {
   jw.start_object();
   jw.key_optional("description", obj.description);
   if (!obj.content.empty()) {
@@ -367,7 +372,7 @@ void emit_RequestBody(utils::JsonWriter &jw, const RequestBody &obj) {
   jw.end_object();
 }
 
-void emit_Link(utils::JsonWriter &jw, const Link &obj) {
+void emit_Link(utils::JsonWriter &jw, const Link &obj) noexcept {
   jw.start_object();
   jw.key_optional("operationRef", obj.operationRef);
   jw.key_optional("operationId", obj.operationId);
@@ -392,7 +397,7 @@ void emit_Link(utils::JsonWriter &jw, const Link &obj) {
   jw.end_object();
 }
 
-void emit_Response(utils::JsonWriter &jw, const Response &obj) {
+void emit_Response(utils::JsonWriter &jw, const Response &obj) noexcept {
   jw.start_object();
   jw.key_value("description", obj.description);
   if (obj.headers.has_value() && !obj.headers->empty()) {
@@ -430,7 +435,7 @@ void emit_Response(utils::JsonWriter &jw, const Response &obj) {
   jw.end_object();
 }
 
-void emit_Parameter(utils::JsonWriter &jw, const Parameter &obj) {
+void emit_Parameter(utils::JsonWriter &jw, const Parameter &obj) noexcept {
   jw.start_object();
   jw.key_value("name", obj.name);
   jw.key_value("in", obj.in);
@@ -477,7 +482,7 @@ void emit_Parameter(utils::JsonWriter &jw, const Parameter &obj) {
   jw.end_object();
 }
 
-void emit_OAuthFlow(utils::JsonWriter &jw, const OAuthFlow &obj) {
+void emit_OAuthFlow(utils::JsonWriter &jw, const OAuthFlow &obj) noexcept {
   jw.start_object();
   jw.key_optional("authorizationUrl", obj.authorizationUrl);
   jw.key_optional("tokenUrl", obj.tokenUrl);
@@ -492,7 +497,7 @@ void emit_OAuthFlow(utils::JsonWriter &jw, const OAuthFlow &obj) {
   jw.end_object();
 }
 
-void emit_OAuthFlows(utils::JsonWriter &jw, const OAuthFlows &obj) {
+void emit_OAuthFlows(utils::JsonWriter &jw, const OAuthFlows &obj) noexcept {
   jw.start_object();
   if (obj.implicit.has_value()) {
     jw.key("implicit");
@@ -513,7 +518,8 @@ void emit_OAuthFlows(utils::JsonWriter &jw, const OAuthFlows &obj) {
   jw.end_object();
 }
 
-void emit_SecurityScheme(utils::JsonWriter &jw, const SecurityScheme &obj) {
+void emit_SecurityScheme(utils::JsonWriter &jw,
+                         const SecurityScheme &obj) noexcept {
   jw.start_object();
   jw.key_value("type", obj.type);
   jw.key_optional("description", obj.description);
@@ -534,7 +540,7 @@ void emit_SecurityScheme(utils::JsonWriter &jw, const SecurityScheme &obj) {
   jw.end_object();
 }
 
-void emit_Operation(utils::JsonWriter &jw, const Operation &obj) {
+void emit_Operation(utils::JsonWriter &jw, const Operation &obj) noexcept {
   jw.start_object();
   if (obj.tags.has_value() && !obj.tags->empty()) {
     jw.key("tags");
@@ -612,7 +618,7 @@ void emit_Operation(utils::JsonWriter &jw, const Operation &obj) {
   jw.end_object();
 }
 
-void emit_PathItem(utils::JsonWriter &jw, const PathItem &obj) {
+void emit_PathItem(utils::JsonWriter &jw, const PathItem &obj) noexcept {
   jw.start_object();
   jw.key_optional("$ref", obj.ref);
   jw.key_optional("summary", obj.summary);
@@ -679,7 +685,7 @@ void emit_PathItem(utils::JsonWriter &jw, const PathItem &obj) {
   jw.end_object();
 }
 
-void emit_Components(utils::JsonWriter &jw, const Components &obj) {
+void emit_Components(utils::JsonWriter &jw, const Components &obj) noexcept {
   jw.start_object();
   if (obj.schemas.has_value() && !obj.schemas->empty()) {
     jw.key("schemas");
@@ -788,7 +794,7 @@ void emit_Components(utils::JsonWriter &jw, const Components &obj) {
   jw.end_object();
 }
 
-void emit_OpenAPI(utils::JsonWriter &jw, const OpenAPI &obj) {
+void emit_OpenAPI(utils::JsonWriter &jw, const OpenAPI &obj) noexcept {
   jw.start_object();
   jw.key_value("openapi", obj.openapi);
   jw.key_optional("$self", obj.self_link);
