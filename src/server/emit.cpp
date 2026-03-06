@@ -1,7 +1,7 @@
 #include "emit.hpp"
 #include <sstream>
 
-namespace cdd_cpp::routes {
+namespace cdd_cpp::server {
 
 std::string emit(const openapi::OpenAPI &spec) noexcept {
   std::stringstream ss;
@@ -45,4 +45,4 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   return ss.str();
 }
 
-} // namespace cdd_cpp::routes
+} // namespace cdd_cpp::server

@@ -14,7 +14,7 @@ class JsonWriter {
   bool first = true;
 
   /// @brief Auto-generated doc.
-  void escape_string(const std::string &str) {
+  void escape_string(const std::string &str) noexcept {
     ss << '"';
     for (unsigned char c : str) {
       switch (c) {
@@ -53,7 +53,7 @@ class JsonWriter {
 
 public:
   /// @brief Auto-generated doc.
-  void start_object() {
+  void start_object() noexcept {
     if (!first)
       ss << ",";
     ss << "{";
@@ -61,13 +61,13 @@ public:
   }
 
   /// @brief Auto-generated doc.
-  void end_object() {
+  void end_object() noexcept {
     ss << "}";
     first = false;
   }
 
   /// @brief Auto-generated doc.
-  void start_array() {
+  void start_array() noexcept {
     if (!first)
       ss << ",";
     ss << "[";
@@ -75,13 +75,13 @@ public:
   }
 
   /// @brief Auto-generated doc.
-  void end_array() {
+  void end_array() noexcept {
     ss << "]";
     first = false;
   }
 
   /// @brief Auto-generated doc.
-  void key(const std::string &k) {
+  void key(const std::string &k) noexcept {
     if (!first) {
       ss << ",";
     }
@@ -91,7 +91,7 @@ public:
   }
 
   /// @brief Auto-generated doc.
-  void raw_value(const std::string &v) {
+  void raw_value(const std::string &v) noexcept {
     if (!first) {
       ss << ",";
     }
@@ -100,64 +100,64 @@ public:
   }
 
   /// @brief Auto-generated doc.
-  void null_value() {
+  void null_value() noexcept {
     ss << "null";
     first = false;
   }
   /// @brief Write string value
-  void value(const std::string &v) {
+  void value(const std::string &v) noexcept {
     escape_string(v);
     first = false;
   }
 
   /// @brief Auto-generated doc.
-  void value(const char *v) { value(std::string(v)); }
+  void value(const char *v) noexcept { value(std::string(v)); }
 
   /// @brief Auto-generated doc.
-  void value(bool v) {
+  void value(bool v) noexcept {
     ss << (v ? "true" : "false");
     first = false;
   }
 
   /// @brief Auto-generated doc.
-  void value(int v) {
+  void value(int v) noexcept {
     ss << v;
     first = false;
   }
 
   /// @brief Auto-generated doc.
-  void value(double v) {
+  void value(double v) noexcept {
     ss << v;
     first = false;
   }
 
   /// @brief Auto-generated doc.
-  void key_value(const std::string &k, const std::string &v) {
+  void key_value(const std::string &k, const std::string &v) noexcept {
     key(k);
     value(v);
   }
 
   /// @brief Auto-generated doc.
-  void key_value(const std::string &k, bool v) {
+  void key_value(const std::string &k, bool v) noexcept {
     key(k);
     value(v);
   }
 
   /// @brief Auto-generated doc.
-  void key_value(const std::string &k, const char *v) {
+  void key_value(const std::string &k, const char *v) noexcept {
     key(k);
     value(std::string(v));
   }
 
   template <typename T>
   /// @brief Auto-generated doc.
-  void key_optional(const std::string &k, const std::optional<T> &v) {
+  void key_optional(const std::string &k, const std::optional<T> &v) noexcept {
     if (v.has_value()) {
       key(k);
       value(v.value());
     }
   }
 
-  std::string str() const { return ss.str(); }
+  std::string str() const noexcept { return ss.str(); }
 };
 } // namespace cdd_cpp::utils

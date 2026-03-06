@@ -88,6 +88,7 @@ struct ExternalDocumentation {
 /// @brief Adds metadata to a single tag that is used by the Operation Object.
 struct Tag {
   std::string name;                       ///< The name of the tag.
+  std::optional<std::string> summary;     ///< A short summary of the tag.
   std::optional<std::string> description; ///< A short description for the tag.
   std::optional<std::string> parent; ///< A hierarchical parent for the tag.
   std::optional<std::string>
@@ -134,6 +135,9 @@ struct Schema {
   std::optional<std::string> description; ///< A description of the schema.
   std::optional<std::string> format;      ///< The format of the schema.
   std::optional<Reference> ref;           ///< A reference to another schema.
+  std::optional<ExternalDocumentation>
+      externalDocs; ///< Additional external documentation.
+  std::optional<std::string> example; ///< Example of the schema.
   std::optional<Discriminator>
       discriminator;      ///< Adds support for polymorphism.
   std::optional<XML> xml; ///< This MAY be used only on properties schemas.
@@ -361,6 +365,8 @@ struct OAuthFlow {
       tokenUrl; ///< The token URL to be used for this flow.
   std::optional<std::string>
       refreshUrl; ///< The URL to be used for obtaining refresh tokens.
+  std::optional<std::string>
+      deviceAuthorizationUrl; ///< The device authorization URL to be used for this flow.
   std::optional<std::map<std::string, std::string>>
       scopes; ///< The available scopes for the OAuth2 security scheme.
 };
@@ -375,6 +381,8 @@ struct OAuthFlows {
                                               ///< Client Credentials flow.
   std::optional<OAuthFlow> authorizationCode; ///< Configuration for the OAuth
                                               ///< Authorization Code flow.
+  std::optional<OAuthFlow> deviceAuthorization; ///< Configuration for the OAuth
+                                                ///< Device Authorization flow.
 };
 
 /// @brief Defines a security scheme that can be used by the operations.
@@ -396,6 +404,9 @@ struct SecurityScheme {
   std::optional<std::string>
       openIdConnectUrl; ///< OpenId Connect URL to discover OAuth2 configuration
                         ///< values.
+  std::optional<std::string>
+      oauth2MetadataUrl; ///< OpenId Connect URL to discover OAuth2 configuration values.
+  std::optional<bool> deprecated; ///< Specifies whether the security scheme is deprecated.
   std::optional<Reference> ref; ///< Reference to another security scheme.
 };
 

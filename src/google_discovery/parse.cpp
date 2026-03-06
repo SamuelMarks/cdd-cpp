@@ -1,3 +1,4 @@
+#include <expected>
 #include "parse.hpp"
 #include <simdjson.h>
 
@@ -46,7 +47,7 @@ openapi::Schema convert_schema(simdjson::dom::element el) noexcept {
 }
 
 void process_methods(simdjson::dom::object methods,
-                     std::map<std::string, openapi::PathItem> &paths) {
+                     std::map<std::string, openapi::PathItem> &paths) noexcept {
   for (auto m : methods) {
     if (!m.value.is_object())
       continue;
@@ -166,7 +167,7 @@ void process_methods(simdjson::dom::object methods,
 }
 
 void process_resources(simdjson::dom::object resources,
-                       std::map<std::string, openapi::PathItem> &paths) {
+                       std::map<std::string, openapi::PathItem> &paths) noexcept {
   for (auto r : resources) {
     if (r.value.is_object()) {
       auto res_obj = r.value.get_object();
@@ -184,7 +185,7 @@ void process_resources(simdjson::dom::object resources,
   }
 }
 
-std::vector<openapi::OpenAPI> parse(const std::string &input) noexcept {
+std::expected<std::vector<openapi::OpenAPI>, std::string> parse(const std::string &input) noexcept {
   simdjson::dom::parser parser;
   auto doc = parser.parse(input);
   auto root = doc.get_object();

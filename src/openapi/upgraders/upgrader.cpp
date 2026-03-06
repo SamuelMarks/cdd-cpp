@@ -131,7 +131,7 @@ void process_element_3_0(simdjson::dom::element el,
 }
 
 std::string upgrade_openapi_3(simdjson::dom::object root,
-                              std::string_view current_version) {
+                              std::string_view current_version) noexcept {
   utils::JsonWriter jw;
   jw.start_object();
   jw.key_value("openapi", "3.2.0");

@@ -119,6 +119,7 @@ void emit_ExternalDocumentation(utils::JsonWriter &jw,
 void emit_Tag(utils::JsonWriter &jw, const Tag &obj) noexcept {
   jw.start_object();
   jw.key_value("name", obj.name);
+  jw.key_optional("summary", obj.summary);
   jw.key_optional("description", obj.description);
   jw.key_optional("parent", obj.parent);
   jw.key_optional("kind", obj.kind);
@@ -487,6 +488,7 @@ void emit_OAuthFlow(utils::JsonWriter &jw, const OAuthFlow &obj) noexcept {
   jw.key_optional("authorizationUrl", obj.authorizationUrl);
   jw.key_optional("tokenUrl", obj.tokenUrl);
   jw.key_optional("refreshUrl", obj.refreshUrl);
+  jw.key_optional("deviceAuthorizationUrl", obj.deviceAuthorizationUrl);
   if (obj.scopes.has_value() && !obj.scopes->empty()) {
     jw.key("scopes");
     jw.start_object();
@@ -515,6 +517,10 @@ void emit_OAuthFlows(utils::JsonWriter &jw, const OAuthFlows &obj) noexcept {
     jw.key("authorizationCode");
     emit_OAuthFlow(jw, obj.authorizationCode.value());
   }
+  if (obj.deviceAuthorization.has_value()) {
+    jw.key("deviceAuthorization");
+    emit_OAuthFlow(jw, obj.deviceAuthorization.value());
+  }
   jw.end_object();
 }
 
@@ -532,6 +538,8 @@ void emit_SecurityScheme(utils::JsonWriter &jw,
     emit_OAuthFlows(jw, obj.flows.value());
   }
   jw.key_optional("openIdConnectUrl", obj.openIdConnectUrl);
+  jw.key_optional("oauth2MetadataUrl", obj.oauth2MetadataUrl);
+  jw.key_optional("deprecated", obj.deprecated);
   if (obj.ref.has_value()) {
     jw.key_value("$ref", obj.ref.value().ref);
     jw.key_optional("summary", obj.ref.value().summary);
