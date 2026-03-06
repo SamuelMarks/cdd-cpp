@@ -1,5 +1,5 @@
-#include "../classes/emit_cli.hpp"
-#include "../classes/emit_client.hpp"
+#include "../client_sdk_cli/emit.hpp"
+#include "../client_sdk/emit.hpp"
 #include "../mocks/emit.hpp"
 #include "../openapi/emit.hpp"
 #include "../openapi/parse.hpp"
@@ -192,10 +192,10 @@ int main_impl(int argc, char **argv, std::ostream &out,
     std::string code = "";
     std::string filename = "generated.cpp";
     if (subcommand == "to_sdk_cli") {
-      code = classes::emit_cli(spec);
+      code = client_sdk_cli::emit_cli(spec);
       filename = "generated_cli.cpp";
     } else if (subcommand == "to_sdk") {
-      code = classes::emit_client(spec);
+      code = client_sdk::emit_client(spec);
       filename = "generated_client.hpp";
     } else if (subcommand == "to_server") {
       code = "// Server implementation placeholder\n";

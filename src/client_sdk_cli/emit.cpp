@@ -1,4 +1,4 @@
-#include "emit_cli.hpp"
+#include "emit.hpp"
 #include <algorithm>
 #include <iostream>
 #include <map>
@@ -6,7 +6,7 @@
 #include <set>
 #include <sstream>
 
-namespace cdd_cpp::classes {
+namespace cdd_cpp::client_sdk_cli {
 
 struct CliNode {
   std::string name;
@@ -224,6 +224,22 @@ std::string emit_cli(const openapi::OpenAPI &spec) noexcept {
          << escape_string(n->path.value()) << "\n";
       ss << " */\n";
 
+      
+      if (n->op->parameters.has_value()) {
+          for (const auto& p : n->op->parameters.value()) {
+              if (p.description.has_value()) {
+                  ss << " * @param " << p.name << " " << escape_string(p.description.value()) << "\n";
+              } else {
+                  ss << " * @param " << p.name << " " << p.in << " parameter\n";
+              }
+              if (p.example.has_value()) {
+                  ss << " * @param_example " << p.name << " " << escape_string(p.example.value()) << "\n";
+              }
+              if (p.deprecated) {
+                  ss << " * @param_deprecated " << p.name << "\n";
+              }
+          }
+      }
       ss << "std::expected<std::string, std::string> handle_" << op_id
          << "(cdd_cli::Client& client";
 
@@ -433,4 +449,4 @@ std::string emit_cli(const openapi::OpenAPI &spec) noexcept {
   return ss.str();
 }
 
-} // namespace cdd_cpp::classes
+} // namespace cdd_cpp::client_sdk_cli

@@ -14,7 +14,7 @@ CppAST parse_cpp(const std::string &source) noexcept {
   // regex is very hard, we capture blocks and attach previous
   // whitespace/comments as leading trivia. This is a minimal approximation.
   std::regex class_regex(
-      R"((?:(/\*(?:.|\n)*?\*/)\s*)?(?:struct|class)\s+(\w+)\s*\{([^}]*)\})");
+      R"((?:(/\*(?:(?!\*/)(?:.|\n))*\*/)\s*)?(?:struct|class)\s+(\w+)\s*\{([^}]*)\})");
   std::sregex_iterator cls_it(source.begin(), source.end(), class_regex);
   std::sregex_iterator end;
 
@@ -29,7 +29,7 @@ CppAST parse_cpp(const std::string &source) noexcept {
 
     std::string body = (*cls_it)[3].str();
     std::regex field_regex(
-        R"((\w+(?:::\w+)*(?:<\w+>)?)\s+(\w+)\s*;(?:\s*(//.*))?)");
+        R"((?:const\s+)?([\w:]+(?:<\w+>)?)(?:\s*&|\s*\*|\s+)\s*(\w+)\s*;(?:\s*(//.*))?)");
     std::sregex_iterator fld_it(body.begin(), body.end(), field_regex);
     while (fld_it != end) {
       CppField fld;
@@ -46,7 +46,7 @@ CppAST parse_cpp(const std::string &source) noexcept {
   }
 
   std::regex func_regex(
-      R"((?:(/\*(?:.|\n)*?\*/)\s*)?(?:inline\s+|virtual\s+|static\s+)*(\w+(?:::\w+)*(?:<\w+>)?)\s+(\w+)\s*\(([^)]*)\)\s*(?:\{([^}]*)\}|;))");
+      R"((?:(/\*(?:(?!\*/)(?:.|\n))*\*/)\s*)?(?:inline\s+|virtual\s+|static\s+)*(?:const\s+)?([\w:]+(?:<\w+>)?)(?:\s*&|\s*\*|\s+)\s*(\w+)\s*\(([^)]*)\)\s*(?:\{([^}]*)\}|;))");
   std::sregex_iterator fn_it(source.begin(), source.end(), func_regex);
 
   while (fn_it != end) {
@@ -63,7 +63,7 @@ CppAST parse_cpp(const std::string &source) noexcept {
       fn.body = (*fn_it)[5].str();
     }
 
-    std::regex param_regex(R"((\w+(?:::\w+)*(?:<\w+>)?)\s+(\w+))");
+    std::regex param_regex(R"((?:const\s+)?([\w:]+(?:<\w+>)?)(?:\s*&|\s*\*|\s+)\s*(\w+))");
     std::sregex_iterator p_it(params_str.begin(), params_str.end(),
                               param_regex);
     while (p_it != end) {

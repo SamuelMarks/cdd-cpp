@@ -89,9 +89,9 @@ endif()
 # Define Library
 set(CDD_LIB_SRCS
     src/functions/parse.cpp src/functions/emit.cpp
-    src/classes/parse.cpp src/classes/emit.cpp src/classes/emit_client.cpp src/classes/emit_cli.cpp
+    src/client_sdk/parse.cpp src/models/emit.cpp src/models/parse.cpp src/client_sdk/emit.cpp src/client_sdk_cli/emit.cpp src/client_sdk_cli/parse.cpp
     src/docstrings/parse.cpp src/docstrings/emit.cpp
-    src/routes/parse.cpp src/routes/emit.cpp
+    src/server/parse.cpp src/server/emit.cpp
     src/mocks/parse.cpp src/mocks/emit.cpp
     src/utils/http.cpp src/utils/cpp_ast.cpp src/utils/cpp_parser.cpp src/google_discovery/parse.cpp src/openapi/parse.cpp src/openapi/emit.cpp src/openapi/upgraders/upgrader.cpp
     src/orm/emit.cpp
@@ -118,7 +118,7 @@ target_link_libraries(cdd-cpp PRIVATE cdd_lib)
 enable_extreme_checks(cdd-cpp)
 
 # Tests
-add_executable(cdd-tests src/tests/main.cpp src/tests/parse.cpp src/tests/emit.cpp src/tests/upgrader_test.cpp src/tests/google_discovery.cpp src/tests/classes.cpp src/tests/emit_client_test.cpp src/tests/functions.cpp src/tests/docstrings.cpp src/tests/routes.cpp src/tests/mocks.cpp src/tests/http.cpp src/tests/cli.cpp src/tests/orm.cpp)
+add_executable(cdd-tests src/tests/client_sdk_cli_test.cpp  src/tests/main.cpp src/tests/parse.cpp src/tests/emit.cpp src/tests/upgrader_test.cpp src/tests/google_discovery.cpp src/tests/models.cpp src/tests/client_sdk_test.cpp src/tests/functions.cpp src/tests/docstrings.cpp src/tests/server.cpp src/tests/mocks.cpp src/tests/http.cpp src/tests/cli.cpp src/tests/orm.cpp)
 target_link_libraries(cdd-tests PRIVATE cdd_lib)
 enable_extreme_checks(cdd-tests)
 

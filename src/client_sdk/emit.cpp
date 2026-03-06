@@ -1,7 +1,7 @@
-#include "emit_client.hpp"
+#include "emit.hpp"
 #include <sstream>
 
-namespace cdd_cpp::classes {
+namespace cdd_cpp::client_sdk {
 std::string emit_client(const openapi::OpenAPI &spec) noexcept {
   std::stringstream ss;
 
@@ -92,4 +92,4 @@ std::string emit_client(const openapi::OpenAPI &spec) noexcept {
 
   return ss.str();
 }
-} // namespace cdd_cpp::classes
+} // namespace cdd_cpp::client_sdk

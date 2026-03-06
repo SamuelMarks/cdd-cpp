@@ -192,6 +192,7 @@ parse_ExternalDocumentation(simdjson::dom::object obj) noexcept {
 static Tag parse_Tag(simdjson::dom::object obj) noexcept {
   Tag res;
   res.name = get_optional_string(obj, "name").value_or("");
+  res.summary = get_optional_string(obj, "summary");
   res.description = get_optional_string(obj, "description");
   res.parent = get_optional_string(obj, "parent");
   res.kind = get_optional_string(obj, "kind");
@@ -637,6 +638,7 @@ static OAuthFlow parse_OAuthFlow(simdjson::dom::object obj) noexcept {
   res.authorizationUrl = get_optional_string(obj, "authorizationUrl");
   res.tokenUrl = get_optional_string(obj, "tokenUrl");
   res.refreshUrl = get_optional_string(obj, "refreshUrl");
+  res.deviceAuthorizationUrl = get_optional_string(obj, "deviceAuthorizationUrl");
   res.scopes = parse_map_string(obj, "scopes");
   return res;
 }
@@ -663,6 +665,11 @@ static OAuthFlows parse_OAuthFlows(simdjson::dom::object obj) noexcept {
       el_authorizationCode.type() == simdjson::dom::element_type::OBJECT) {
     res.authorizationCode = parse_OAuthFlow(el_authorizationCode.get_object());
   }
+  simdjson::dom::element el_deviceAuthorization;
+  if (obj["deviceAuthorization"].get(el_deviceAuthorization) == simdjson::SUCCESS &&
+      el_deviceAuthorization.type() == simdjson::dom::element_type::OBJECT) {
+    res.deviceAuthorization = parse_OAuthFlow(el_deviceAuthorization.get_object());
+  }
   return res;
 }
 
@@ -680,6 +687,8 @@ static SecurityScheme parse_SecurityScheme(simdjson::dom::object obj) noexcept {
     res.flows = parse_OAuthFlows(el_flows.get_object());
   }
   res.openIdConnectUrl = get_optional_string(obj, "openIdConnectUrl");
+  res.oauth2MetadataUrl = get_optional_string(obj, "oauth2MetadataUrl");
+  res.deprecated = get_optional_bool(obj, "deprecated");
   simdjson::dom::element el_ref;
   if (obj["$ref"].get(el_ref) == simdjson::SUCCESS &&
       el_ref.type() == simdjson::dom::element_type::OBJECT) {

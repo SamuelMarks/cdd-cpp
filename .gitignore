@@ -26,3 +26,18 @@ test_regex.cpp
 test_fetch/
 test_fetch.cmake
 __pycache__/
+
+# Scratch files added during refactor
+/a.out
+/debug_out.txt
+/debug_test.cpp
+/fix_tests.sh
+/parse_common.cpp
+/test_client_parse.cpp
+/test_emit_helper.cpp
+/test_emit_parse.cpp
+/test_parse_ast.cpp
+/test_parse_helper.cpp
+/test_parse_regex.cpp
+/test_script.cpp
+/test_spec.json

@@ -1,4 +1,4 @@
-#include "../classes/emit_client.hpp"
+#include "../client_sdk/emit.hpp"
 #include "../mocks/emit.hpp"
 #include "../openapi/emit.hpp"
 #include "../openapi/parse.hpp"
@@ -38,7 +38,7 @@ void sync_command(const std::string &code_dir,
   mock_fs << mock_code << "\n";
 
   // Regenerate Client
-  std::string client_code = classes::emit_client(merged_spec);
+  std::string client_code = client_sdk::emit_client(merged_spec);
   std::ofstream client_fs(code_dir + "/client_generated.hpp");
   client_fs << client_code << "\n";
 

@@ -43,7 +43,7 @@ void test_to_docs_json() {
   std::string res = res_exp ? *res_exp : "";
   if (res.empty() || res.find("not found") != std::string::npos) {
     auto fb =
-        exec("../build/cdd-cpp to_docs_json -i test_spec.json"); // fallback
+        exec("./build/cdd-cpp to_docs_json -i test_spec.json"); // fallback
     if (fb)
       res = *fb;
   }
@@ -57,7 +57,7 @@ void test_to_docs_json() {
       "./cdd-cpp to_docs_json --no-imports --no-wrapping -i test_spec.json");
   std::string res_no = res_no_exp ? *res_no_exp : "";
   if (res_no.empty() || res_no.find("not found") != std::string::npos) {
-    auto fb = exec("../build/cdd-cpp to_docs_json --no-imports --no-wrapping "
+    auto fb = exec("./build/cdd-cpp to_docs_json --no-imports --no-wrapping "
                    "-i test_spec.json");
     if (fb)
       res_no = *fb;
