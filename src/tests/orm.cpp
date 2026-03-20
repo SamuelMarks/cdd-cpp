@@ -21,8 +21,10 @@ void test_emit() {
     }
   })";
   auto spec = cdd_cpp::openapi::parse(json);
-  if (!spec)
-    throw std::runtime_error(spec.error());
+  if (!spec) {
+    std::cerr << spec.error() << '\n';
+    exit(1);
+  }
   std::string code = emit(*spec);
 
   assert(code.find("struct User") != std::string::npos);

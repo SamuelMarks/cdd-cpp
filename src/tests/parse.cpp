@@ -42,8 +42,10 @@ void test_parse() {
         })";
 
   auto spec_res = parse(json);
-  if (!spec_res)
-    throw std::runtime_error(spec_res.error());
+  if (!spec_res) {
+    std::cerr << spec_res.error() << '\n';
+    exit(1);
+  }
   OpenAPI spec = *spec_res;
   assert(spec.openapi == "3.2.0");
   assert(spec.paths.has_value());
@@ -118,8 +120,10 @@ void test_parse() {
   })";
 
   auto spec_schema_res = parse(spec_with_schema);
-  if (!spec_schema_res)
-    throw std::runtime_error(spec_schema_res.error());
+  if (!spec_schema_res) {
+    std::cerr << spec_schema_res.error() << '\n';
+    exit(1);
+  }
   OpenAPI spec_schema = *spec_schema_res;
   assert(spec_schema.components.has_value());
   auto &schema = spec_schema.components->schemas->at("MySchema");
@@ -168,8 +172,10 @@ void test_parse() {
   })";
 
   auto spec_latest_res = parse(spec_3_2_0);
-  if (!spec_latest_res)
-    throw std::runtime_error(spec_latest_res.error());
+  if (!spec_latest_res) {
+    std::cerr << spec_latest_res.error() << '\n';
+    exit(1);
+  }
   OpenAPI spec_latest = *spec_latest_res;
   assert(spec_latest.self_link == "https://example.com/openapi.json");
   assert(spec_latest.tags.has_value() && spec_latest.tags->size() == 1);

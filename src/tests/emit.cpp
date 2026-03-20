@@ -46,8 +46,10 @@ void test_emit() {
         })";
 
   auto spec_res = parse(json);
-  if (!spec_res)
-    throw std::runtime_error(spec_res.error());
+  if (!spec_res) {
+    std::cerr << spec_res.error() << '\n';
+    exit(1);
+  }
   OpenAPI spec = *spec_res;
   std::string out = emit(spec);
 
@@ -94,8 +96,10 @@ void test_emit() {
   })";
 
   auto spec_3_res = parse(json_3_2_0);
-  if (!spec_3_res)
-    throw std::runtime_error(spec_3_res.error());
+  if (!spec_3_res) {
+    std::cerr << spec_3_res.error() << '\n';
+    exit(1);
+  }
   OpenAPI spec_3 = *spec_3_res;
   std::string out_3 = emit(spec_3);
 

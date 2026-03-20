@@ -240,24 +240,24 @@ int main_impl(int argc, char **argv, std::ostream &out,
     }
 
   } else if (command == "to_openapi") {
-    std::string folder;
+    std::string input;
     std::string output;
     for (int i = 2; i < argc; ++i) {
       std::string arg = argv[i];
-      if ((arg == "-f" || arg == "--folder") && i + 1 < argc) {
-        folder = argv[++i];
+      if ((arg == "-i" || arg == "--input") && i + 1 < argc) {
+        input = argv[++i];
       } else if ((arg == "-o" || arg == "--output") && i + 1 < argc) {
         output = argv[++i];
       }
     }
-    folder = get_arg_or_env(folder, "CDD_CPP_FOLDER");
+    input = get_arg_or_env(input, "CDD_CPP_INPUT");
     output = get_arg_or_env(output, "CDD_CPP_OUTPUT");
 
-    if (folder.empty()) {
-      err << "Missing -f <path/to/code>\n";
+    if (input.empty()) {
+      err << "Missing -i <path/to/code>\n";
       return 1;
     }
-    auto spec = utils::parse_cpp_project(folder);
+    auto spec = utils::parse_cpp_project(input);
     std::string spec_str = openapi::emit(spec);
     if (output.empty()) {
       out << spec_str << "\n";

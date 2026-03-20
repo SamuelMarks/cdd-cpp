@@ -1,3 +1,4 @@
+#include <sstream>
 #include <expected>
 #include "parse.hpp"
 #include "../utils/cpp_ast.hpp"
