@@ -1,7 +1,7 @@
 #pragma once
-#include <string>
-#include <sstream>
 #include "../openapi/parse.hpp"
+#include <sstream>
+#include <string>
 
 namespace cdd_cpp::docstrings {
 std::string emit_api_docstrings(const openapi::OpenAPI &spec) noexcept;

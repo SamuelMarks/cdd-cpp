@@ -1,16 +1,51 @@
-namespace cdd_cpp::orm { void test_emit() noexcept; }
-namespace cdd_cpp::google_discovery { void test_parse() noexcept; }
-namespace cdd_cpp::openapi { void test_parse() noexcept; void test_emit() noexcept; }
-namespace cdd_cpp::models { void test_emit() noexcept; }
-namespace cdd_cpp::client_sdk { void test_parse() noexcept; void test_emit_client() noexcept; }
-namespace cdd_cpp::client_sdk_cli { void test_emit_cli() noexcept; void test_parse() noexcept; }
-namespace cdd_cpp::functions { void test_parse() noexcept; void test_emit() noexcept; }
-namespace cdd_cpp::docstrings { void test_parse() noexcept; void test_emit() noexcept; }
-namespace cdd_cpp::server { void test_parse() noexcept; void test_emit() noexcept; }
-namespace cdd_cpp::mocks { void test_parse() noexcept; void test_emit() noexcept; }
-namespace cdd_cpp::utils { void test_http() noexcept; void test_cpp_parser() noexcept; }
-namespace cdd_cpp::cli { void test_to_docs_json() noexcept; void test_sync() noexcept; }
-namespace cdd_cpp::openapi::upgraders { void test_upgraders() noexcept; }
+namespace cdd_cpp::orm {
+void test_emit() noexcept;
+}
+namespace cdd_cpp::google_discovery {
+void test_parse() noexcept;
+}
+namespace cdd_cpp::openapi {
+void test_parse() noexcept;
+void test_emit() noexcept;
+} // namespace cdd_cpp::openapi
+namespace cdd_cpp::models {
+void test_emit() noexcept;
+}
+namespace cdd_cpp::client_sdk {
+void test_parse() noexcept;
+void test_emit_client() noexcept;
+} // namespace cdd_cpp::client_sdk
+namespace cdd_cpp::client_sdk_cli {
+void test_emit_cli() noexcept;
+void test_parse() noexcept;
+} // namespace cdd_cpp::client_sdk_cli
+namespace cdd_cpp::functions {
+void test_parse() noexcept;
+void test_emit() noexcept;
+} // namespace cdd_cpp::functions
+namespace cdd_cpp::docstrings {
+void test_parse() noexcept;
+void test_emit() noexcept;
+} // namespace cdd_cpp::docstrings
+namespace cdd_cpp::server {
+void test_parse() noexcept;
+void test_emit() noexcept;
+} // namespace cdd_cpp::server
+namespace cdd_cpp::mocks {
+void test_parse() noexcept;
+void test_emit() noexcept;
+} // namespace cdd_cpp::mocks
+namespace cdd_cpp::utils {
+void test_http() noexcept;
+void test_cpp_parser() noexcept;
+} // namespace cdd_cpp::utils
+namespace cdd_cpp::cli {
+void test_to_docs_json() noexcept;
+void test_sync() noexcept;
+} // namespace cdd_cpp::cli
+namespace cdd_cpp::openapi::upgraders {
+void test_upgraders() noexcept;
+}
 
 #include <iostream>
 

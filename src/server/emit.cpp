@@ -28,13 +28,15 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
         std::string func_name = op->operationId.value_or("handler");
 
         ss << docstrings::emit_path_docstrings(item);
-        
+
         std::vector<openapi::Parameter> all_params;
         if (item.parameters) {
-          for (const auto &p : *item.parameters) all_params.push_back(p);
+          for (const auto &p : *item.parameters)
+            all_params.push_back(p);
         }
         if (op->parameters) {
-          for (const auto &p : *op->parameters) all_params.push_back(p);
+          for (const auto &p : *op->parameters)
+            all_params.push_back(p);
         }
 
         openapi::Operation new_op = op.value();
@@ -46,24 +48,31 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
           const auto &p = all_params[i];
           std::string type = "std::string";
           if (p.schema && p.schema->type) {
-            if (*p.schema->type == "integer") type = "int";
-            else if (*p.schema->type == "boolean") type = "bool";
-            else if (*p.schema->type == "number") type = "double";
+            if (*p.schema->type == "integer")
+              type = "int";
+            else if (*p.schema->type == "boolean")
+              type = "bool";
+            else if (*p.schema->type == "number")
+              type = "double";
           }
-          if (i > 0) param_list += ", ";
+          if (i > 0)
+            param_list += ", ";
           param_list += type + " " + p.name;
         }
         if (op->requestBody) {
-          if (!param_list.empty()) param_list += ", ";
+          if (!param_list.empty())
+            param_list += ", ";
           param_list += "std::string requestBody";
         }
         if (param_list.empty()) {
-            param_list = "const std::string&";
+          param_list = "const std::string&";
         }
 
-        ss << "        using " << func_name << "Handler = std::function<std::string(" << param_list << ")>;\n";
+        ss << "        using " << func_name
+           << "Handler = std::function<std::string(" << param_list << ")>;\n";
         ss << "        void on_" << method << "_" << func_name
-           << "(const std::string& path, " << func_name << "Handler handler) {\n";
+           << "(const std::string& path, " << func_name
+           << "Handler handler) {\n";
         ss << "            // " << param_list << "\n";
         ss << "            routes[\"" << method << " \" + path] = nullptr;\n";
         ss << "        }\n\n";

@@ -123,19 +123,27 @@ Commands:
 
 ```
 $ ./build/cdd-cpp from_openapi --help
-Missing -i <spec.json> or --input-dir <specs_dir>
+Usage:
+  cdd-cpp from_openapi to_sdk_cli -i <spec.json> -o <target_directory>
+  cdd-cpp from_openapi to_sdk_cli --input-dir <specs_dir> -o <target_directory>
+  cdd-cpp from_openapi to_sdk -i <spec.json> -o <target_directory>
+  cdd-cpp from_openapi to_sdk --input-dir <specs_dir> -o <target_directory>
+  cdd-cpp from_openapi to_server -i <spec.json> -o <target_directory>
+  cdd-cpp from_openapi to_server --input-dir <specs_dir> -o <target_directory>
 ```
 
 ### `to_openapi`
 
 ```
 $ ./build/cdd-cpp to_openapi --help
-Missing -i <path/to/code>
+Usage:
+  cdd-cpp to_openapi -f <path/to/code> [-o <spec.json>]
 ```
 
 ### `to_docs_json`
 
 ```
 $ ./build/cdd-cpp to_docs_json --help
-Missing -i <spec.json>
+Usage:
+  cdd-cpp to_docs_json [--no-imports] [--no-wrapping] -i <spec.json> [-o <docs.json>]
 ```

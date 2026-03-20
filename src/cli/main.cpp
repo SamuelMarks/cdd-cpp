@@ -1,5 +1,5 @@
-#include "../client_sdk_cli/emit.hpp"
 #include "../client_sdk/emit.hpp"
+#include "../client_sdk_cli/emit.hpp"
 #include "../mocks/emit.hpp"
 #include "../openapi/emit.hpp"
 #include "../openapi/parse.hpp"
@@ -107,6 +107,14 @@ int main_impl(int argc, char **argv, std::ostream &out,
   }
 
   if (command == "sync") {
+    for (int i = 2; i < argc; ++i) {
+      std::string arg = argv[i];
+      if (arg == "--help" || arg == "-h") {
+        out << "Usage:\n  cdd-cpp sync -d <dir> -s <spec.json>\n";
+        return 0;
+      }
+    }
+
     std::string folder, spec;
     for (int i = 2; i < argc; ++i) {
       std::string arg = argv[i];
@@ -126,6 +134,26 @@ int main_impl(int argc, char **argv, std::ostream &out,
   }
 
   else if (command == "from_openapi") {
+    for (int i = 2; i < argc; ++i) {
+      std::string arg = argv[i];
+      if (arg == "--help" || arg == "-h") {
+        out << "Usage:\n"
+            << "  cdd-cpp from_openapi to_sdk_cli -i <spec.json> -o "
+               "<target_directory>\n"
+            << "  cdd-cpp from_openapi to_sdk_cli --input-dir <specs_dir> -o "
+               "<target_directory>\n"
+            << "  cdd-cpp from_openapi to_sdk -i <spec.json> -o "
+               "<target_directory>\n"
+            << "  cdd-cpp from_openapi to_sdk --input-dir <specs_dir> -o "
+               "<target_directory>\n"
+            << "  cdd-cpp from_openapi to_server -i <spec.json> -o "
+               "<target_directory>\n"
+            << "  cdd-cpp from_openapi to_server --input-dir <specs_dir> -o "
+               "<target_directory>\n";
+        return 0;
+      }
+    }
+
     if (argc < 3) {
       err << "Missing subcommand for from_openapi\n";
       return 1;
@@ -240,6 +268,15 @@ int main_impl(int argc, char **argv, std::ostream &out,
     }
 
   } else if (command == "to_openapi") {
+    for (int i = 2; i < argc; ++i) {
+      std::string arg = argv[i];
+      if (arg == "--help" || arg == "-h") {
+        out << "Usage:\n  cdd-cpp to_openapi -f <path/to/code> [-o "
+               "<spec.json>]\n";
+        return 0;
+      }
+    }
+
     std::string input;
     std::string output;
     for (int i = 2; i < argc; ++i) {
@@ -265,7 +302,17 @@ int main_impl(int argc, char **argv, std::ostream &out,
       std::ofstream fs(output);
       fs << spec_str << "\n";
     }
+
   } else if (command == "serve_json_rpc") {
+    for (int i = 2; i < argc; ++i) {
+      std::string arg = argv[i];
+      if (arg == "--help" || arg == "-h") {
+        out << "Usage:\n  cdd-cpp serve_json_rpc --port <port> --listen "
+               "<host>\n";
+        return 0;
+      }
+    }
+
     std::string port = "8080";
     std::string listen = "127.0.0.1";
     for (int i = 2; i < argc; ++i) {
@@ -279,7 +326,17 @@ int main_impl(int argc, char **argv, std::ostream &out,
     listen = get_arg_or_env(listen, "CDD_CPP_LISTEN", "127.0.0.1");
     out << "Starting JSON-RPC server on " << listen << ":" << port << " ...\n";
     // placeholder for json rpc server logic
+
   } else if (command == "to_docs_json") {
+    for (int i = 2; i < argc; ++i) {
+      std::string arg = argv[i];
+      if (arg == "--help" || arg == "-h") {
+        out << "Usage:\n  cdd-cpp to_docs_json [--no-imports] [--no-wrapping] "
+               "-i <spec.json> [-o <docs.json>]\n";
+        return 0;
+      }
+    }
+
     bool no_imports = false;
     bool no_wrapping = false;
     std::string input_file;
@@ -395,7 +452,17 @@ int main_impl(int argc, char **argv, std::ostream &out,
 std::mutex g_cout_mutex;
 
 int main(int argc, char **argv) noexcept {
+
   if (argc >= 2 && std::string(argv[1]) == "serve_json_rpc") {
+    for (int i = 2; i < argc; ++i) {
+      std::string arg = argv[i];
+      if (arg == "--help" || arg == "-h") {
+        std::cout << "Usage:\n  cdd-cpp serve_json_rpc --port <port> --listen "
+                     "<host>\n";
+        return 0;
+      }
+    }
+
     std::string port = "8080";
     std::string listen_host = "127.0.0.1";
     for (int i = 2; i < argc; ++i) {

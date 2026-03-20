@@ -32,22 +32,37 @@ std::string map_type(const openapi::Schema &schema) noexcept {
   return "std::string";
 }
 
-void emit_docstrings(std::stringstream &ss, const openapi::Schema &schema, const std::string &indent) noexcept {
-  if (schema.description) ss << indent << "/// @description " << *schema.description << "\n";
-  if (schema.example) ss << indent << "/// @example " << *schema.example << "\n";
+void emit_docstrings(std::stringstream &ss, const openapi::Schema &schema,
+                     const std::string &indent) noexcept {
+  if (schema.description)
+    ss << indent << "/// @description " << *schema.description << "\n";
+  if (schema.example)
+    ss << indent << "/// @example " << *schema.example << "\n";
   if (schema.externalDocs) {
-    if (schema.externalDocs->description) ss << indent << "/// @externalDocs.description " << *schema.externalDocs->description << "\n";
-    ss << indent << "/// @externalDocs.url " << schema.externalDocs->url << "\n";
+    if (schema.externalDocs->description)
+      ss << indent << "/// @externalDocs.description "
+         << *schema.externalDocs->description << "\n";
+    ss << indent << "/// @externalDocs.url " << schema.externalDocs->url
+       << "\n";
   }
   if (schema.xml) {
-    if (schema.xml->name) ss << indent << "/// @xml.name " << *schema.xml->name << "\n";
-    if (schema.xml->namespace_url) ss << indent << "/// @xml.namespace_url " << *schema.xml->namespace_url << "\n";
-    if (schema.xml->prefix) ss << indent << "/// @xml.prefix " << *schema.xml->prefix << "\n";
-    if (schema.xml->attribute) ss << indent << "/// @xml.attribute " << (*schema.xml->attribute ? "true" : "false") << "\n";
-    if (schema.xml->wrapped) ss << indent << "/// @xml.wrapped " << (*schema.xml->wrapped ? "true" : "false") << "\n";
+    if (schema.xml->name)
+      ss << indent << "/// @xml.name " << *schema.xml->name << "\n";
+    if (schema.xml->namespace_url)
+      ss << indent << "/// @xml.namespace_url " << *schema.xml->namespace_url
+         << "\n";
+    if (schema.xml->prefix)
+      ss << indent << "/// @xml.prefix " << *schema.xml->prefix << "\n";
+    if (schema.xml->attribute)
+      ss << indent << "/// @xml.attribute "
+         << (*schema.xml->attribute ? "true" : "false") << "\n";
+    if (schema.xml->wrapped)
+      ss << indent << "/// @xml.wrapped "
+         << (*schema.xml->wrapped ? "true" : "false") << "\n";
   }
   if (schema.discriminator) {
-    ss << indent << "/// @discriminator.propertyName " << schema.discriminator->propertyName << "\n";
+    ss << indent << "/// @discriminator.propertyName "
+       << schema.discriminator->propertyName << "\n";
     if (schema.discriminator->mapping) {
       for (const auto &[k, v] : *schema.discriminator->mapping) {
         ss << indent << "/// @discriminator.mapping " << k << ":" << v << "\n";
@@ -58,7 +73,8 @@ void emit_docstrings(std::stringstream &ss, const openapi::Schema &schema, const
 
 std::string emit(const openapi::OpenAPI &spec) noexcept {
   std::stringstream ss;
-  ss << "#pragma once\n#include <string>\n#include <vector>\n#include <optional>\n\n";
+  ss << "#pragma once\n#include <string>\n#include <vector>\n#include "
+        "<optional>\n\n";
 
   ss << "namespace cdd_models {\n\n";
 
@@ -80,8 +96,8 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
             ss << "        " << map_type(prop_schema) << " " << prop_name
                << ";\n";
           } else {
-            ss << "        std::optional<" << map_type(prop_schema) << "> " << prop_name
-               << ";\n";
+            ss << "        std::optional<" << map_type(prop_schema) << "> "
+               << prop_name << ";\n";
           }
         }
       }

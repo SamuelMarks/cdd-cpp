@@ -190,13 +190,13 @@ std::string emit_cli(const openapi::OpenAPI &spec) noexcept {
       }
       if (n->op->parameters.has_value()) {
         for (const auto &p : n->op->parameters.value()) {
-          ss << "            std::cout << \"  --" << escape_string(p.name) << "\\n\";\n";
+          ss << "            std::cout << \"  --" << escape_string(p.name)
+             << "\\n\";\n";
         }
       }
       if (n->op->requestBody.has_value()) {
         ss << "            std::cout << \"  --body\\n\";\n";
       }
-
     }
     if (!n->children.empty()) {
       ss << "            std::cout << \"Commands:\\n\";\n";
@@ -223,23 +223,25 @@ std::string emit_cli(const openapi::OpenAPI &spec) noexcept {
       sanitize_string(op_id);
 
       ss << docstrings::emit_operation_docstrings(n->op.value());
-      ss << "/// @route " << n->method.value() << " " << escape_string(n->path.value()) << "\n";
+      ss << "/// @route " << n->method.value() << " "
+         << escape_string(n->path.value()) << "\n";
 
-      
       if (n->op->parameters.has_value()) {
-          for (const auto& p : n->op->parameters.value()) {
-              if (p.description.has_value()) {
-                  ss << " * @param " << p.name << " " << escape_string(p.description.value()) << "\n";
-              } else {
-                  ss << " * @param " << p.name << " " << p.in << " parameter\n";
-              }
-              if (p.example.has_value()) {
-                  ss << " * @param_example " << p.name << " " << escape_string(p.example.value()) << "\n";
-              }
-              if (p.deprecated) {
-                  ss << " * @param_deprecated " << p.name << "\n";
-              }
+        for (const auto &p : n->op->parameters.value()) {
+          if (p.description.has_value()) {
+            ss << " * @param " << p.name << " "
+               << escape_string(p.description.value()) << "\n";
+          } else {
+            ss << " * @param " << p.name << " " << p.in << " parameter\n";
           }
+          if (p.example.has_value()) {
+            ss << " * @param_example " << p.name << " "
+               << escape_string(p.example.value()) << "\n";
+          }
+          if (p.deprecated) {
+            ss << " * @param_deprecated " << p.name << "\n";
+          }
+        }
       }
       ss << "std::expected<std::string, std::string> handle_" << op_id
          << "(cdd_cli::Client& client";

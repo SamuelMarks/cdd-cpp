@@ -63,7 +63,8 @@ CppAST parse_cpp(const std::string &source) noexcept {
       fn.body = (*fn_it)[5].str();
     }
 
-    std::regex param_regex(R"((?:const\s+)?([\w:]+(?:<\w+>)?)(?:\s*&|\s*\*|\s+)\s*(\w+))");
+    std::regex param_regex(
+        R"((?:const\s+)?([\w:]+(?:<\w+>)?)(?:\s*&|\s*\*|\s+)\s*(\w+))");
     std::sregex_iterator p_it(params_str.begin(), params_str.end(),
                               param_regex);
     while (p_it != end) {

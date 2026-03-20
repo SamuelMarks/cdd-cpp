@@ -638,7 +638,8 @@ static OAuthFlow parse_OAuthFlow(simdjson::dom::object obj) noexcept {
   res.authorizationUrl = get_optional_string(obj, "authorizationUrl");
   res.tokenUrl = get_optional_string(obj, "tokenUrl");
   res.refreshUrl = get_optional_string(obj, "refreshUrl");
-  res.deviceAuthorizationUrl = get_optional_string(obj, "deviceAuthorizationUrl");
+  res.deviceAuthorizationUrl =
+      get_optional_string(obj, "deviceAuthorizationUrl");
   res.scopes = parse_map_string(obj, "scopes");
   return res;
 }
@@ -666,9 +667,11 @@ static OAuthFlows parse_OAuthFlows(simdjson::dom::object obj) noexcept {
     res.authorizationCode = parse_OAuthFlow(el_authorizationCode.get_object());
   }
   simdjson::dom::element el_deviceAuthorization;
-  if (obj["deviceAuthorization"].get(el_deviceAuthorization) == simdjson::SUCCESS &&
+  if (obj["deviceAuthorization"].get(el_deviceAuthorization) ==
+          simdjson::SUCCESS &&
       el_deviceAuthorization.type() == simdjson::dom::element_type::OBJECT) {
-    res.deviceAuthorization = parse_OAuthFlow(el_deviceAuthorization.get_object());
+    res.deviceAuthorization =
+        parse_OAuthFlow(el_deviceAuthorization.get_object());
   }
   return res;
 }

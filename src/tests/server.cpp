@@ -61,7 +61,7 @@ void test_parse() {
   )";
 
   auto spec = parse(input).value();
-  
+
   assert(spec.info.title == "Awesome API");
   assert(spec.info.version == "2.0.0");
   assert(spec.info.description == "Best API");
@@ -77,15 +77,20 @@ void test_parse() {
   assert(spec.servers->at(0).description == "Local");
   assert(spec.servers->at(0).variables->at("var").default_value == "default");
   assert(spec.servers->at(1).url == "http://remote");
-  assert(spec.components.has_value() && spec.components->securitySchemes.has_value());
+  assert(spec.components.has_value() &&
+         spec.components->securitySchemes.has_value());
   assert(spec.components->securitySchemes->at("BasicAuth").type == "http");
   assert(spec.components->securitySchemes->at("BasicAuth").name == "name");
   assert(spec.components->securitySchemes->at("BasicAuth").in == "header");
   assert(spec.components->securitySchemes->at("BasicAuth").scheme == "basic");
-  assert(spec.components->securitySchemes->at("BasicAuth").bearerFormat == "format");
-  assert(spec.components->securitySchemes->at("BasicAuth").description == "desc");
-  assert(spec.components->securitySchemes->at("BasicAuth").openIdConnectUrl == "https://oidc");
-  assert(spec.components->securitySchemes->at("BasicAuth").oauth2MetadataUrl == "https://oauth");
+  assert(spec.components->securitySchemes->at("BasicAuth").bearerFormat ==
+         "format");
+  assert(spec.components->securitySchemes->at("BasicAuth").description ==
+         "desc");
+  assert(spec.components->securitySchemes->at("BasicAuth").openIdConnectUrl ==
+         "https://oidc");
+  assert(spec.components->securitySchemes->at("BasicAuth").oauth2MetadataUrl ==
+         "https://oauth");
   assert(spec.components->securitySchemes->at("BasicAuth").deprecated == true);
   assert(!spec.servers->at(1).description.has_value());
 
@@ -96,7 +101,8 @@ void test_parse() {
   assert(get_op->description == "Retrieves a specific resource");
   assert(get_op->tags.has_value() && get_op->tags->at(0) == "api");
   assert(get_op->deprecated == true);
-  assert(get_op->security.has_value() && get_op->security->at(0).count("Bearer"));
+  assert(get_op->security.has_value() &&
+         get_op->security->at(0).count("Bearer"));
   assert(get_op->responses->at("200").content->count("application/json"));
   assert(get_op->responses.has_value() && get_op->responses->size() == 2);
   assert(get_op->responses->at("200").description == "OK");
@@ -108,16 +114,20 @@ void test_parse() {
   assert(get_op->parameters->at(1).in == "query");
   assert(get_op->parameters->at(1).schema->type == "string");
   assert(get_op->requestBody.has_value());
-  
+
   assert(spec.paths->contains("/api/v1/resource"));
   assert(spec.paths->at("/api/v1/resource").post.has_value());
   assert(!spec.paths->at("/api/v1/resource").post->parameters.has_value());
-  
+
   assert(spec.paths->at("/api/v1/resource").put.has_value());
   assert(spec.paths->at("/api/v1/resource").delete_op.has_value());
-  assert(spec.paths->at("/api/v1/resource").delete_op->parameters->at(0).schema->type == "number");
+  assert(spec.paths->at("/api/v1/resource")
+             .delete_op->parameters->at(0)
+             .schema->type == "number");
   assert(spec.paths->at("/api/v1/resource").patch.has_value());
-  assert(spec.paths->at("/api/v1/resource").patch->parameters->at(0).schema->type == "boolean");
+  assert(spec.paths->at("/api/v1/resource")
+             .patch->parameters->at(0)
+             .schema->type == "boolean");
 
   std::cout << "routes::test_parse passed.\n";
 }
@@ -129,7 +139,8 @@ void test_emit() {
   spec.info.version = "1.0";
   spec.info.description = "Desc";
   spec.info.termsOfService = "https://terms";
-  spec.info.contact = openapi::Contact{"Samuel", "https://samuel", "samuel@test"};
+  spec.info.contact =
+      openapi::Contact{"Samuel", "https://samuel", "samuel@test"};
   spec.info.license = openapi::License{"MIT", "MIT", "https://mit"};
 
   openapi::ServerVariable sv;
@@ -140,7 +151,7 @@ void test_emit() {
   srv.url = "http://api";
   srv.description = "API server";
   srv.variables = std::map<std::string, openapi::ServerVariable>{{"var", sv}};
-  
+
   openapi::SecurityScheme scheme;
   scheme.type = "http";
   scheme.name = "name";
@@ -152,7 +163,8 @@ void test_emit() {
   scheme.oauth2MetadataUrl = "https://oauth";
   scheme.deprecated = true;
   spec.components = openapi::Components{};
-  spec.components->securitySchemes = std::map<std::string, openapi::SecurityScheme>{{"BasicAuth", scheme}};
+  spec.components->securitySchemes =
+      std::map<std::string, openapi::SecurityScheme>{{"BasicAuth", scheme}};
   openapi::Server srv2;
   srv2.url = "http://remote";
   spec.servers = std::vector<openapi::Server>{srv, srv2};
@@ -160,7 +172,7 @@ void test_emit() {
   spec.paths = std::map<std::string, openapi::PathItem>{};
 
   openapi::PathItem item;
-  
+
   openapi::Operation op;
   op.operationId = "testRoute";
   op.summary = "Sum";
@@ -172,9 +184,10 @@ void test_emit() {
   op.security = std::vector<openapi::SecurityRequirement>{sr};
   openapi::Response resp;
   resp.description = "OK";
-  resp.content = std::map<std::string, openapi::MediaType>{{"application/json", openapi::MediaType{}}};
+  resp.content = std::map<std::string, openapi::MediaType>{
+      {"application/json", openapi::MediaType{}}};
   op.responses = std::map<std::string, openapi::Response>{{"200", resp}};
-  
+
   openapi::Parameter p1, p2, p3, p4, p5;
   p1.name = "id";
   p1.schema = openapi::Schema{};
@@ -191,7 +204,7 @@ void test_emit() {
   p5.name = "other";
   op.parameters = std::vector<openapi::Parameter>{p1, p2, p3, p4, p5};
   op.requestBody = openapi::RequestBody{};
-  
+
   item.get = op;
   item.post = op;
   item.put = op;
@@ -209,19 +222,30 @@ void test_emit() {
   assert(code.find("@tags api") != std::string::npos);
   assert(code.find("@deprecated") != std::string::npos);
   assert(code.find("@security Bearer") != std::string::npos);
-  assert(code.find("@response_content 200 application/json") != std::string::npos);
+  assert(code.find("@response_content 200 application/json") !=
+         std::string::npos);
   assert(code.find("@termsOfService https://terms") != std::string::npos);
   assert(code.find("@contact_name Samuel") != std::string::npos);
   assert(code.find("@license_name MIT") != std::string::npos);
-  assert(code.find("@server_variable var default desc [enum1]") != std::string::npos);
+  assert(code.find("@server_variable var default desc [enum1]") !=
+         std::string::npos);
   assert(code.find("@securitySchemes") != std::string::npos);
-  assert(code.find("- BasicAuth http name header basic format") != std::string::npos);
-  assert(code.find("@securityScheme_description BasicAuth desc") != std::string::npos);
-  assert(code.find("@securityScheme_openIdConnectUrl BasicAuth https://oidc") != std::string::npos);
-  assert(code.find("@securityScheme_oauth2MetadataUrl BasicAuth https://oauth") != std::string::npos);
-  assert(code.find("@securityScheme_deprecated BasicAuth") != std::string::npos);
-  assert(code.find("int id, std::string name, double score, bool active, std::string other, std::string requestBody") != std::string::npos);
-  // assert(code.find("routes[\"GET /api/v1/test\"] = handler;") != std::string::npos);
+  assert(code.find("- BasicAuth http name header basic format") !=
+         std::string::npos);
+  assert(code.find("@securityScheme_description BasicAuth desc") !=
+         std::string::npos);
+  assert(code.find("@securityScheme_openIdConnectUrl BasicAuth https://oidc") !=
+         std::string::npos);
+  assert(
+      code.find("@securityScheme_oauth2MetadataUrl BasicAuth https://oauth") !=
+      std::string::npos);
+  assert(code.find("@securityScheme_deprecated BasicAuth") !=
+         std::string::npos);
+  assert(code.find("int id, std::string name, double score, bool active, "
+                   "std::string other, std::string requestBody") !=
+         std::string::npos);
+  // assert(code.find("routes[\"GET /api/v1/test\"] = handler;") !=
+  // std::string::npos);
   assert(code.find("on_GET_handler") != std::string::npos);
 
   std::cout << "routes::test_emit passed.\n";

@@ -1,5 +1,5 @@
-#include <expected>
 #include "parse.hpp"
+#include <expected>
 #include <simdjson.h>
 
 namespace cdd_cpp::google_discovery {
@@ -166,8 +166,9 @@ void process_methods(simdjson::dom::object methods,
   }
 }
 
-void process_resources(simdjson::dom::object resources,
-                       std::map<std::string, openapi::PathItem> &paths) noexcept {
+void process_resources(
+    simdjson::dom::object resources,
+    std::map<std::string, openapi::PathItem> &paths) noexcept {
   for (auto r : resources) {
     if (r.value.is_object()) {
       auto res_obj = r.value.get_object();
@@ -185,7 +186,8 @@ void process_resources(simdjson::dom::object resources,
   }
 }
 
-std::expected<std::vector<openapi::OpenAPI>, std::string> parse(const std::string &input) noexcept {
+std::expected<std::vector<openapi::OpenAPI>, std::string>
+parse(const std::string &input) noexcept {
   simdjson::dom::parser parser;
   auto doc = parser.parse(input);
   auto root = doc.get_object();
