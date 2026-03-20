@@ -92,3 +92,50 @@ at your option.
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
+
+## CLI Help
+
+```
+$ ./build/cdd-cpp --help
+CDD CLI (Code-Driven Development)
+Usage:
+  cdd-cpp --help
+  cdd-cpp --version
+  cdd-cpp to_openapi -f <path/to/code> [-o <spec.json>]
+  cdd-cpp to_docs_json [--no-imports] [--no-wrapping] -i <spec.json> [-o <docs.json>]
+  cdd-cpp from_openapi to_sdk_cli -i <spec.json> -o <target_directory>
+  cdd-cpp from_openapi to_sdk_cli --input-dir <specs_dir> -o <target_directory>
+  cdd-cpp from_openapi to_sdk -i <spec.json> -o <target_directory>
+  cdd-cpp from_openapi to_sdk --input-dir <specs_dir> -o <target_directory>
+  cdd-cpp from_openapi to_server -i <spec.json> -o <target_directory>
+  cdd-cpp from_openapi to_server --input-dir <specs_dir> -o <target_directory>
+  cdd-cpp serve_json_rpc --port <port> --listen <host>
+
+Commands:
+  sync         : Bi-directional sync of code directory and OpenAPI spec.
+  from_openapi : Parses an OpenAPI spec and emits C++ code.
+  to_openapi   : Parses C++ code and emits an OpenAPI spec.
+  to_docs_json : Generates JSON documentation for API calls.
+  serve_json_rpc: Starts JSON-RPC server.
+```
+
+### `from_openapi`
+
+```
+$ ./build/cdd-cpp from_openapi --help
+Missing -i <spec.json> or --input-dir <specs_dir>
+```
+
+### `to_openapi`
+
+```
+$ ./build/cdd-cpp to_openapi --help
+Missing -i <path/to/code>
+```
+
+### `to_docs_json`
+
+```
+$ ./build/cdd-cpp to_docs_json --help
+Missing -i <spec.json>
+```
