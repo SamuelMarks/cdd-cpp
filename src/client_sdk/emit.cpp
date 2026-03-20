@@ -1,5 +1,6 @@
 #include "emit.hpp"
 #include <sstream>
+#include "../docstrings/emit.hpp"
 
 namespace cdd_cpp::client_sdk {
 std::string emit_client(const openapi::OpenAPI &spec) noexcept {
@@ -14,6 +15,7 @@ std::string emit_client(const openapi::OpenAPI &spec) noexcept {
 
   ss << "namespace cdd_client {\n\n";
 
+  ss << docstrings::emit_api_docstrings(spec);
   ss << "    class Client {\n";
   ss << "        std::string base_url;\n";
   ss << "        CURL* curl;\n\n";
@@ -51,13 +53,58 @@ std::string emit_client(const openapi::OpenAPI &spec) noexcept {
           return;
         std::string func_name = op->operationId.value_or("request");
 
+        ss << docstrings::emit_path_docstrings(item);
+        
+        // collect parameters from path and operation
+        std::vector<openapi::Parameter> all_params;
+        if (item.parameters) {
+          for (const auto &p : *item.parameters) all_params.push_back(p);
+        }
+        if (op->parameters) {
+          for (const auto &p : *op->parameters) all_params.push_back(p);
+        }
+        
+        // Now emit operation docstrings and inject missing params
+        openapi::Operation new_op = op.value();
+        new_op.parameters = all_params;
+        ss << docstrings::emit_operation_docstrings(new_op);
+
+        std::string param_list = "";
+        for (size_t i = 0; i < all_params.size(); ++i) {
+          const auto &p = all_params[i];
+          std::string type = "std::string";
+          if (p.schema && p.schema->type) {
+            if (*p.schema->type == "integer") type = "int";
+            else if (*p.schema->type == "boolean") type = "bool";
+            else if (*p.schema->type == "number") type = "double";
+          }
+          if (i > 0) param_list += ", ";
+          param_list += type + " " + p.name;
+        }
+        
+        if (op->requestBody) {
+          if (!param_list.empty()) param_list += ", ";
+          param_list += "const std::string& body";
+        }
+
         ss << "        std::expected<std::string, std::string> " << func_name
-           << "() noexcept {\n";
+           << "(" << param_list << ") noexcept {\n";
         ss << "            if (!curl) return std::unexpected(\"Curl not "
               "initialized\");\n";
         ss << "            std::string readBuffer;\n";
         ss << "            std::string full_url = base_url + \"" << path
            << "\";\n";
+        
+        // replace url parameters
+        for (const auto &p : all_params) {
+          if (p.in == "path") {
+            ss << "            full_url.replace(full_url.find(\"{" << p.name << "}\"), " << p.name.length() + 2 << ", std::to_string(" << p.name << "));\n";
+          } else if (p.in == "query") {
+            ss << "            full_url += (full_url.find('?') == std::string::npos ? \"?\" : \"&\");\n";
+            ss << "            full_url += \"" << p.name << "=\" + std::to_string(" << p.name << ");\n";
+          }
+        }
+           
         ss << "            curl_easy_setopt(curl, CURLOPT_URL, "
               "full_url.c_str());\n";
 
@@ -70,7 +117,18 @@ std::string emit_client(const openapi::OpenAPI &spec) noexcept {
               "WriteCallback);\n";
         ss << "            curl_easy_setopt(curl, CURLOPT_WRITEDATA, "
               "&readBuffer);\n";
+        
+        if (op->requestBody) {
+          ss << "            struct curl_slist *headers = NULL;\n";
+          ss << "            headers = curl_slist_append(headers, \"content-type: application/json\");\n";
+          ss << "            curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);\n";
+          ss << "            curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body.c_str());\n";
+        }
+
         ss << "            CURLcode res = curl_easy_perform(curl);\n";
+        if (op->requestBody) {
+          ss << "            if(headers) curl_slist_free_all(headers);\n";
+        }
         ss << "            if(res != CURLE_OK) {\n";
         ss << "                return "
               "std::unexpected(curl_easy_strerror(res));\n";

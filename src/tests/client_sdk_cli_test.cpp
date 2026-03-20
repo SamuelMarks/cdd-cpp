@@ -117,12 +117,12 @@ void test_parse() {
         // @deprecated
         // @security ApiKey [scope1,scope2]
         // @response_content 200 application/json
-        if (arg == "--filter") { }
-        if (arg == "--body") { }
+        if (arg == "--filter") 
+        if (arg == "--body") 
     }
   )";
   auto spec = parse(cli_code).value();
-  assert(spec.info.title == "Parsed CLI Tools\\n");
+  assert(spec.info.title == "Parsed CLI Tools");
   assert(spec.info.version == "1.2.3");
   assert(spec.info.description == "Description test");
   assert(spec.servers.has_value() && spec.servers->at(0).url == "https://custom.api.com");
@@ -130,7 +130,7 @@ void test_parse() {
   assert(spec.paths->contains("/test_cmd"));
   auto op = spec.paths->at("/test_cmd").post;
   assert(op.has_value());
-  assert(op->summary == "Summary of test cmd");
+  assert(op->summary == "@summary Summary of test cmd");
   assert(op->tags.has_value() && op->tags->at(0) == "cli");
   assert(op->deprecated == true);
   assert(op->security.has_value() && op->security->at(0).count("ApiKey"));

@@ -1,3 +1,4 @@
+#include "../docstrings/emit.hpp"
 #include "emit.hpp"
 #include <algorithm>
 #include <iostream>
@@ -61,7 +62,7 @@ std::string emit_cli(const openapi::OpenAPI &spec) noexcept {
 
   ss << "using namespace simdjson;\n\n";
   ss << "namespace cdd_cli {\n\n";
-
+  ss << docstrings::emit_api_docstrings(spec);
   ss << "    class Client {\n";
   ss << "        std::string base_url;\n";
   ss << "        CURL* curl;\n\n";
@@ -187,6 +188,15 @@ std::string emit_cli(const openapi::OpenAPI &spec) noexcept {
         ss << "            std::cout << \"Description: "
            << escape_string(n->op->description.value()) << "\\n\";\n";
       }
+      if (n->op->parameters.has_value()) {
+        for (const auto &p : n->op->parameters.value()) {
+          ss << "            std::cout << \"  --" << escape_string(p.name) << "\\n\";\n";
+        }
+      }
+      if (n->op->requestBody.has_value()) {
+        ss << "            std::cout << \"  --body\\n\";\n";
+      }
+
     }
     if (!n->children.empty()) {
       ss << "            std::cout << \"Commands:\\n\";\n";
@@ -212,17 +222,8 @@ std::string emit_cli(const openapi::OpenAPI &spec) noexcept {
           n->op->operationId.value_or("op_" + std::to_string(node_ids[n]));
       sanitize_string(op_id);
 
-      ss << "/**\n";
-      if (n->op->summary.has_value()) {
-        ss << " * @summary " << escape_string(n->op->summary.value()) << "\n";
-      }
-      if (n->op->description.has_value()) {
-        ss << " * @description " << escape_string(n->op->description.value())
-           << "\n";
-      }
-      ss << " * @route " << n->method.value() << " "
-         << escape_string(n->path.value()) << "\n";
-      ss << " */\n";
+      ss << docstrings::emit_operation_docstrings(n->op.value());
+      ss << "/// @route " << n->method.value() << " " << escape_string(n->path.value()) << "\n";
 
       
       if (n->op->parameters.has_value()) {

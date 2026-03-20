@@ -24,9 +24,9 @@ void test_parse() {
         })";
 
   auto list_res = parse(list_json);
-  assert(list_res.size() == 2);
-  assert(list_res[0].info.title == "API 1");
-  assert(list_res[1].info.title == "API 2");
+  assert(list_res->size() == 2);
+  assert((*list_res)[0].info.title == "API 1");
+  assert((*list_res)[1].info.title == "API 2");
 
   std::string rest_json = R"({
             "kind": "discovery#restDescription",
@@ -60,11 +60,11 @@ void test_parse() {
         })";
 
   auto rest_res = parse(rest_json);
-  assert(rest_res.size() == 1);
-  assert(rest_res[0].info.title == "Test Service");
-  assert(rest_res[0].servers->front().url == "https://api.test.com/v1/");
-  assert(rest_res[0].components->schemas->contains("User"));
-  assert(rest_res[0].paths->contains("/users/{id}"));
+  assert(rest_res->size() == 1);
+  assert((*rest_res)[0].info.title == "Test Service");
+  assert((*rest_res)[0].servers->front().url == "https://api.test.com/v1/");
+  assert((*rest_res)[0].components->schemas->contains("User"));
+  assert((*rest_res)[0].paths->contains("/users/{id}"));
 
   std::cout << "google_discovery::test_parse passed.\n";
 }

@@ -10,6 +10,7 @@ std::string map_type(const openapi::Schema &schema) noexcept {
     if (last_slash != std::string::npos) {
       return ref.substr(last_slash + 1);
     }
+    return ref;
   }
   if (!schema.type.has_value())
     return "std::string";
@@ -24,21 +25,11 @@ std::string map_type(const openapi::Schema &schema) noexcept {
   if (t == "string")
     return "std::string";
   if (t == "array") {
-    if (schema.items) {
+    if (schema.items)
       return "std::vector<" + map_type(*schema.items) + ">";
-    }
     return "std::vector<std::string>";
   }
   return "std::string";
-}
-
-bool is_required(const openapi::Schema &parent_schema, const std::string &prop_name) noexcept {
-  if (parent_schema.required.has_value()) {
-    for (const auto &r : parent_schema.required.value()) {
-      if (r == prop_name) return true;
-    }
-  }
-  return false;
 }
 
 void emit_docstrings(std::stringstream &ss, const openapi::Schema &schema, const std::string &indent) noexcept {
@@ -67,31 +58,38 @@ void emit_docstrings(std::stringstream &ss, const openapi::Schema &schema, const
 
 std::string emit(const openapi::OpenAPI &spec) noexcept {
   std::stringstream ss;
-  ss << "#pragma once\n";
-  ss << "#include <string>\n";
-  ss << "#include <vector>\n";
-  ss << "#include <optional>\n\n";
+  ss << "#pragma once\n#include <string>\n#include <vector>\n#include <optional>\n\n";
+
   ss << "namespace cdd_models {\n\n";
 
-  if (spec.components.has_value() && spec.components->schemas.has_value()) {
-    for (const auto &[name, schema] : spec.components->schemas.value()) {
+  if (spec.components && spec.components->schemas) {
+    for (const auto &[name, schema] : *spec.components->schemas) {
       emit_docstrings(ss, schema, "    ");
       ss << "    struct " << name << " {\n";
-      if (schema.properties != nullptr) {
+      if (schema.properties) {
         for (const auto &[prop_name, prop_schema] : *schema.properties) {
           emit_docstrings(ss, prop_schema, "        ");
-          std::string cpp_type = map_type(prop_schema);
-          if (!is_required(schema, prop_name)) {
-            cpp_type = "std::optional<" + cpp_type + ">";
+          bool is_required = false;
+          if (schema.required) {
+            for (const auto &req : *schema.required) {
+              if (req == prop_name)
+                is_required = true;
+            }
           }
-          ss << "        " << cpp_type << " " << prop_name << ";\n";
+          if (is_required) {
+            ss << "        " << map_type(prop_schema) << " " << prop_name
+               << ";\n";
+          } else {
+            ss << "        std::optional<" << map_type(prop_schema) << "> " << prop_name
+               << ";\n";
+          }
         }
       }
       ss << "    };\n\n";
     }
   }
 
-  ss << "}\n";
+  ss << "}\n\n";
   return ss.str();
 }
 
