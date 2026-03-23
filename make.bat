@@ -62,7 +62,24 @@ if errorlevel 1 (
 goto :eof
 
 :build_wasm
-echo WASM build requires emsdk configured.
+echo Building WASM via emsdk...
+if not exist "emsdk" (
+    git clone https://github.com/emscripten-core/emsdk.git
+    cd emsdk
+    call emsdk install latest
+    call emsdk activate latest
+    cd ..
+)
+call emsdk\emsdk_env.bat
+if exist "build_wasm" rmdir /S /Q build_wasm
+mkdir build_wasm
+cd build_wasm
+call emcmake cmake .. -G "MinGW Makefiles" -DCDD_EXTREME_CHECKS=OFF -DCMAKE_BUILD_TYPE=Release
+call cmake --build . -j %NUMBER_OF_PROCESSORS%
+cd ..
+if not exist "bin" mkdir bin
+copy build_wasm\cdd-cpp.js bin\cdd-cpp.js
+copy build_wasm\cdd-cpp.wasm bin\cdd-cpp.wasm
 goto :eof
 
 :build_docker

@@ -446,19 +446,22 @@ int main_impl(int argc, char **argv, std::ostream &out,
   return 0;
 }
 
+#if !defined(__wasi__) && !defined(__EMSCRIPTEN__)
 #include "../utils/httplib.h"
 #include <mutex>
-
 std::mutex g_cout_mutex;
+#endif
 
 int main(int argc, char **argv) noexcept {
 
+#if !defined(__wasi__) && !defined(__EMSCRIPTEN__)
   if (argc >= 2 && std::string(argv[1]) == "serve_json_rpc") {
     for (int i = 2; i < argc; ++i) {
       std::string arg = argv[i];
       if (arg == "--help" || arg == "-h") {
-        std::cout << "Usage:\n  cdd-cpp serve_json_rpc --port <port> --listen "
-                     "<host>\n";
+        std::cout << "Usage:
+  cdd-cpp serve_json_rpc --port <port> --listen <host>
+";
         return 0;
       }
     }
@@ -467,93 +470,38 @@ int main(int argc, char **argv) noexcept {
     std::string listen_host = "127.0.0.1";
     for (int i = 2; i < argc; ++i) {
       std::string arg = argv[i];
-      if (arg == "--port" && i + 1 < argc)
+      if (arg == "--port" && i + 1 < argc) {
         port = argv[++i];
-      else if (arg == "--listen" && i + 1 < argc)
+      } else if (arg == "--listen" && i + 1 < argc) {
         listen_host = argv[++i];
+      }
     }
-    port = get_arg_or_env(port, "CDD_CPP_PORT", "8080");
-    listen_host = get_arg_or_env(listen_host, "CDD_CPP_LISTEN", "127.0.0.1");
 
     httplib::Server svr;
-    svr.Post("/rpc", [](const httplib::Request &req, httplib::Response &res) {
-      simdjson::dom::parser parser;
-      simdjson::dom::element doc;
-      auto error = parser.parse(req.body).get(doc);
-      if (error) {
-        res.status = 400;
-        res.set_content("{\"jsonrpc\": \"2.0\", \"error\": {\"code\": -32700, "
-                        "\"message\": \"Parse error\"}, \"id\": null}",
-                        "application/json");
-        return;
-      }
 
-      std::string_view method_sv;
-      if (doc["method"].get(method_sv)) {
-        res.status = 400;
-        return;
-      }
-
-      std::vector<std::string> args = {"cdd-cpp", std::string(method_sv)};
-      simdjson::dom::array params;
-      if (!doc["params"].get(params)) {
-        for (auto elem : params) {
-          std::string_view p;
-          if (!elem.get(p)) {
-            args.push_back(std::string(p));
-          }
-        }
-      }
-
-      std::vector<char *> argv_vec;
-      for (auto &s : args)
-        argv_vec.push_back(const_cast<char *>(s.c_str()));
-
-      std::ostringstream out, err;
-      int ret;
-      {
-        std::lock_guard<std::mutex> lock(g_cout_mutex);
-        ret = main_impl(argv_vec.size(), argv_vec.data(), out, err);
-      }
-
-      utils::JsonWriter jw;
-      jw.start_object();
-      jw.key_value("jsonrpc", "2.0");
-
-      std::string id_str = "null";
-      if (doc["id"].type() == simdjson::dom::element_type::INT64) {
-        int64_t id_val;
-        if (doc["id"].get(id_val) == simdjson::SUCCESS) {
-          jw.key_value("id", std::to_string(id_val));
-        }
-      } else if (doc["id"].type() == simdjson::dom::element_type::STRING) {
-        std::string_view id_val;
-        if (doc["id"].get(id_val) == simdjson::SUCCESS) {
-          jw.key_value("id", std::string(id_val));
-        }
-      } else {
-        jw.key("id");
-        jw.null_value(); // simplified
-      }
-
-      if (ret == 0) {
-        jw.key_value("result", out.str());
-      } else {
-        jw.key("error");
-        jw.start_object();
-        jw.key_value("code", -32603);
-        jw.key_value("message", err.str());
-        jw.end_object();
-      }
-      jw.end_object();
-      res.set_content(jw.str(), "application/json");
+    svr.Post("/", [](const httplib::Request &req, httplib::Response &res) {
+      std::string result = cdd_cpp::server::serve_json_rpc(req.body);
+      res.set_content(result, "application/json");
+      res.set_header("Access-Control-Allow-Origin", "*");
     });
 
-    std::cout << "Starting JSON-RPC server on " << listen_host << ":" << port
-              << " ...\n";
-    svr.listen(listen_host.c_str(), std::stoi(port));
+    svr.Options("/", [](const httplib::Request & /*req*/, httplib::Response &res) {
+      res.set_header("Access-Control-Allow-Origin", "*");
+      res.set_header("Access-Control-Allow-Methods", "POST, OPTIONS");
+      res.set_header("Access-Control-Allow-Headers", "Content-Type");
+      res.set_content("", "text/plain");
+    });
+
+    std::cout << "JSON RPC server listening on " << listen_host << ":" << port << std::endl;
+    svr.listen(listen_host, std::stoi(port));
     return 0;
   }
+#else
+  if (argc >= 2 && std::string(argv[1]) == "serve_json_rpc") {
+      std::cerr << "serve_json_rpc is not supported in WASI builds." << std::endl;
+      return 1;
+  }
+#endif
 
   return main_impl(argc, argv, std::cout, std::cerr);
 }

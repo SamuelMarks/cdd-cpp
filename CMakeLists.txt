@@ -37,8 +37,10 @@ endif()
 
 if (USE_VCPKG)
     find_package(simdjson CONFIG REQUIRED)
-    find_package(CURL REQUIRED)
-    find_package(PostgreSQL REQUIRED)
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+        find_package(CURL REQUIRED)
+        find_package(PostgreSQL REQUIRED)
+    endif()
 else()
     include(FetchContent)
     
@@ -49,41 +51,47 @@ else()
     )
     FetchContent_MakeAvailable(simdjson)
 
-    find_package(CURL QUIET)
-    if(NOT CURL_FOUND)
-        FetchContent_Declare(
-            curl
-            GIT_REPOSITORY https://github.com/curl/curl.git
-            GIT_TAG curl-8_7_1
-        )
-        set(BUILD_CURL_EXE OFF CACHE BOOL "Disable curl executable" FORCE)
-        set(BUILD_TESTING OFF CACHE BOOL "Disable curl testing" FORCE)
-        set(CURL_USE_OPENSSL OFF CACHE BOOL "Disable OpenSSL" FORCE)
-        set(CURL_DISABLE_LDAP ON CACHE BOOL "" FORCE)
-        set(CURL_DISABLE_LDAPS ON CACHE BOOL "" FORCE)
-        set(CURL_USE_LIBPSL OFF CACHE BOOL "" FORCE)
-        set(CURL_USE_LIBSSH2 OFF CACHE BOOL "" FORCE)
-        FetchContent_MakeAvailable(curl)
-    endif()
-
-    find_package(PostgreSQL QUIET)
-    if(NOT PostgreSQL_FOUND)
-        if(POLICY CMP0135)
-            cmake_policy(SET CMP0135 NEW)
-        endif()
-        FetchContent_Declare(
-            postgresql
-            URL "https://ftp.postgresql.org/pub/source/v15.5/postgresql-15.5.tar.bz2"
-        )
-        FetchContent_GetProperties(postgresql)
-        if(NOT postgresql_POPULATED)
-            FetchContent_Populate(postgresql)
-            add_library(PostgreSQL::PostgreSQL INTERFACE IMPORTED)
-            set_target_properties(PostgreSQL::PostgreSQL PROPERTIES
-                INTERFACE_INCLUDE_DIRECTORIES "${postgresql_SOURCE_DIR}/src/interfaces/libpq;${postgresql_SOURCE_DIR}/src/include"
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+        find_package(CURL QUIET)
+        if(NOT CURL_FOUND)
+            FetchContent_Declare(
+                curl
+                GIT_REPOSITORY https://github.com/curl/curl.git
+                GIT_TAG curl-8_7_1
             )
+            set(BUILD_CURL_EXE OFF CACHE BOOL "Disable curl executable" FORCE)
+            set(BUILD_TESTING OFF CACHE BOOL "Disable curl testing" FORCE)
+            set(CURL_USE_OPENSSL OFF CACHE BOOL "Disable OpenSSL" FORCE)
+            set(CURL_DISABLE_LDAP ON CACHE BOOL "" FORCE)
+            set(CURL_DISABLE_LDAPS ON CACHE BOOL "" FORCE)
+            set(CURL_USE_LIBPSL OFF CACHE BOOL "" FORCE)
+            set(CURL_USE_LIBSSH2 OFF CACHE BOOL "" FORCE)
+            FetchContent_MakeAvailable(curl)
+        endif()
+
+        find_package(PostgreSQL QUIET)
+        if(NOT PostgreSQL_FOUND)
+            if(POLICY CMP0135)
+                cmake_policy(SET CMP0135 NEW)
+            endif()
+            FetchContent_Declare(
+                postgresql
+                URL "https://ftp.postgresql.org/pub/source/v15.5/postgresql-15.5.tar.bz2"
+            )
+            FetchContent_GetProperties(postgresql)
+            if(NOT postgresql_POPULATED)
+                FetchContent_Populate(postgresql)
+                add_library(PostgreSQL::PostgreSQL INTERFACE IMPORTED)
+                set_target_properties(PostgreSQL::PostgreSQL PROPERTIES
+                    INTERFACE_INCLUDE_DIRECTORIES "${postgresql_SOURCE_DIR}/src/interfaces/libpq;${postgresql_SOURCE_DIR}/src/include"
+                )
+            endif()
         endif()
     endif()
+endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "WASI")
+    add_compile_options(-fno-exceptions)
 endif()
 
 # Define Library
@@ -101,14 +109,18 @@ add_library(cdd_lib STATIC ${CDD_LIB_SRCS})
 target_include_directories(cdd_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 enable_extreme_checks(cdd_lib)
 
-target_link_libraries(cdd_lib PUBLIC simdjson simdjson::simdjson PostgreSQL::PostgreSQL)
-if(USE_VCPKG)
-    target_link_libraries(cdd_lib PUBLIC CURL::libcurl)
-else()
-    if(TARGET curl)
-        target_link_libraries(cdd_lib PUBLIC curl)
-    elseif(TARGET CURL::libcurl)
+target_link_libraries(cdd_lib PUBLIC simdjson simdjson::simdjson)
+
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    target_link_libraries(cdd_lib PUBLIC PostgreSQL::PostgreSQL)
+    if(USE_VCPKG)
         target_link_libraries(cdd_lib PUBLIC CURL::libcurl)
+    else()
+        if(TARGET curl)
+            target_link_libraries(cdd_lib PUBLIC curl)
+        elseif(TARGET CURL::libcurl)
+            target_link_libraries(cdd_lib PUBLIC CURL::libcurl)
+        endif()
     endif()
 endif()
 
@@ -117,27 +129,30 @@ add_executable(cdd-cpp src/cli/main.cpp src/cli/sync.cpp)
 target_link_libraries(cdd-cpp PRIVATE cdd_lib)
 enable_extreme_checks(cdd-cpp)
 
-# Tests
-add_executable(cdd-tests src/tests/client_sdk_cli_test.cpp  src/tests/main.cpp src/tests/parse.cpp src/tests/emit.cpp src/tests/upgrader_test.cpp src/tests/google_discovery.cpp src/tests/models.cpp src/tests/client_sdk_test.cpp src/tests/functions.cpp src/tests/docstrings.cpp src/tests/server.cpp src/tests/mocks.cpp src/tests/http.cpp src/tests/cli.cpp src/tests/orm.cpp)
-target_link_libraries(cdd-tests PRIVATE cdd_lib)
-enable_extreme_checks(cdd-tests)
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    # Tests
+    add_executable(cdd-tests src/tests/client_sdk_cli_test.cpp  src/tests/main.cpp src/tests/parse.cpp src/tests/emit.cpp src/tests/upgrader_test.cpp src/tests/google_discovery.cpp src/tests/models.cpp src/tests/client_sdk_test.cpp src/tests/functions.cpp src/tests/docstrings.cpp src/tests/server.cpp src/tests/mocks.cpp src/tests/http.cpp src/tests/cli.cpp src/tests/orm.cpp)
+    target_link_libraries(cdd-tests PRIVATE cdd_lib)
+    enable_extreme_checks(cdd-tests)
 
-# Testing config
-enable_testing()
-add_test(NAME CDDTests COMMAND cdd-tests)
+    # Testing config
+    enable_testing()
+    add_test(NAME CDDTests COMMAND cdd-tests)
 
-if(COVERAGE)
-    message(STATUS "Adding coverage flags")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+    if(COVERAGE)
+        message(STATUS "Adding coverage flags")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
+    endif()
+
+    # Append ast_test to tests
+    list(APPEND CDD_TEST_SRCS src/tests/ast_test.cpp)
+    target_sources(cdd-tests PRIVATE src/tests/ast_test.cpp)
+
+    list(APPEND CDD_TEST_SRCS src/tests/sync_test.cpp)
+    target_sources(cdd-tests PRIVATE src/tests/sync_test.cpp)
 endif()
 
-# Append ast_test to tests
-list(APPEND CDD_TEST_SRCS src/tests/ast_test.cpp)
-target_sources(cdd-tests PRIVATE src/tests/ast_test.cpp)
-
-list(APPEND CDD_TEST_SRCS src/tests/sync_test.cpp)
-target_sources(cdd-tests PRIVATE src/tests/sync_test.cpp)
 if(EMSCRIPTEN)
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
     set_target_properties(cdd-cpp PROPERTIES LINK_FLAGS "-s WASM=1 -s STANDALONE_WASM=1")

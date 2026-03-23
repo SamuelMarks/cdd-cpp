@@ -1,6 +1,8 @@
 #include "http.hpp"
-#include <curl/curl.h>
 #include <expected>
+
+#if !defined(__wasi__) && !defined(__EMSCRIPTEN__)
+#include <curl/curl.h>
 
 namespace cdd_cpp::utils {
 
@@ -30,3 +32,11 @@ http_get(const std::string &url) noexcept {
   return readBuffer;
 }
 } // namespace cdd_cpp::utils
+#else
+namespace cdd_cpp::utils {
+std::expected<std::string, std::string>
+http_get(const std::string &url) noexcept {
+  return std::unexpected("http_get() not implemented in WASI");
+}
+} // namespace cdd_cpp::utils
+#endif

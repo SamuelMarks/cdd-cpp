@@ -39,14 +39,18 @@ run: build
 	./$(BIN_DIR)/cdd-cpp $(ARGS)
 
 build_wasm:
-	if [ -d "../emsdk" ]; then \
-		cd ../emsdk && . ./emsdk_env.sh && cd ../cdd-cpp && \
-		emcmake cmake -B build_wasm -S . -DCMAKE_BUILD_TYPE=Release && \
-		cmake --build build_wasm -j$$(nproc); \
-	else \
-		echo "emsdk not found in ../emsdk"; \
-		exit 1; \
+	@echo "Building WASM via emsdk..."
+	@if [ ! -d "emsdk" ]; then \
+		git clone https://github.com/emscripten-core/emsdk.git; \
+		cd emsdk && ./emsdk install latest && ./emsdk activate latest; \
 	fi
+	cd emsdk && . ./emsdk_env.sh && cd .. && \
+	rm -rf build_wasm && mkdir -p build_wasm && \
+	emcmake cmake -B build_wasm -S . -DCDD_EXTREME_CHECKS=OFF -DCMAKE_BUILD_TYPE=Release && \
+	cmake --build build_wasm -j$$(nproc)
+	mkdir -p bin
+	cp build_wasm/cdd-cpp.js bin/cdd-cpp.js || true
+	cp build_wasm/cdd-cpp.wasm bin/cdd-cpp.wasm || true
 
 build_docker:
 	docker build -t cdd-cpp-alpine -f alpine.Dockerfile .
