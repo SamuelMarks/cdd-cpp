@@ -41,3 +41,10 @@ __pycache__/
 /test_parse_regex.cpp
 /test_script.cpp
 /test_spec.json
+
+*.wasm
+node_modules/
+dist/
+*.so
+target/
+.idea/
