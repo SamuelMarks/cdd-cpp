@@ -1,7 +1,7 @@
 repos:
--   repo: local
+  - repo: local
     hooks:
-    -   id: run-tests-and-coverage
+      - id: run-tests-and-coverage
         name: Run Tests & Update Coverage Badges
         entry: .githooks/pre-commit
         language: script

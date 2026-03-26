@@ -24,6 +24,7 @@
    - `sync` processes match the models internally and apply changes to both targets simultaneously.
 
 ## Tooling Integration
+
 - JSON handling via `simdjson` for performance.
 - HTTP clients via `libcurl`.
 - PostgreSQL handlers for ORM logic generation.
