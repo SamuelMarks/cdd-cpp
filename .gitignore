@@ -48,3 +48,5 @@ dist/
 *.so
 target/
 .idea/
+bin/
+emsdk/
