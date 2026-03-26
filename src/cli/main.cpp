@@ -4,6 +4,7 @@
 #include "../openapi/emit.hpp"
 #include "../openapi/parse.hpp"
 #include "../openapi/upgraders/upgrader.hpp"
+#include "../server/emit.hpp"
 #include <cstdlib>
 #include <expected>
 #include <filesystem>
@@ -459,9 +460,8 @@ int main(int argc, char **argv) noexcept {
     for (int i = 2; i < argc; ++i) {
       std::string arg = argv[i];
       if (arg == "--help" || arg == "-h") {
-        std::cout << "Usage:
-  cdd-cpp serve_json_rpc --port <port> --listen <host>
-";
+        std::cout << "Usage:\n"
+                  << "  cdd-cpp serve_json_rpc --port <port> --listen <host>\n";
         return 0;
       }
     }

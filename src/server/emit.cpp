@@ -94,4 +94,8 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   return ss.str();
 }
 
+std::string serve_json_rpc(const std::string & /*request*/) noexcept {
+  return "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32601,\"message\":\"Method not found\"}}";
+}
+
 } // namespace cdd_cpp::server
