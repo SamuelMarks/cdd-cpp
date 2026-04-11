@@ -29,7 +29,14 @@ function(enable_extreme_checks target)
 endfunction()
 
 # Options for dependencies
+
+if(CMAKE_SYSTEM_NAME STREQUAL "WASI")
+    add_compile_options(-fno-exceptions)
+    add_definitions(-DSIMDJSON_EXCEPTIONS=1)
+endif()
+
 option(USE_VCPKG "Use vcpkg for dependencies" OFF)
+
 
 if (DEFINED CMAKE_TOOLCHAIN_FILE AND CMAKE_TOOLCHAIN_FILE MATCHES "vcpkg")
     set(USE_VCPKG ON)
@@ -90,9 +97,7 @@ else()
     endif()
 endif()
 
-if(CMAKE_SYSTEM_NAME STREQUAL "WASI")
-    add_compile_options(-fno-exceptions)
-endif()
+
 
 # Define Library
 set(CDD_LIB_SRCS

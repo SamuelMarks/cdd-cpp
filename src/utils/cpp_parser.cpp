@@ -64,7 +64,7 @@ openapi::OpenAPI parse_cpp_project(const std::string &folder_path) noexcept {
   spec.components->schemas = std::map<std::string, openapi::Schema>{};
   spec.paths = std::map<std::string, openapi::PathItem>{};
 
-#ifndef __EMSCRIPTEN__
+#if 1
   for (const auto &entry : fs::recursive_directory_iterator(folder_path)) {
     if (entry.is_regular_file()) {
       std::string path = entry.path().string();
