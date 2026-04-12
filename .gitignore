@@ -50,3 +50,15 @@ target/
 .idea/
 bin/
 emsdk/
+wasi-sdk/
+*.bak
+test.s
+*.o
+dump.txt
+add_wasi.py
+Makefile.wasi
+fix_cmake.py
+patch_simdjson*.py
+src/cli/*.s
+tmp/
+test_tag.s
