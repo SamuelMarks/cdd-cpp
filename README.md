@@ -1,5 +1,4 @@
-cdd-cpp
-============
+# cdd-cpp
 
 [![License](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://github.com/SamuelMarks/cdd-cpp/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/cdd-cpp/actions/workflows/ci.yml)
@@ -11,33 +10,50 @@ OpenAPI ↔ C++. This is one compiler in a suite, all focussed on the same task:
 Each compiler is written in its target language, is whitespace and comment sensitive, and has both an SDK and CLI.
 
 The CLI—at a minimum—has:
+
 - `cdd-cpp --help`
 - `cdd-cpp --version`
-- `cdd-cpp from_openapi -i spec.json`
+- `cdd-cpp from_openapi to_sdk_cli -i spec.json`
+- `cdd-cpp from_openapi to_sdk -i spec.json`
+- `cdd-cpp from_openapi to_server -i spec.json`
 - `cdd-cpp to_openapi -f path/to/code`
 - `cdd-cpp to_docs_json --no-imports --no-wrapping -i spec.json`
+- `cdd-cpp serve_json_rpc --port 8080 --listen 0.0.0.0`
 
-The goal of this project is to enable rapid application development without tradeoffs. Tradeoffs of Protocol Buffers / Thrift etc. are an untouchable "generated" directory and package, compile-time and/or runtime overhead. Tradeoffs of Java or JavaScript for everything are: overhead in hardware access, offline mode, ML inefficiency, and more. And neither of these alterantive approaches are truly integrated into your target system, test frameworks, and bigger abstractions you build in your app. Tradeoffs in CDD are code duplication (but CDD handles the synchronisation for you).
+The goal of this project is to enable rapid application development without tradeoffs. Tradeoffs of Protocol Buffers / Thrift etc. are an untouchable "generated" directory and package, compile-time and/or runtime overhead. Tradeoffs of Java or JavaScript for everything are: overhead in hardware access, offline mode, ML inefficiency, and more. And neither of these alternative approaches are truly integrated into your target system, test frameworks, and bigger abstractions you build in your app. Tradeoffs in CDD are code duplication (but CDD handles the synchronisation for you).
 
 ## 🚀 Capabilities
 
 The `cdd-cpp` compiler leverages a unified architecture to support various facets of API and code lifecycle management.
 
-* **Compilation**:
-  * **OpenAPI → C++**: Generate idiomatic native models, network routes, client SDKs, database schemas, and boilerplate directly from OpenAPI (`.json` / `.yaml`) specifications.
-  * **C++ → OpenAPI**: Statically parse existing C++ source code and emit compliant OpenAPI specifications.
-* **Format Upgrades**: Automatically upgrades older Swagger (2.0) and OpenAPI (3.0/3.1) specifications to the latest supported OpenAPI 3.2.0 format.
-* **Google Discovery Integration**: Parses Google Discovery API JSON files and maps them into standard OpenAPI specifications.
-* **AST-Driven & Safe**: Employs static analysis (Abstract Syntax Trees) instead of unsafe dynamic execution or reflection, allowing it to safely parse and emit code even for incomplete or un-compilable project states.
-* **Seamless Sync**: Keep your docs, tests, database, clients, and routing in perfect harmony. Update your code, and generate the docs; or update the docs, and generate the code.
+- **Compilation**:
+    - **OpenAPI → `C++`**: Generate idiomatic native models, network routes, client SDKs, and boilerplate directly from OpenAPI (`.json` / `.yaml`) specifications.
+    - **`C++` → OpenAPI**: Statically parse existing `C++` source code and emit compliant OpenAPI specifications.
+- **AST-Driven & Safe**: Employs static analysis instead of unsafe dynamic execution or reflection, allowing it to safely parse and emit code even for incomplete or un-compilable project states.
+- **Seamless Sync**: Keep your docs, tests, database, clients, and routing in perfect harmony. Update your code, and generate the docs; or update the docs, and generate the code.
 
-## 📦 Installation
+## 📦 Installation & Build
+
+### Native Tooling
 
 ```bash
-git clone https://github.com/SamuelMarks/cdd-cpp
-cd cdd-cpp
-cmake -S . -B build
-cmake --build build
+cmake -B build && cmake --build build
+ctest --test-dir build
+```
+
+### Makefile / make.bat
+
+You can also use the included cross-platform Makefiles to fetch dependencies, build, and test:
+
+```bash
+# Install dependencies
+make deps
+
+# Build the project
+make build
+
+# Run tests
+make test
 ```
 
 ## 🛠 Usage
@@ -45,36 +61,46 @@ cmake --build build
 ### Command Line Interface
 
 ```bash
-# Generate C++ SDK from OpenAPI
-cdd-cpp from_openapi to_sdk -i openapi.json -o ./MyClientSDK
+# Generate C++ models from an OpenAPI spec
+cdd-cpp from_openapi to_sdk -i spec.json -o src/models
 
-# Generate OpenAPI from existing C++ models
-cdd-cpp to_openapi -f src/models.cpp -o openapi.json
-
-# Serve JSON-RPC
-cdd-cpp serve_json_rpc --port 8082 --listen 0.0.0.0
+# Generate an OpenAPI spec from your C++ code
+cdd-cpp to_openapi -f src/models -o openapi.json
 ```
 
-WASM support is possible and implemented. See [WASM.md](WASM.md) for details.
+### Programmatic SDK / Library
 
-## Design choices
+```cpp
+#include "cdd_api.hpp"
+#include <iostream>
 
-Custom AST parsing and static analysis are used for robust, source-accurate manipulation. This ensures that accurate context and structure are preserved.
+int main() {
+    cdd::Config config{"spec.json", "src/models"};
+    cdd::generate_sdk(config);
+    std::cout << "SDK generation complete.\n";
+    return 0;
+}
+```
 
 ## 🏗 Supported Conversions for C++
 
 *(The boxes below reflect the features supported by this specific `cdd-cpp` implementation)*
 
-| Concept | Parse (From) | Emit (To) |
-|---------|--------------|-----------|
-| OpenAPI (JSON/YAML) | [✅] | [✅] |
-| Google Discovery API | [✅] | [ ] |
-| C++ Models / Structs / Types | [✅] | [✅] |
-| C++ Server Routes / Endpoints | [✅] | [✅] |
-| C++ API Clients / SDKs | [✅] | [✅] |
-| C++ ORM / DB Schemas | [✅] | [✅] |
-| C++ CLI Argument Parsers | [✅] | [✅] |
-| C++ Docstrings / Comments | [✅] | [✅] |
+| Features | Parse (From) | Emit (To) |
+| --- | --- | --- |
+| OpenAPI 3.2.0 | ✅ | ✅ |
+| API Client SDK | ✅ | ✅ |
+| API Client CLI | ✅ | ✅ |
+| Server Routes / Endpoints | ✅ | ✅ |
+| ORM / DB Schema | ✅ | ✅ |
+| Mocks + Tests | [ ] | [ ] |
+| Model Context Protocol (MCP) | [ ] | [ ] |
+
+### Uncommon Features
+
+`cdd-cpp` includes specific parsing features beyond the base specification:
+- **Format Upgrades:** Automatically parses older Swagger (2.0) and OpenAPI (3.0/3.1) and upgrades them to the OpenAPI 3.2.0 internal representation.
+- **Google Discovery Integration:** Can parse Google Discovery API JSON files and map them to OpenAPI specifications natively.
 
 ---
 
@@ -92,58 +118,3 @@ at your option.
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
-
-## CLI Help
-
-```
-$ ./build/cdd-cpp --help
-CDD CLI (Code-Driven Development)
-Usage:
-  cdd-cpp --help
-  cdd-cpp --version
-  cdd-cpp to_openapi -f <path/to/code> [-o <spec.json>]
-  cdd-cpp to_docs_json [--no-imports] [--no-wrapping] -i <spec.json> [-o <docs.json>]
-  cdd-cpp from_openapi to_sdk_cli -i <spec.json> -o <target_directory>
-  cdd-cpp from_openapi to_sdk_cli --input-dir <specs_dir> -o <target_directory>
-  cdd-cpp from_openapi to_sdk -i <spec.json> -o <target_directory>
-  cdd-cpp from_openapi to_sdk --input-dir <specs_dir> -o <target_directory>
-  cdd-cpp from_openapi to_server -i <spec.json> -o <target_directory>
-  cdd-cpp from_openapi to_server --input-dir <specs_dir> -o <target_directory>
-  cdd-cpp serve_json_rpc --port <port> --listen <host>
-
-Commands:
-  sync         : Bi-directional sync of code directory and OpenAPI spec.
-  from_openapi : Parses an OpenAPI spec and emits C++ code.
-  to_openapi   : Parses C++ code and emits an OpenAPI spec.
-  to_docs_json : Generates JSON documentation for API calls.
-  serve_json_rpc: Starts JSON-RPC server.
-```
-
-### `from_openapi`
-
-```
-$ ./build/cdd-cpp from_openapi --help
-Usage:
-  cdd-cpp from_openapi to_sdk_cli -i <spec.json> -o <target_directory>
-  cdd-cpp from_openapi to_sdk_cli --input-dir <specs_dir> -o <target_directory>
-  cdd-cpp from_openapi to_sdk -i <spec.json> -o <target_directory>
-  cdd-cpp from_openapi to_sdk --input-dir <specs_dir> -o <target_directory>
-  cdd-cpp from_openapi to_server -i <spec.json> -o <target_directory>
-  cdd-cpp from_openapi to_server --input-dir <specs_dir> -o <target_directory>
-```
-
-### `to_openapi`
-
-```
-$ ./build/cdd-cpp to_openapi --help
-Usage:
-  cdd-cpp to_openapi -f <path/to/code> [-o <spec.json>]
-```
-
-### `to_docs_json`
-
-```
-$ ./build/cdd-cpp to_docs_json --help
-Usage:
-  cdd-cpp to_docs_json [--no-imports] [--no-wrapping] -i <spec.json> [-o <docs.json>]
-```
