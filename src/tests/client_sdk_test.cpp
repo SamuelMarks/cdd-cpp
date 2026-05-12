@@ -95,7 +95,11 @@ void test_emit_client() {
   paths["/pet/{id}"] = pi;
   spec.paths = paths;
 
-  std::string generated = emit_client(spec);
+  auto generated_files = emit_client(spec);
+  std::string generated = "";
+  for (const auto& [name, content] : generated_files) {
+      generated += content + "\\n";
+  }
 
   assert(generated.find("/// @title Test API") != std::string::npos);
   assert(generated.find("/// @version 1.0.0") != std::string::npos);
@@ -163,7 +167,11 @@ void test_emit_client() {
   pi.post = no_id_op;
   paths["/no_id"] = pi;
   spec.paths = paths;
-  std::string generated2 = emit_client(spec);
+  auto generated2_files = emit_client(spec);
+  std::string generated2 = "";
+  for (const auto& [name, content] : generated2_files) {
+      generated2 += content + "\\n";
+  }
 
   std::cout << "client_sdk::test_emit_client passed.\n";
 }

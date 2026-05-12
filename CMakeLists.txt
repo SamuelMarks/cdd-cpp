@@ -15,7 +15,7 @@ if(CDD_EXTREME_CHECKS)
         set(EXTREME_FLAGS /W4 /WX /fsanitize=address)
         set(EXTREME_LINK_FLAGS /fsanitize=address)
     else()
-        set(EXTREME_FLAGS -Wall -Wextra -Wpedantic -Werror -Wno-uninitialized -Wno-missing-field-initializers -fsanitize=address,undefined -g -fno-omit-frame-pointer)
+        set(EXTREME_FLAGS -Wall -Wextra -Wpedantic -Werror -Wno-deprecated-literal-operator -Wno-uninitialized -Wno-missing-field-initializers -fsanitize=address,undefined -g -fno-omit-frame-pointer)
         set(EXTREME_LINK_FLAGS -fsanitize=address,undefined)
     endif()
 else()
@@ -37,28 +37,33 @@ endif()
 
 option(USE_VCPKG "Use vcpkg for dependencies" OFF)
 
-
 if (DEFINED CMAKE_TOOLCHAIN_FILE AND CMAKE_TOOLCHAIN_FILE MATCHES "vcpkg")
     set(USE_VCPKG ON)
 endif()
 
+include(FetchContent)
+
+# -----------------
+# simdjson
+# -----------------
 if (USE_VCPKG)
     find_package(simdjson CONFIG REQUIRED)
-    if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-        find_package(CURL REQUIRED)
-        find_package(PostgreSQL REQUIRED)
-    endif()
 else()
-    include(FetchContent)
-    
     FetchContent_Declare(
         simdjson
         GIT_REPOSITORY https://github.com/simdjson/simdjson.git
         GIT_TAG v3.9.5
     )
     FetchContent_MakeAvailable(simdjson)
+endif()
 
-    if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    # -----------------
+    # CURL
+    # -----------------
+    if (USE_VCPKG)
+        find_package(CURL REQUIRED)
+    else()
         find_package(CURL QUIET)
         if(NOT CURL_FOUND)
             FetchContent_Declare(
@@ -75,7 +80,14 @@ else()
             set(CURL_USE_LIBSSH2 OFF CACHE BOOL "" FORCE)
             FetchContent_MakeAvailable(curl)
         endif()
+    endif()
 
+    # -----------------
+    # PostgreSQL
+    # -----------------
+    if (USE_VCPKG)
+        find_package(PostgreSQL REQUIRED)
+    else()
         find_package(PostgreSQL QUIET)
         if(NOT PostgreSQL_FOUND)
             if(POLICY CMP0135)
@@ -84,10 +96,11 @@ else()
             FetchContent_Declare(
                 postgresql
                 URL "https://ftp.postgresql.org/pub/source/v15.5/postgresql-15.5.tar.bz2"
+                PATCH_COMMAND ${CMAKE_COMMAND} -E touch CMakeLists.txt
             )
-            FetchContent_GetProperties(postgresql)
-            if(NOT postgresql_POPULATED)
-                FetchContent_Populate(postgresql)
+            FetchContent_MakeAvailable(postgresql)
+            
+            if(NOT TARGET PostgreSQL::PostgreSQL)
                 add_library(PostgreSQL::PostgreSQL INTERFACE IMPORTED)
                 set_target_properties(PostgreSQL::PostgreSQL PROPERTIES
                     INTERFACE_INCLUDE_DIRECTORIES "${postgresql_SOURCE_DIR}/src/interfaces/libpq;${postgresql_SOURCE_DIR}/src/include"
@@ -117,7 +130,7 @@ enable_extreme_checks(cdd_lib)
 target_link_libraries(cdd_lib PUBLIC simdjson simdjson::simdjson)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-    target_link_libraries(cdd_lib PUBLIC PostgreSQL::PostgreSQL)
+    
     if(USE_VCPKG)
         target_link_libraries(cdd_lib PUBLIC CURL::libcurl)
     else()

@@ -220,28 +220,42 @@ int main_impl(int argc, char **argv, std::ostream &out,
 
     std::string code = "";
     std::string filename = "generated.cpp";
+    std::map<std::string, std::string> multiple_files;
+
     if (subcommand == "to_sdk_cli") {
       code = client_sdk_cli::emit_cli(spec);
       filename = "generated_cli.cpp";
     } else if (subcommand == "to_sdk") {
-      code = client_sdk::emit_client(spec);
-      filename = "generated_client.hpp";
+      multiple_files = client_sdk::emit_client(spec);
     } else if (subcommand == "to_server") {
-      code = "// Server implementation placeholder\n";
+      code = "// Server implementation placeholder\\n";
       filename = "generated_server.cpp";
     } else {
-      err << "Unknown subcommand: " << subcommand << "\n";
+      err << "Unknown subcommand: " << subcommand << "\\n";
       return 1;
     }
 
-    std::string out_path = output + "/" + filename;
-    std::ofstream out_file(out_path);
-    if (!out_file) {
-      err << "Could not open output file: " << out_path << "\n";
-      return 1;
+    if (!multiple_files.empty()) {
+        for (const auto& [fname, content] : multiple_files) {
+            std::string out_path = output + "/" + fname;
+            std::ofstream out_file(out_path);
+            if (!out_file) {
+                err << "Could not open output file: " << out_path << "\\n";
+                return 1;
+            }
+            out_file << content;
+            out << "Successfully generated " << out_path << "\\n";
+        }
+    } else {
+        std::string out_path = output + "/" + filename;
+        std::ofstream out_file(out_path);
+        if (!out_file) {
+          err << "Could not open output file: " << out_path << "\\n";
+          return 1;
+        }
+        out_file << code;
+        out << "Successfully generated " << out_path << "\\n";
     }
-    out_file << code;
-    out << "Successfully generated " << out_path << "\n";
 
     if (!no_installable_package) {
       std::string cmake_path = output + "/CMakeLists.txt";

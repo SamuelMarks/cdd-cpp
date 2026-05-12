@@ -38,9 +38,11 @@ void sync_command(const std::string &code_dir,
   mock_fs << mock_code << "\n";
 
   // Regenerate Client
-  std::string client_code = client_sdk::emit_client(merged_spec);
-  std::ofstream client_fs(code_dir + "/client_generated.hpp");
-  client_fs << client_code << "\n";
+  auto client_files = client_sdk::emit_client(merged_spec);
+  for (const auto& [filename, content] : client_files) {
+    std::ofstream client_fs(code_dir + "/" + filename);
+    client_fs << content << "\n";
+  }
 
   std::cout << "Updated mocks and clients in " << code_dir << "\n";
 }
