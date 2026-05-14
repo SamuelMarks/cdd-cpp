@@ -5,6 +5,7 @@
 #include "../utils/cpp_parser.hpp"
 #include <fstream>
 #include <iostream>
+#include <filesystem>
 
 namespace cdd_cpp::cli {
 
@@ -40,7 +41,13 @@ void sync_command(const std::string &code_dir,
   // Regenerate Client
   auto client_files = client_sdk::emit_client(merged_spec);
   for (const auto& [filename, content] : client_files) {
-    std::ofstream client_fs(code_dir + "/" + filename);
+    std::string out_path = code_dir + "/" + filename;
+    std::filesystem::path p(out_path);
+    if (p.has_parent_path()) {
+        std::error_code ec;
+        std::filesystem::create_directories(p.parent_path(), ec);
+    }
+    std::ofstream client_fs(out_path);
     client_fs << content << "\n";
   }
 

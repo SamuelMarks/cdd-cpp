@@ -4,6 +4,8 @@
 #include "../models/emit.hpp"
 #include <sstream>
 
+#include "../mocks/emit.hpp"
+
 namespace cdd_cpp::client_sdk {
 
 std::string map_type(const openapi::Schema &schema) noexcept {
@@ -35,12 +37,13 @@ std::string map_type(const openapi::Schema &schema) noexcept {
   return "std::string";
 }
 
-std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec) noexcept {
+std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec, bool no_github_actions, bool no_installable_package, bool tests) noexcept {
   std::map<std::string, std::string> result;
 
   // 1. models.hpp
   std::stringstream m_hpp;
   m_hpp << "#pragma once\n";
+  m_hpp << "#define SIMDJSON_STATIC_REFLECTION 1\n";
   m_hpp << "#include <string>\n";
   m_hpp << "#include <vector>\n";
   m_hpp << "#include <optional>\n";
@@ -66,116 +69,15 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec) noe
         }
       }
       m_hpp << "    };\n\n";
-      m_hpp << "    " << name << " from_json_" << name << "(simdjson::ondemand::value val);\n";
-      m_hpp << "    std::string to_json(const " << name << "& obj);\n\n";
     }
   }
   m_hpp << "}\n";
-  result["models.hpp"] = m_hpp.str();
+  result["src/models.hpp"] = m_hpp.str();
 
-  // 2. models.cpp
+  // 2. models.cpp (Empty because we use C++26 reflection in the header)
   std::stringstream m_cpp;
   m_cpp << "#include \"models.hpp\"\n";
-  m_cpp << "#include <sstream>\n";
-  m_cpp << "#include <iomanip>\n\n";
-  m_cpp << "namespace cdd_models {\n\n";
-
-  m_cpp << "    static void escape_string(std::stringstream& ss, const std::string &str) noexcept {\n";
-  m_cpp << "        ss << '\"';\n";
-  m_cpp << "        for (unsigned char c : str) {\n";
-  m_cpp << "            if (c == '\"') ss << \"\\\\\\\"\";\n";
-  m_cpp << "            else if (c == '\\') ss << \"\\\\\\\\\";\n";
-  m_cpp << "            else if (c == '\b') ss << \"\\\\b\";\n";
-  m_cpp << "            else if (c == '\f') ss << \"\\\\f\";\n";
-  m_cpp << "            else if (c == '\n') ss << \"\\\\n\";\n";
-  m_cpp << "            else if (c == '\r') ss << \"\\\\r\";\n";
-  m_cpp << "            else if (c == '\t') ss << \"\\\\t\";\n";
-  m_cpp << "            else if (c <= 0x1f) {\n";
-  m_cpp << "                ss << \"\\\\u\" << std::hex << std::setw(4) << std::setfill('0') << (int)c << std::dec;\n";
-  m_cpp << "            } else ss << c;\n";
-  m_cpp << "        }\n";
-  m_cpp << "        ss << '\"';\n";
-  m_cpp << "    }\n\n";
-
-  if (spec.components && spec.components->schemas) {
-    for (const auto &[name, schema] : *spec.components->schemas) {
-      m_cpp << "    " << name << " from_json_" << name << "(simdjson::ondemand::value val) {\n";
-      m_cpp << "        " << name << " obj;\n";
-      
-      if (schema.properties) {
-        for (const auto &[prop_name, prop_schema] : *schema.properties) {
-          std::string type = map_type(prop_schema);
-          
-          m_cpp << "        simdjson::ondemand::value val_" << prop_name << ";\n";
-          m_cpp << "        if (val[\"" << prop_name << "\"].get(val_" << prop_name << ") == simdjson::SUCCESS) {\n";
-          
-          if (type == "int") {
-            m_cpp << "            obj." << prop_name << " = val_" << prop_name << ".get_int64();\n";
-          } else if (type == "double") {
-            m_cpp << "            obj." << prop_name << " = val_" << prop_name << ".get_double();\n";
-          } else if (type == "bool") {
-            m_cpp << "            obj." << prop_name << " = val_" << prop_name << ".get_bool();\n";
-          } else if (type == "std::string") {
-            m_cpp << "            obj." << prop_name << " = std::string(val_" << prop_name << ".get_string().value());\n";
-          } else {
-            // Nested object or array not fully implemented in this minimal snippet
-            m_cpp << "            // nested object or array\n";
-          }
-          m_cpp << "        }\n";
-        }
-      }
-      
-      m_cpp << "        return obj;\n";
-      m_cpp << "    }\n\n";
-
-      m_cpp << "    std::string to_json(const " << name << "& obj) {\n";
-      m_cpp << "        std::stringstream ss;\n";
-      m_cpp << "        ss << \"{\";\n";
-      m_cpp << "        bool first = true;\n";
-      
-      if (schema.properties) {
-        for (const auto &[prop_name, prop_schema] : *schema.properties) {
-          bool is_required = false;
-          if (schema.required) {
-            for (const auto &req : *schema.required) {
-              if (req == prop_name) is_required = true;
-            }
-          }
-          std::string type = map_type(prop_schema);
-          
-          if (!is_required) {
-            m_cpp << "        if (obj." << prop_name << ".has_value()) {\n";
-          }
-          
-          m_cpp << "        if (!first) ss << \",\";\n";
-          m_cpp << "        first = false;\n";
-          m_cpp << "        escape_string(ss, \"" << prop_name << "\");\n";
-          m_cpp << "        ss << \":\";\n";
-          
-          std::string val_ref = is_required ? ("obj." + prop_name) : ("obj." + prop_name + ".value()");
-          if (type == "int" || type == "double") {
-            m_cpp << "        ss << " << val_ref << ";\n";
-          } else if (type == "bool") {
-            m_cpp << "        ss << (" << val_ref << " ? \"true\" : \"false\");\n";
-          } else if (type == "std::string") {
-            m_cpp << "        escape_string(ss, " << val_ref << ");\n";
-          } else {
-             m_cpp << "        ss << \"null\";\n";
-          }
-          
-          if (!is_required) {
-            m_cpp << "        }\n";
-          }
-        }
-      }
-      
-      m_cpp << "        ss << \"}\";\n";
-      m_cpp << "        return ss.str();\n";
-      m_cpp << "    }\n\n";
-    }
-  }
-  m_cpp << "}\n";
-  result["models.cpp"] = m_cpp.str();
+  result["src/models.cpp"] = m_cpp.str();
 
   // 3. client.hpp
   std::stringstream c_hpp;
@@ -245,7 +147,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec) noe
 
   c_hpp << "    };\n";
   c_hpp << "}\n";
-  result["client.hpp"] = c_hpp.str();
+  result["src/client.hpp"] = c_hpp.str();
 
   // 4. client.cpp
   std::stringstream c_cpp;
@@ -299,11 +201,22 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec) noe
         c_cpp << "        std::string full_url = base_url + \"" << path << "\";\n";
 
         for (const auto &p : all_params) {
+          std::string to_str = p.name;
+          std::string type = "std::string";
+          if (p.schema && p.schema->type) {
+            if (*p.schema->type == "integer") type = "int";
+            else if (*p.schema->type == "boolean") type = "bool";
+            else if (*p.schema->type == "number") type = "double";
+          }
+          if (type != "std::string") {
+            to_str = "std::to_string(" + p.name + ")";
+          }
+
           if (p.in == "path") {
-            c_cpp << "        full_url.replace(full_url.find(\"{" << p.name << "}\"), " << p.name.length() + 2 << ", std::to_string(" << p.name << "));\n";
+            c_cpp << "        full_url.replace(full_url.find(\"{" << p.name << "}\"), " << p.name.length() + 2 << ", " << to_str << ");\n";
           } else if (p.in == "query") {
             c_cpp << "        full_url += (full_url.find('?') == std::string::npos ? \"?\" : \"&\");\n";
-            c_cpp << "        full_url += \"" << p.name << "=\" + std::to_string(" << p.name << ");\n";
+            c_cpp << "        full_url += \"" << p.name << "=\" + " << to_str << ";\n";
           }
         }
 
@@ -341,7 +254,107 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec) noe
   }
 
   c_cpp << "}\n";
-  result["client.cpp"] = c_cpp.str();
+  result["src/client.cpp"] = c_cpp.str();
+
+  if (!no_installable_package) {
+      std::string cmake_content = "cmake_minimum_required(VERSION 3.15)\n"
+                                 "project(generated_project LANGUAGES CXX)\n"
+                                 "set(CMAKE_CXX_STANDARD 26)\n"
+                                 "add_subdirectory(src)\n";
+      if (tests) {
+          cmake_content += "enable_testing()\n";
+          cmake_content += "add_subdirectory(tests)\n";
+      }
+      result["CMakeLists.txt"] = cmake_content;
+      result["src/CMakeLists.txt"] = "set(HEADERS models.hpp client.hpp)\n"
+                                     "set(SOURCES models.cpp client.cpp)\n"
+                                     "add_library(generated_sdk ${SOURCES} ${HEADERS})\n"
+                                     "target_include_directories(generated_sdk PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})\n"
+                                     "install(TARGETS generated_sdk)\n";
+  }
+
+  if (tests) {
+      result["tests/mocks.hpp"] = mocks::emit(spec);
+      result["tests/CMakeLists.txt"] = "include(FetchContent)\n"
+                                       "FetchContent_Declare(\n"
+                                       "  googletest\n"
+                                       "  GIT_REPOSITORY https://github.com/google/googletest.git\n"
+                                       "  GIT_TAG release-1.12.1\n"
+                                       ")\n"
+                                       "FetchContent_MakeAvailable(googletest)\n"
+                                       "add_executable(client_test client_test.cpp)\n"
+                                       "target_link_libraries(client_test gtest_main gmock generated_sdk)\n"
+                                       "include(GoogleTest)\n"
+                                       "gtest_discover_tests(client_test)\n";
+      
+      std::stringstream t_cpp;
+      t_cpp << "#include <gtest/gtest.h>\n"
+            << "#include \"../src/client.hpp\"\n\n";
+
+      if (spec.paths.has_value() && !spec.paths->empty()) {
+        for (const auto &[path, item] : spec.paths.value()) {
+            auto emit_test = [&](const std::string &/*method*/, const std::optional<openapi::Operation> &op) {
+                if (!op.has_value()) return;
+                std::string func_name = op->operationId.value_or("request");
+                
+                t_cpp << "TEST(ClientTest, " << func_name << "Test) {\n";
+                std::vector<openapi::Parameter> all_params;
+                if (item.parameters) for (const auto &p : *item.parameters) all_params.push_back(p);
+                if (op->parameters) for (const auto &p : *op->parameters) all_params.push_back(p);
+                
+                std::string call_args = "";
+                for (size_t i = 0; i < all_params.size(); ++i) {
+                  const auto &p = all_params[i];
+                  std::string val = "\"test_string\"";
+                  if (p.schema && p.schema->type) {
+                      if (*p.schema->type == "integer") { val = "1"; }
+                      else if (*p.schema->type == "boolean") { val = "true"; }
+                      else if (*p.schema->type == "number") { val = "1.0"; }
+                  }
+                  
+                  if (i > 0) call_args += ", ";
+                  call_args += val;
+                }
+                
+                if (op->requestBody) {
+                    if (!call_args.empty()) call_args += ", ";
+                    call_args += "\"{\\\"test\\\":\\\"string\\\"}\"";
+                }
+
+                t_cpp << "    cdd_client::Client client(\"http://localhost:8080/api/v3\");\n";
+                t_cpp << "    auto res = client." << func_name << "(" << call_args << ");\n";
+                t_cpp << "    if (!res.has_value()) {\n";
+                t_cpp << "        FAIL() << \"Network error: \" << res.error();\n";
+                t_cpp << "    }\n";
+                t_cpp << "    SUCCEED();\n";
+                t_cpp << "}\n\n";
+            };
+
+            emit_test("GET", item.get);
+            emit_test("POST", item.post);
+            emit_test("PUT", item.put);
+            emit_test("DELETE", item.delete_op);
+            emit_test("PATCH", item.patch);
+        }
+      }
+      result["tests/client_test.cpp"] = t_cpp.str();
+  }
+
+  if (!no_github_actions) {
+      std::string ci_content = "name: CI\n"
+                               "on: [push]\n"
+                               "jobs:\n"
+                               "  build:\n"
+                               "    runs-on: ubuntu-latest\n"
+                               "    steps:\n"
+                               "      - uses: actions/checkout@v3\n"
+                               "      - run: cmake . && make\n";
+      if (tests) {
+          ci_content += "      - run: cd tests && ./client_test\n";
+      }
+      result[".github/workflows/ci.yml"] = ci_content;
+  }
+
 
   return result;
 }

@@ -5,6 +5,7 @@ openapi_versions
 3.2.0.md
 custom_bin/
 build/
+build_*/
 *.orig
 *.patch
 *.rej
@@ -26,6 +27,7 @@ test_regex.cpp
 test_fetch/
 test_fetch.cmake
 __pycache__/
+test_*/
 
 # Scratch files added during refactor
 /a.out

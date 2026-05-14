@@ -73,8 +73,10 @@ void emit_docstrings(std::stringstream &ss, const openapi::Schema &schema,
 
 std::string emit(const openapi::OpenAPI &spec) noexcept {
   std::stringstream ss;
-  ss << "#pragma once\n#include <string>\n#include <vector>\n#include "
-        "<optional>\n\n";
+  ss << "#pragma once\n";
+  ss << "#define SIMDJSON_STATIC_REFLECTION 1\n";
+  ss << "#include <simdjson.h>\n";
+  ss << "#include <string>\n#include <vector>\n#include <optional>\n\n";
 
   ss << "namespace cdd_models {\n\n";
 

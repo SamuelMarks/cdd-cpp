@@ -67,7 +67,11 @@ void test_emit_cli() {
   pi.get = get_op;
   spec.paths = std::map<std::string, openapi::PathItem>{{"/pet", pi}};
 
-  std::string generated = emit_cli(spec);
+  auto generated_files = emit_cli(spec);
+  std::string generated = "";
+  for (const auto& [name, content] : generated_files) {
+      generated += content + "\n";
+  }
 
   assert(generated.find("Test CLI") != std::string::npos);
   assert(generated.find("@tags cli") != std::string::npos);

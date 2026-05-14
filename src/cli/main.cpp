@@ -165,6 +165,7 @@ int main_impl(int argc, char **argv, std::ostream &out,
     std::string output;
     bool no_github_actions = false;
     bool no_installable_package = false;
+    bool tests = false;
 
     for (int i = 3; i < argc; ++i) {
       std::string arg = argv[i];
@@ -178,6 +179,8 @@ int main_impl(int argc, char **argv, std::ostream &out,
         no_github_actions = true;
       } else if (arg == "--no-installable-package") {
         no_installable_package = true;
+      } else if (arg == "--tests") {
+        tests = true;
       }
     }
 
@@ -188,6 +191,8 @@ int main_impl(int argc, char **argv, std::ostream &out,
         get_bool_arg_or_env(no_github_actions, "CDD_CPP_NO_GITHUB_ACTIONS");
     no_installable_package = get_bool_arg_or_env(
         no_installable_package, "CDD_CPP_NO_INSTALLABLE_PACKAGE");
+    tests = get_bool_arg_or_env(
+        tests, "CDD_CPP_TESTS");
 
     if (input.empty() && input_dir.empty()) {
       err << "Missing -i <spec.json> or --input-dir <specs_dir>\n";
@@ -218,68 +223,72 @@ int main_impl(int argc, char **argv, std::ostream &out,
     }
     auto spec = *spec_res;
 
-    std::string code = "";
-    std::string filename = "generated.cpp";
     std::map<std::string, std::string> multiple_files;
 
     if (subcommand == "to_sdk_cli") {
-      code = client_sdk_cli::emit_cli(spec);
-      filename = "generated_cli.cpp";
+      multiple_files = client_sdk_cli::emit_cli(spec, no_github_actions, no_installable_package, tests);
     } else if (subcommand == "to_sdk") {
-      multiple_files = client_sdk::emit_client(spec);
+      multiple_files = client_sdk::emit_client(spec, no_github_actions, no_installable_package, tests);
     } else if (subcommand == "to_server") {
-      code = "// Server implementation placeholder\\n";
-      filename = "generated_server.cpp";
+      multiple_files["src/generated_server.cpp"] = "// Server implementation placeholder\n";
+      if (!no_installable_package) {
+          std::string cmake_content = "cmake_minimum_required(VERSION 3.15)\nproject(generated_project LANGUAGES CXX)\nset(CMAKE_CXX_STANDARD 26)\nadd_subdirectory(src)\n";
+          if (tests) {
+              cmake_content += "add_subdirectory(tests)\n";
+          }
+          multiple_files["CMakeLists.txt"] = cmake_content;
+          multiple_files["src/CMakeLists.txt"] = "set(HEADERS )\n"
+                                                 "set(SOURCES generated_server.cpp)\n"
+                                                 "add_executable(generated_bin ${SOURCES} ${HEADERS})\n"
+                                                 "install(TARGETS generated_bin)\n";
+      }
+      
+      if (tests) {
+          multiple_files["tests/CMakeLists.txt"] = "include(FetchContent)\n"
+                                                   "FetchContent_Declare(\n"
+                                                   "  googletest\n"
+                                                   "  GIT_REPOSITORY https://github.com/google/googletest.git\n"
+                                                   "  GIT_TAG release-1.12.1\n"
+                                                   ")\n"
+                                                   "FetchContent_MakeAvailable(googletest)\n"
+                                                   "add_executable(server_test server_test.cpp)\n"
+                                                   "target_link_libraries(server_test gtest_main gmock)\n"
+                                                   "include(GoogleTest)\n"
+                                                   "gtest_discover_tests(server_test)\n";
+          multiple_files["tests/server_test.cpp"] = "#include <gtest/gtest.h>\n\n"
+                                                    "TEST(ServerTest, BasicTest) {\n"
+                                                    "    EXPECT_TRUE(true);\n"
+                                                    "}\n";
+      }
+
+      if (!no_github_actions) {
+          std::string ci_content = "name: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n      - run: cmake . && make\n";
+          if (tests) {
+              ci_content += "      - run: cd tests && ./server_test\n";
+          }
+          multiple_files[".github/workflows/ci.yml"] = ci_content;
+      }
     } else {
-      err << "Unknown subcommand: " << subcommand << "\\n";
+      err << "Unknown subcommand: " << subcommand << "\n";
       return 1;
     }
 
     if (!multiple_files.empty()) {
         for (const auto& [fname, content] : multiple_files) {
             std::string out_path = output + "/" + fname;
+            std::filesystem::path p(out_path);
+            if (p.has_parent_path()) {
+                std::error_code ec;
+                std::filesystem::create_directories(p.parent_path(), ec);
+            }
             std::ofstream out_file(out_path);
             if (!out_file) {
-                err << "Could not open output file: " << out_path << "\\n";
+                err << "Could not open output file: " << out_path << "\n";
                 return 1;
             }
             out_file << content;
-            out << "Successfully generated " << out_path << "\\n";
+            out << "Successfully generated " << out_path << "\n";
         }
-    } else {
-        std::string out_path = output + "/" + filename;
-        std::ofstream out_file(out_path);
-        if (!out_file) {
-          err << "Could not open output file: " << out_path << "\\n";
-          return 1;
-        }
-        out_file << code;
-        out << "Successfully generated " << out_path << "\\n";
-    }
-
-    if (!no_installable_package) {
-      std::string cmake_path = output + "/CMakeLists.txt";
-      std::ofstream cmake_file(cmake_path);
-      cmake_file << "cmake_minimum_required(VERSION 3.15)\n"
-                 << "project(generated_project LANGUAGES CXX)\n"
-                 << "set(CMAKE_CXX_STANDARD 20)\n"
-                 << "add_executable(generated_bin " << filename << ")\n";
-    }
-
-    if (!no_github_actions) {
-      std::string wf_dir = output + "/.github/workflows";
-      std::error_code ec;
-      std::filesystem::create_directories(wf_dir, ec);
-      std::string ci_path = wf_dir + "/ci.yml";
-      std::ofstream ci_file(ci_path);
-      ci_file << "name: CI\n"
-              << "on: [push]\n"
-              << "jobs:\n"
-              << "  build:\n"
-              << "    runs-on: ubuntu-latest\n"
-              << "    steps:\n"
-              << "      - uses: actions/checkout@v3\n"
-              << "      - run: cmake . && make\n";
     }
 
   } else if (command == "to_openapi") {
