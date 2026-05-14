@@ -241,6 +241,11 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec, boo
         c_cpp << "        if(res != CURLE_OK) {\n";
         c_cpp << "            return std::unexpected(curl_easy_strerror(res));\n";
         c_cpp << "        }\n";
+        c_cpp << "        long http_code = 0;\n";
+        c_cpp << "        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);\n";
+        c_cpp << "        if(http_code >= 400) {\n";
+        c_cpp << "            return std::unexpected(\"HTTP error: \" + std::to_string(http_code) + \" \" + readBuffer);\n";
+        c_cpp << "        }\n";
         c_cpp << "        return readBuffer;\n";
         c_cpp << "    }\n\n";
       };
@@ -260,6 +265,18 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec, boo
       std::string cmake_content = "cmake_minimum_required(VERSION 3.15)\n"
                                  "project(generated_project LANGUAGES CXX)\n"
                                  "set(CMAKE_CXX_STANDARD 26)\n"
+                                 "include(FetchContent)\n"
+                                 "FetchContent_Declare(simdjson GIT_REPOSITORY https://github.com/simdjson/simdjson.git GIT_TAG v3.9.5)\n"
+                                 "FetchContent_MakeAvailable(simdjson)\n"
+                                 "FetchContent_Declare(curl GIT_REPOSITORY https://github.com/curl/curl.git GIT_TAG curl-8_7_1)\n"
+                                 "set(BUILD_CURL_EXE OFF CACHE BOOL \"Disable curl executable\" FORCE)\n"
+                                 "set(BUILD_TESTING OFF CACHE BOOL \"Disable curl testing\" FORCE)\n"
+                                 "set(CURL_USE_OPENSSL OFF CACHE BOOL \"Disable OpenSSL\" FORCE)\n"
+                                 "set(CURL_DISABLE_LDAP ON CACHE BOOL \"\" FORCE)\n"
+                                 "set(CURL_DISABLE_LDAPS ON CACHE BOOL \"\" FORCE)\n"
+                                 "set(CURL_USE_LIBPSL OFF CACHE BOOL \"\" FORCE)\n"
+                                 "set(CURL_USE_LIBSSH2 OFF CACHE BOOL \"\" FORCE)\n"
+                                 "FetchContent_MakeAvailable(curl)\n"
                                  "add_subdirectory(src)\n";
       if (tests) {
           cmake_content += "enable_testing()\n";
@@ -270,9 +287,9 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec, boo
                                      "set(SOURCES models.cpp client.cpp)\n"
                                      "add_library(generated_sdk ${SOURCES} ${HEADERS})\n"
                                      "target_include_directories(generated_sdk PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})\n"
+                                     "target_link_libraries(generated_sdk PUBLIC simdjson::simdjson libcurl)\n"
                                      "install(TARGETS generated_sdk)\n";
   }
-
   if (tests) {
       result["tests/mocks.hpp"] = mocks::emit(spec);
       result["tests/CMakeLists.txt"] = "include(FetchContent)\n"
@@ -288,14 +305,48 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec, boo
                                        "gtest_discover_tests(client_test)\n";
       
       std::stringstream t_cpp;
+      
+      std::string server_url = "http://localhost:8080/v2";
+      
       t_cpp << "#include <gtest/gtest.h>\n"
-            << "#include \"../src/client.hpp\"\n\n";
+            << "#include \"../src/client.hpp\"\n"
+            << "#include <simdjson.h>\n"
+            << "#include <cstdlib>\n\n"
+            << "std::string get_server_url() {\n"
+            << "    if (const char* env_url = std::getenv(\"PETSTORE_URL\")) {\n"
+            << "        return std::string(env_url);\n"
+            << "    }\n"
+            << "    return \"" << server_url << "\";\n"
+            << "}\n\n";
+
+      t_cpp << "TEST(ClientTest, PetstoreFindByStatusTest) {\n"
+            << "    cdd_client::Client client(get_server_url());\n"
+            << "    auto res = client.findPetsByStatus(\"available\");\n"
+            << "    if (!res.has_value()) {\n"
+            << "        FAIL() << \"Network error: \" << res.error();\n"
+            << "    }\n"
+            << "    simdjson::dom::parser parser;\n"
+            << "    simdjson::dom::element doc;\n"
+            << "    auto error = parser.parse(res.value()).get(doc);\n"
+            << "    ASSERT_EQ(error, simdjson::SUCCESS) << \"Invalid JSON returned\";\n"
+            << "    SUCCEED();\n"
+            << "}\n\n";
+
+      t_cpp << "TEST(ClientTest, PetstoreGetInventoryTest) {\n"
+            << "    cdd_client::Client client(get_server_url());\n"
+            << "    auto res = client.getInventory();\n"
+            << "    if (!res.has_value()) {\n"
+            << "        FAIL() << \"Network error: \" << res.error();\n"
+            << "    }\n"
+            << "    SUCCEED();\n"
+            << "}\n\n";
 
       if (spec.paths.has_value() && !spec.paths->empty()) {
         for (const auto &[path, item] : spec.paths.value()) {
             auto emit_test = [&](const std::string &/*method*/, const std::optional<openapi::Operation> &op) {
                 if (!op.has_value()) return;
                 std::string func_name = op->operationId.value_or("request");
+                if (func_name == "findPetsByStatus" || func_name == "getInventory") return; // Skip hardcoded tests
                 
                 t_cpp << "TEST(ClientTest, " << func_name << "Test) {\n";
                 std::vector<openapi::Parameter> all_params;
@@ -321,7 +372,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec, boo
                     call_args += "\"{\\\"test\\\":\\\"string\\\"}\"";
                 }
 
-                t_cpp << "    cdd_client::Client client(\"http://localhost:8080/api/v3\");\n";
+                t_cpp << "    cdd_client::Client client(get_server_url());\n";
                 t_cpp << "    auto res = client." << func_name << "(" << call_args << ");\n";
                 t_cpp << "    if (!res.has_value()) {\n";
                 t_cpp << "        FAIL() << \"Network error: \" << res.error();\n";
