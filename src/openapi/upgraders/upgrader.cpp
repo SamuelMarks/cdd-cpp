@@ -257,6 +257,16 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
     jw.raw_value(simdjson::minify(info_el));
   }
 
+  // Copy top-level properties
+  for (auto field : root) {
+    std::string key(field.key);
+    if (key == "tags" || key == "externalDocs" || key == "security" ||
+        key.starts_with("x-")) {
+      jw.key(key);
+      jw.raw_value(simdjson::minify(field.value));
+    }
+  }
+
   std::string host = "";
   std::string basePath = "";
   simdjson::dom::element host_el, bp_el, schemes_el;
@@ -303,6 +313,69 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
   if (global_produces.empty())
     global_produces.push_back("application/json");
 
+  // Helper lambda to process parameters
+  auto process_parameters = [&](simdjson::dom::element params_el) {
+    std::string body_param_raw = "";
+    std::vector<std::string> form_params;
+    jw.key("parameters");
+    jw.start_array();
+    if (params_el.is_array()) {
+      for (auto p : params_el.get_array()) {
+        if (p.is_object()) {
+          auto p_obj = p.get_object().value();
+          simdjson::dom::element in_el;
+          if (p_obj["in"].get(in_el) == simdjson::SUCCESS) {
+            std::string in_val(in_el.get_string().value());
+            if (in_val == "body") {
+              simdjson::dom::element schema_el;
+              if (p_obj["schema"].get(schema_el) == simdjson::SUCCESS) {
+                body_param_raw = simdjson::minify(schema_el);
+              }
+            } else if (in_val == "formData") {
+              form_params.push_back(simdjson::minify(p));
+            } else {
+              jw.start_object();
+              for (auto pp : p_obj) {
+                std::string pk(pp.key);
+                if (pk == "type" || pk == "format" || pk == "items" ||
+                    pk == "collectionFormat" || pk == "default" ||
+                    pk == "maximum" || pk == "exclusiveMaximum" ||
+                    pk == "minimum" || pk == "exclusiveMinimum" ||
+                    pk == "maxLength" || pk == "minLength" || pk == "pattern" ||
+                    pk == "maxItems" || pk == "minItems" ||
+                    pk == "uniqueItems" || pk == "enum" || pk == "multipleOf")
+                  continue; // Move to schema
+                jw.key(pk);
+                jw.raw_value(simdjson::minify(pp.value));
+              }
+              jw.key("schema");
+              jw.start_object();
+              for (auto pp : p_obj) {
+                std::string pk(pp.key);
+                if (pk == "type" || pk == "format" || pk == "items" ||
+                    pk == "default" || pk == "maximum" ||
+                    pk == "exclusiveMaximum" || pk == "minimum" ||
+                    pk == "exclusiveMinimum" || pk == "maxLength" ||
+                    pk == "minLength" || pk == "pattern" || pk == "maxItems" ||
+                    pk == "minItems" || pk == "uniqueItems" || pk == "enum" ||
+                    pk == "multipleOf") {
+                  jw.key(pk);
+                  jw.raw_value(simdjson::minify(pp.value));
+                }
+              }
+              jw.end_object();
+              jw.end_object();
+            }
+          } else {
+            jw.raw_value(simdjson::minify(p)); // $ref or other
+          }
+        }
+      }
+    }
+    jw.end_array();
+    return std::make_pair(body_param_raw, form_params);
+  };
+
   simdjson::dom::element paths_el;
   if (root["paths"].get(paths_el) == simdjson::SUCCESS &&
       paths_el.is_object()) {
@@ -316,7 +389,12 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
         for (auto op_field : path_field.value.get_object()) {
           std::string op_method(op_field.key);
           if (op_method == "parameters") {
-            jw.key("parameters");
+            // Path level parameters
+            auto p_res = process_parameters(op_field.value);
+            continue;
+          }
+          if (op_method.starts_with("x-") || op_method == "$ref") {
+            jw.key(op_method);
             jw.raw_value(simdjson::minify(op_field.value));
             continue;
           }
@@ -343,65 +421,17 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
                 local_produces.push_back(std::string(p.get_string().value()));
             }
 
-            std::vector<std::string> form_params;
             std::string body_param_raw = "";
+            std::vector<std::string> form_params;
 
             for (auto op_prop : op_obj) {
               std::string k(op_prop.key);
               if (k == "consumes" || k == "produces")
                 continue;
               if (k == "parameters") {
-                jw.key("parameters");
-                jw.start_array();
-                for (auto p : op_prop.value.get_array()) {
-                  if (p.is_object()) {
-                    auto p_obj = p.get_object().value();
-                    simdjson::dom::element in_el;
-                    if (p_obj["in"].get(in_el) == simdjson::SUCCESS) {
-                      std::string in_val(in_el.get_string().value());
-                      if (in_val == "body") {
-                        // extract body schema
-                        simdjson::dom::element schema_el;
-                        if (p_obj["schema"].get(schema_el) ==
-                            simdjson::SUCCESS) {
-                          body_param_raw = simdjson::minify(schema_el);
-                        }
-                      } else if (in_val == "formData") {
-                        form_params.push_back(simdjson::minify(p));
-                      } else {
-                        // Normal parameter, need to copy type to schema
-                        jw.start_object();
-                        for (auto pp : p_obj) {
-                          std::string pk(pp.key);
-                          if (pk == "type" || pk == "format" || pk == "items")
-                            continue; // Move to schema
-                          jw.key(pk);
-                          jw.raw_value(simdjson::minify(pp.value));
-                        }
-                        jw.key("schema");
-                        jw.start_object();
-                        simdjson::dom::element tel, fel, iel;
-                        if (p_obj["type"].get(tel) == simdjson::SUCCESS) {
-                          jw.key("type");
-                          jw.raw_value(simdjson::minify(tel));
-                        }
-                        if (p_obj["format"].get(fel) == simdjson::SUCCESS) {
-                          jw.key("format");
-                          jw.raw_value(simdjson::minify(fel));
-                        }
-                        if (p_obj["items"].get(iel) == simdjson::SUCCESS) {
-                          jw.key("items");
-                          jw.raw_value(simdjson::minify(iel));
-                        }
-                        jw.end_object();
-                        jw.end_object();
-                      }
-                    } else {
-                      jw.raw_value(simdjson::minify(p));
-                    }
-                  }
-                }
-                jw.end_array();
+                auto p_res = process_parameters(op_prop.value);
+                body_param_raw = p_res.first;
+                form_params = p_res.second;
                 continue;
               }
 
@@ -473,9 +503,7 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
                 jw.key("properties");
                 jw.start_object();
 
-                // Let's just output dummy for simplicity right now unless we
-                // really re-parse
-
+                // Dummy
                 jw.end_object(); // properties
                 jw.end_object(); // schema
                 jw.end_object(); // cons
@@ -493,76 +521,150 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
     jw.end_object(); // paths
   }
 
+  jw.key("components");
+  jw.start_object();
+
   simdjson::dom::element defs_el;
   if (root["definitions"].get(defs_el) == simdjson::SUCCESS) {
-    jw.key("components");
-    jw.start_object();
     jw.key("schemas");
     jw.raw_value(simdjson::minify(defs_el)); // Simplified: direct copy
+  }
 
-    simdjson::dom::element sec_el;
-    if (root["securityDefinitions"].get(sec_el) == simdjson::SUCCESS) {
-      jw.key("securitySchemes");
-      // basic -> http/basic
-      // oauth2 -> flows
+  simdjson::dom::element p_el;
+  if (root["parameters"].get(p_el) == simdjson::SUCCESS && p_el.is_object()) {
+    jw.key("parameters");
+    jw.start_object();
+    for (auto p : p_el.get_object()) {
+      jw.key(std::string(p.key));
       jw.start_object();
-      if (sec_el.is_object()) {
-        for (auto sf : sec_el.get_object()) {
-          jw.key(std::string(sf.key));
-          jw.start_object();
-          if (sf.value.is_object()) {
-            auto sfo = sf.value.get_object().value();
-            simdjson::dom::element type_el;
-            std::string type_val = "";
-            if (sfo["type"].get(type_el) == simdjson::SUCCESS)
-              type_val = type_el.get_string().value();
-
-            if (type_val == "basic") {
-              jw.key_value("type", "http");
-              jw.key_value("scheme", "basic");
-            } else if (type_val == "oauth2") {
-              jw.key_value("type", "oauth2");
-              jw.key("flows");
-              jw.start_object();
-
-              simdjson::dom::element flow_el;
-              std::string flow_val = "implicit";
-              if (sfo["flow"].get(flow_el) == simdjson::SUCCESS)
-                flow_val = flow_el.get_string().value();
-
-              std::string nflow = flow_val;
-              if (nflow == "accessCode")
-                nflow = "authorizationCode";
-              if (nflow == "application")
-                nflow = "clientCredentials";
-
-              jw.key(nflow);
-              jw.start_object();
-              for (auto sfp : sfo) {
-                std::string k(sfp.key);
-                if (k == "type" || k == "flow")
-                  continue;
-                jw.key(k);
-                jw.raw_value(simdjson::minify(sfp.value));
-              }
-              jw.end_object();
-              jw.end_object(); // flows
-            } else {
-              // apikey, etc
-              for (auto sfp : sfo) {
-                jw.key(std::string(sfp.key));
-                jw.raw_value(simdjson::minify(sfp.value));
-              }
-            }
+      if (p.value.is_object()) {
+        auto p_obj = p.value.get_object().value();
+        for (auto pp : p_obj) {
+          std::string pk(pp.key);
+          if (pk == "type" || pk == "format" || pk == "items" ||
+              pk == "collectionFormat" || pk == "default" || pk == "maximum" ||
+              pk == "exclusiveMaximum" || pk == "minimum" ||
+              pk == "exclusiveMinimum" || pk == "maxLength" ||
+              pk == "minLength" || pk == "pattern" || pk == "maxItems" ||
+              pk == "minItems" || pk == "uniqueItems" || pk == "enum" ||
+              pk == "multipleOf")
+            continue; // Move to schema
+          jw.key(pk);
+          jw.raw_value(simdjson::minify(pp.value));
+        }
+        jw.key("schema");
+        jw.start_object();
+        for (auto pp : p_obj) {
+          std::string pk(pp.key);
+          if (pk == "type" || pk == "format" || pk == "items" ||
+              pk == "default" || pk == "maximum" || pk == "exclusiveMaximum" ||
+              pk == "minimum" || pk == "exclusiveMinimum" ||
+              pk == "maxLength" || pk == "minLength" || pk == "pattern" ||
+              pk == "maxItems" || pk == "minItems" || pk == "uniqueItems" ||
+              pk == "enum" || pk == "multipleOf") {
+            jw.key(pk);
+            jw.raw_value(simdjson::minify(pp.value));
           }
-          jw.end_object();
+        }
+        jw.end_object();
+      }
+      jw.end_object();
+    }
+    jw.end_object();
+  }
+
+  simdjson::dom::element r_el;
+  if (root["responses"].get(r_el) == simdjson::SUCCESS && r_el.is_object()) {
+    jw.key("responses");
+    jw.start_object();
+    for (auto r : r_el.get_object()) {
+      jw.key(std::string(r.key));
+      jw.start_object();
+      if (r.value.is_object()) {
+        for (auto rp : r.value.get_object()) {
+          std::string rk(rp.key);
+          if (rk == "schema") {
+            jw.key("content");
+            jw.start_object();
+            for (const auto &prod : global_produces) {
+              jw.key(prod);
+              jw.start_object();
+              jw.key("schema");
+              jw.raw_value(simdjson::minify(rp.value));
+              jw.end_object();
+            }
+            jw.end_object();
+          } else {
+            jw.key(rk);
+            jw.raw_value(simdjson::minify(rp.value));
+          }
         }
       }
       jw.end_object();
     }
-
-    jw.end_object(); // components
+    jw.end_object();
   }
+
+  simdjson::dom::element sec_el;
+  if (root["securityDefinitions"].get(sec_el) == simdjson::SUCCESS) {
+    jw.key("securitySchemes");
+    jw.start_object();
+    if (sec_el.is_object()) {
+      for (auto sf : sec_el.get_object()) {
+        jw.key(std::string(sf.key));
+        jw.start_object();
+        if (sf.value.is_object()) {
+          auto sfo = sf.value.get_object().value();
+          simdjson::dom::element type_el;
+          std::string type_val = "";
+          if (sfo["type"].get(type_el) == simdjson::SUCCESS)
+            type_val = type_el.get_string().value();
+
+          if (type_val == "basic") {
+            jw.key_value("type", "http");
+            jw.key_value("scheme", "basic");
+          } else if (type_val == "oauth2") {
+            jw.key_value("type", "oauth2");
+            jw.key("flows");
+            jw.start_object();
+
+            simdjson::dom::element flow_el;
+            std::string flow_val = "implicit";
+            if (sfo["flow"].get(flow_el) == simdjson::SUCCESS)
+              flow_val = flow_el.get_string().value();
+
+            std::string nflow = flow_val;
+            if (nflow == "accessCode")
+              nflow = "authorizationCode";
+            if (nflow == "application")
+              nflow = "clientCredentials";
+
+            jw.key(nflow);
+            jw.start_object();
+            for (auto sfp : sfo) {
+              std::string k(sfp.key);
+              if (k == "type" || k == "flow")
+                continue;
+              jw.key(k);
+              jw.raw_value(simdjson::minify(sfp.value));
+            }
+            jw.end_object();
+            jw.end_object(); // flows
+          } else {
+            // apikey, etc
+            for (auto sfp : sfo) {
+              jw.key(std::string(sfp.key));
+              jw.raw_value(simdjson::minify(sfp.value));
+            }
+          }
+        }
+        jw.end_object();
+      }
+    }
+    jw.end_object();
+  }
+
+  jw.end_object(); // components
 
   jw.end_object();
   return jw.str();
