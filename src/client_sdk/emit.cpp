@@ -329,6 +329,9 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec, boo
             << "    simdjson::dom::element doc;\n"
             << "    auto error = parser.parse(res.value()).get(doc);\n"
             << "    ASSERT_EQ(error, simdjson::SUCCESS) << \"Invalid JSON returned\";\n"
+            << "    if (doc.is_object() && doc[\"sabotage\"].error() == simdjson::SUCCESS) {\n"
+            << "        FAIL() << \"Invalid schema: sabotage detected\";\n"
+            << "    }\n"
             << "    SUCCEED();\n"
             << "}\n\n";
 
@@ -343,6 +346,9 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec, boo
             << "        simdjson::dom::element doc;\n"
             << "        auto error = parser.parse(res.value()).get(doc);\n"
             << "        ASSERT_EQ(error, simdjson::SUCCESS) << \"Invalid JSON returned\";\n"
+            << "        if (doc.is_object() && doc[\"sabotage\"].error() == simdjson::SUCCESS) {\n"
+            << "            FAIL() << \"Invalid schema: sabotage detected\";\n"
+            << "        }\n"
             << "    }\n"
             << "    SUCCEED();\n"
             << "}\n\n";
@@ -392,6 +398,9 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec, boo
                 t_cpp << "        simdjson::dom::element doc;\n";
                 t_cpp << "        auto error = parser.parse(res.value()).get(doc);\n";
                 t_cpp << "        ASSERT_EQ(error, simdjson::SUCCESS) << \"Invalid JSON returned\";\n";
+                t_cpp << "        if (doc.is_object() && doc[\"sabotage\"].error() == simdjson::SUCCESS) {\n";
+                t_cpp << "            FAIL() << \"Invalid schema: sabotage detected\";\n";
+                t_cpp << "        }\n";
                 t_cpp << "    }\n";
                 t_cpp << "    SUCCEED();\n";
                 t_cpp << "}\n\n";
