@@ -338,6 +338,12 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec, boo
             << "    if (!res.has_value()) {\n"
             << "        FAIL() << \"Network error: \" << res.error();\n"
             << "    }\n"
+            << "    if (!res.value().empty()) {\n"
+            << "        simdjson::dom::parser parser;\n"
+            << "        simdjson::dom::element doc;\n"
+            << "        auto error = parser.parse(res.value()).get(doc);\n"
+            << "        ASSERT_EQ(error, simdjson::SUCCESS) << \"Invalid JSON returned\";\n"
+            << "    }\n"
             << "    SUCCEED();\n"
             << "}\n\n";
 
@@ -369,13 +375,23 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec, boo
                 
                 if (op->requestBody) {
                     if (!call_args.empty()) call_args += ", ";
-                    call_args += "\"{\\\"test\\\":\\\"string\\\"}\"";
+                    std::string payload = "\"{\\\"name\\\":\\\"test\\\",\\\"photoUrls\\\":[]}\"";
+                    if (func_name.find("Array") != std::string::npos || func_name.find("List") != std::string::npos) {
+                        payload = "\"[{\\\"name\\\":\\\"test\\\",\\\"photoUrls\\\":[]}]\"";
+                    }
+                    call_args += payload;
                 }
 
                 t_cpp << "    cdd_client::Client client(get_server_url());\n";
                 t_cpp << "    auto res = client." << func_name << "(" << call_args << ");\n";
                 t_cpp << "    if (!res.has_value()) {\n";
                 t_cpp << "        FAIL() << \"Network error: \" << res.error();\n";
+                t_cpp << "    }\n";
+                t_cpp << "    if (!res.value().empty()) {\n";
+                t_cpp << "        simdjson::dom::parser parser;\n";
+                t_cpp << "        simdjson::dom::element doc;\n";
+                t_cpp << "        auto error = parser.parse(res.value()).get(doc);\n";
+                t_cpp << "        ASSERT_EQ(error, simdjson::SUCCESS) << \"Invalid JSON returned\";\n";
                 t_cpp << "    }\n";
                 t_cpp << "    SUCCEED();\n";
                 t_cpp << "}\n\n";
