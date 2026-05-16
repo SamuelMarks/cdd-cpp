@@ -503,7 +503,26 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
                 jw.key("properties");
                 jw.start_object();
 
-                // Dummy
+                simdjson::dom::parser p_parser;
+                for (const auto& fp : form_params) {
+                  simdjson::dom::element el;
+                  if (p_parser.parse(fp).get(el) == simdjson::SUCCESS && el.is_object()) {
+                    auto obj = el.get_object();
+                    simdjson::dom::element name_el;
+                    if (obj["name"].get(name_el) == simdjson::SUCCESS) {
+                      jw.key(std::string(name_el.get_string().value()));
+                      jw.start_object();
+                      for (auto field : obj) {
+                        std::string k(field.key);
+                        if (k == "name" || k == "in" || k == "required") continue;
+                        jw.key(k);
+                        jw.raw_value(simdjson::minify(field.value));
+                      }
+                      jw.end_object();
+                    }
+                  }
+                }
+
                 jw.end_object(); // properties
                 jw.end_object(); // schema
                 jw.end_object(); // cons

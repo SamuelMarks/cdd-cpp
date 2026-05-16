@@ -64,3 +64,10 @@ patch_simdjson*.py
 src/cli/*.s
 tmp/
 test_tag.s
+
+# Temporary script files
+patch*.py
+patch*.sh
+fix_*.py
+prompt.md
+test_curl*
