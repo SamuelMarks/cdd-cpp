@@ -191,8 +191,7 @@ int main_impl(int argc, char **argv, std::ostream &out,
         get_bool_arg_or_env(no_github_actions, "CDD_CPP_NO_GITHUB_ACTIONS");
     no_installable_package = get_bool_arg_or_env(
         no_installable_package, "CDD_CPP_NO_INSTALLABLE_PACKAGE");
-    tests = get_bool_arg_or_env(
-        tests, "CDD_CPP_TESTS");
+    tests = get_bool_arg_or_env(tests, "CDD_CPP_TESTS");
 
     if (input.empty() && input_dir.empty()) {
       err << "Missing -i <spec.json> or --input-dir <specs_dir>\n";
@@ -226,47 +225,59 @@ int main_impl(int argc, char **argv, std::ostream &out,
     std::map<std::string, std::string> multiple_files;
 
     if (subcommand == "to_sdk_cli") {
-      multiple_files = client_sdk_cli::emit_cli(spec, no_github_actions, no_installable_package, tests);
+      multiple_files = client_sdk_cli::emit_cli(spec, no_github_actions,
+                                                no_installable_package, tests);
     } else if (subcommand == "to_sdk") {
-      multiple_files = client_sdk::emit_client(spec, no_github_actions, no_installable_package, tests);
+      multiple_files = client_sdk::emit_client(spec, no_github_actions,
+                                               no_installable_package, tests);
     } else if (subcommand == "to_server") {
-      multiple_files["src/generated_server.cpp"] = "// Server implementation placeholder\n";
+      multiple_files["src/generated_server.cpp"] =
+          "// Server implementation placeholder\n";
       if (!no_installable_package) {
-          std::string cmake_content = "cmake_minimum_required(VERSION 3.15)\nproject(generated_project LANGUAGES CXX)\nset(CMAKE_CXX_STANDARD 26)\nadd_subdirectory(src)\n";
-          if (tests) {
-              cmake_content += "add_subdirectory(tests)\n";
-          }
-          multiple_files["CMakeLists.txt"] = cmake_content;
-          multiple_files["src/CMakeLists.txt"] = "set(HEADERS )\n"
-                                                 "set(SOURCES generated_server.cpp)\n"
-                                                 "add_executable(generated_bin ${SOURCES} ${HEADERS})\n"
-                                                 "install(TARGETS generated_bin)\n";
+        std::string cmake_content =
+            "cmake_minimum_required(VERSION 3.15)\nproject(generated_project "
+            "LANGUAGES CXX)\nset(CMAKE_CXX_STANDARD "
+            "26)\nadd_subdirectory(src)\n";
+        if (tests) {
+          cmake_content += "add_subdirectory(tests)\n";
+        }
+        multiple_files["CMakeLists.txt"] = cmake_content;
+        multiple_files["src/CMakeLists.txt"] =
+            "set(HEADERS )\n"
+            "set(SOURCES generated_server.cpp)\n"
+            "add_executable(generated_bin ${SOURCES} ${HEADERS})\n"
+            "install(TARGETS generated_bin)\n";
       }
-      
+
       if (tests) {
-          multiple_files["tests/CMakeLists.txt"] = "include(FetchContent)\n"
-                                                   "FetchContent_Declare(\n"
-                                                   "  googletest\n"
-                                                   "  GIT_REPOSITORY https://github.com/google/googletest.git\n"
-                                                   "  GIT_TAG release-1.12.1\n"
-                                                   ")\n"
-                                                   "FetchContent_MakeAvailable(googletest)\n"
-                                                   "add_executable(server_test server_test.cpp)\n"
-                                                   "target_link_libraries(server_test gtest_main gmock)\n"
-                                                   "include(GoogleTest)\n"
-                                                   "gtest_discover_tests(server_test)\n";
-          multiple_files["tests/server_test.cpp"] = "#include <gtest/gtest.h>\n\n"
-                                                    "TEST(ServerTest, BasicTest) {\n"
-                                                    "    EXPECT_TRUE(true);\n"
-                                                    "}\n";
+        multiple_files["tests/CMakeLists.txt"] =
+            "include(FetchContent)\n"
+            "FetchContent_Declare(\n"
+            "  googletest\n"
+            "  GIT_REPOSITORY https://github.com/google/googletest.git\n"
+            "  GIT_TAG release-1.12.1\n"
+            ")\n"
+            "FetchContent_MakeAvailable(googletest)\n"
+            "add_executable(server_test server_test.cpp)\n"
+            "target_link_libraries(server_test gtest_main gmock)\n"
+            "include(GoogleTest)\n"
+            "gtest_discover_tests(server_test)\n";
+        multiple_files["tests/server_test.cpp"] =
+            "#include <gtest/gtest.h>\n\n"
+            "TEST(ServerTest, BasicTest) {\n"
+            "    EXPECT_TRUE(true);\n"
+            "}\n";
       }
 
       if (!no_github_actions) {
-          std::string ci_content = "name: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n      - run: cmake . && make\n";
-          if (tests) {
-              ci_content += "      - run: cd tests && ./server_test\n";
-          }
-          multiple_files[".github/workflows/ci.yml"] = ci_content;
+        std::string ci_content =
+            "name: CI\non: [push]\njobs:\n  build:\n    runs-on: "
+            "ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n    "
+            "  - run: cmake . && make\n";
+        if (tests) {
+          ci_content += "      - run: cd tests && ./server_test\n";
+        }
+        multiple_files[".github/workflows/ci.yml"] = ci_content;
       }
     } else {
       err << "Unknown subcommand: " << subcommand << "\n";
@@ -274,21 +285,21 @@ int main_impl(int argc, char **argv, std::ostream &out,
     }
 
     if (!multiple_files.empty()) {
-        for (const auto& [fname, content] : multiple_files) {
-            std::string out_path = output + "/" + fname;
-            std::filesystem::path p(out_path);
-            if (p.has_parent_path()) {
-                std::error_code ec;
-                std::filesystem::create_directories(p.parent_path(), ec);
-            }
-            std::ofstream out_file(out_path);
-            if (!out_file) {
-                err << "Could not open output file: " << out_path << "\n";
-                return 1;
-            }
-            out_file << content;
-            out << "Successfully generated " << out_path << "\n";
+      for (const auto &[fname, content] : multiple_files) {
+        std::string out_path = output + "/" + fname;
+        std::filesystem::path p(out_path);
+        if (p.has_parent_path()) {
+          std::error_code ec;
+          std::filesystem::create_directories(p.parent_path(), ec);
         }
+        std::ofstream out_file(out_path);
+        if (!out_file) {
+          err << "Could not open output file: " << out_path << "\n";
+          return 1;
+        }
+        out_file << content;
+        out << "Successfully generated " << out_path << "\n";
+      }
     }
 
   } else if (command == "to_openapi") {
@@ -508,21 +519,23 @@ int main(int argc, char **argv) noexcept {
       res.set_header("Access-Control-Allow-Origin", "*");
     });
 
-    svr.Options("/", [](const httplib::Request & /*req*/, httplib::Response &res) {
-      res.set_header("Access-Control-Allow-Origin", "*");
-      res.set_header("Access-Control-Allow-Methods", "POST, OPTIONS");
-      res.set_header("Access-Control-Allow-Headers", "Content-Type");
-      res.set_content("", "text/plain");
-    });
+    svr.Options(
+        "/", [](const httplib::Request & /*req*/, httplib::Response &res) {
+          res.set_header("Access-Control-Allow-Origin", "*");
+          res.set_header("Access-Control-Allow-Methods", "POST, OPTIONS");
+          res.set_header("Access-Control-Allow-Headers", "Content-Type");
+          res.set_content("", "text/plain");
+        });
 
-    std::cout << "JSON RPC server listening on " << listen_host << ":" << port << std::endl;
+    std::cout << "JSON RPC server listening on " << listen_host << ":" << port
+              << std::endl;
     svr.listen(listen_host, std::stoi(port));
     return 0;
   }
 #else
   if (argc >= 2 && std::string(argv[1]) == "serve_json_rpc") {
-      std::cerr << "serve_json_rpc is not supported in WASI builds." << std::endl;
-      return 1;
+    std::cerr << "serve_json_rpc is not supported in WASI builds." << std::endl;
+    return 1;
   }
 #endif
 

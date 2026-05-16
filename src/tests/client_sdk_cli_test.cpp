@@ -69,8 +69,8 @@ void test_emit_cli() {
 
   auto generated_files = emit_cli(spec);
   std::string generated = "";
-  for (const auto& [name, content] : generated_files) {
-      generated += content + "\n";
+  for (const auto &[name, content] : generated_files) {
+    generated += content + "\n";
   }
 
   assert(generated.find("Test CLI") != std::string::npos);

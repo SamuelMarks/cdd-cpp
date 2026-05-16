@@ -23,7 +23,7 @@ def main():
         out = res.stdout + res.stderr
         m = re.search(r'Coverage:\s+([0-9.]+)%', out)
         if not m:
-        m = re.search(r'\s+([0-9.]+)%\s+covered', out)
+            m = re.search(r'\s+([0-9.]+)%\s+covered', out)
         test_cov = int(float(m.group(1))) if m else 0
     except Exception as e:
         print(f'Coverage calculation failed: {e}')

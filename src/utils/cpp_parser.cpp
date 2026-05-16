@@ -30,8 +30,6 @@ map_cpp_type_to_openapi(const std::string &type) {
   return {"object", ""};
 }
 
-
-
 openapi::Schema generate_schema_from_class(const CppClass &cls) {
   openapi::Schema schema;
   schema.type = "object";
@@ -39,7 +37,8 @@ openapi::Schema generate_schema_from_class(const CppClass &cls) {
   if (!cls.docstring.empty()) {
     schema.description = cls.docstring;
   }
-  schema.properties = std::make_shared<std::map<std::string, openapi::Schema>>();
+  schema.properties =
+      std::make_shared<std::map<std::string, openapi::Schema>>();
   for (const auto &field : cls.fields) {
     openapi::Schema field_schema;
     auto [type, format] = map_cpp_type_to_openapi(field.type);
@@ -77,7 +76,8 @@ openapi::OpenAPI parse_cpp_project(const std::string &folder_path) noexcept {
 
         for (const auto &cls : ast.classes) {
           openapi::Schema schema = generate_schema_from_class(cls);
-          spec.components->schemas->insert({schema.title.value_or(cls.name), schema});
+          spec.components->schemas->insert(
+              {schema.title.value_or(cls.name), schema});
         }
       }
     }
@@ -88,6 +88,5 @@ openapi::OpenAPI parse_cpp_project(const std::string &folder_path) noexcept {
 
   return spec;
 }
-
 
 } // namespace cdd_cpp::utils

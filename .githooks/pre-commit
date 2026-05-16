@@ -1,6 +1,26 @@
 #!/bin/bash
 set -e
 
+# Format code
+echo "Formatting code..."
+find src -name '*.cpp' -o -name '*.hpp' | xargs clang-format -i
+
+# Recheck formatting
+if ! git diff --quiet src/; then
+    echo "Formatting changed files. Staging formatting fixes..."
+    git add src/
+    echo "Files automatically formatted and staged. Please commit again."
+    exit 1
+fi
+
+# Lint code
+echo "Linting code..."
+find src -name '*.cpp' -o -name '*.hpp' | xargs cpplint --filter=-legal/copyright,-build/include_order,-build/include_subdir,-whitespace/comments,-build/include_what_you_use,-build/namespaces,-build/c++17,-readability/casting,-whitespace/indent,-whitespace/ending_newline,-readability/braces,-whitespace/blank_line,-build/include,-whitespace/newline,-readability/todo --linelength=120
+
+# Run build
+echo "Building project..."
+make build || { echo "Build failed. Commit aborted."; exit 1; }
+
 # Run tests
 echo "Running tests..."
 make test || { echo "Tests failed. Commit aborted."; exit 1; }
@@ -14,6 +34,9 @@ doc_cov=$(python3 tools/doc_coverage.py src || echo "0")
 python3 tools/update_badges.py "$test_cov" "$doc_cov"
 
 # Add README to the commit if it was updated
-git add README.md
+if ! git diff --quiet README.md; then
+    git add README.md
+fi
 
 echo "Pre-commit checks passed."
+

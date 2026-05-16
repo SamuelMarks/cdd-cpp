@@ -1,6 +1,6 @@
 #include "../docstrings/emit.hpp"
-#include "emit.hpp"
 #include "../mocks/emit.hpp"
+#include "emit.hpp"
 #include <algorithm>
 #include <iostream>
 #include <map>
@@ -49,7 +49,10 @@ static std::string escape_string(const std::string &s) noexcept {
   return out;
 }
 
-std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec, bool no_github_actions, bool no_installable_package, bool tests) noexcept {
+std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
+                                            bool no_github_actions,
+                                            bool no_installable_package,
+                                            bool tests) noexcept {
   std::stringstream ss;
 
   ss << "#include <expected>\n";
@@ -454,54 +457,56 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec, bool n
   result["src/generated_cli.cpp"] = ss.str();
 
   if (!no_installable_package) {
-      std::string cmake_content = "cmake_minimum_required(VERSION 3.15)\n"
-                                 "project(generated_project LANGUAGES CXX)\n"
-                                 "set(CMAKE_CXX_STANDARD 26)\n"
-                                 "add_subdirectory(src)\n";
-      if (tests) {
-          cmake_content += "add_subdirectory(tests)\n";
-      }
-      result["CMakeLists.txt"] = cmake_content;
-      result["src/CMakeLists.txt"] = "set(HEADERS )\n"
-                                     "set(SOURCES generated_cli.cpp)\n"
-                                     "add_executable(generated_bin ${SOURCES} ${HEADERS})\n"
-                                     "install(TARGETS generated_bin)\n";
+    std::string cmake_content = "cmake_minimum_required(VERSION 3.15)\n"
+                                "project(generated_project LANGUAGES CXX)\n"
+                                "set(CMAKE_CXX_STANDARD 26)\n"
+                                "add_subdirectory(src)\n";
+    if (tests) {
+      cmake_content += "add_subdirectory(tests)\n";
+    }
+    result["CMakeLists.txt"] = cmake_content;
+    result["src/CMakeLists.txt"] =
+        "set(HEADERS )\n"
+        "set(SOURCES generated_cli.cpp)\n"
+        "add_executable(generated_bin ${SOURCES} ${HEADERS})\n"
+        "install(TARGETS generated_bin)\n";
   }
 
   if (tests) {
-      result["tests/mocks.hpp"] = mocks::emit(spec);
-      result["tests/CMakeLists.txt"] = "include(FetchContent)\n"
-                                       "FetchContent_Declare(\n"
-                                       "  googletest\n"
-                                       "  GIT_REPOSITORY https://github.com/google/googletest.git\n"
-                                       "  GIT_TAG release-1.12.1\n"
-                                       ")\n"
-                                       "FetchContent_MakeAvailable(googletest)\n"
-                                       "add_executable(cli_test cli_test.cpp)\n"
-                                       "target_link_libraries(cli_test gtest_main gmock)\n"
-                                       "include(GoogleTest)\n"
-                                       "gtest_discover_tests(cli_test)\n";
-      result["tests/cli_test.cpp"] = "#include <gtest/gtest.h>\n"
-                                     "#include \"mocks.hpp\"\n\n"
-                                     "TEST(CliTest, MockTest) {\n"
-                                     "    cdd_mock_client::MockClient mock;\n"
-                                     "    EXPECT_TRUE(true);\n"
-                                     "}\n";
+    result["tests/mocks.hpp"] = mocks::emit(spec);
+    result["tests/CMakeLists.txt"] =
+        "include(FetchContent)\n"
+        "FetchContent_Declare(\n"
+        "  googletest\n"
+        "  GIT_REPOSITORY https://github.com/google/googletest.git\n"
+        "  GIT_TAG release-1.12.1\n"
+        ")\n"
+        "FetchContent_MakeAvailable(googletest)\n"
+        "add_executable(cli_test cli_test.cpp)\n"
+        "target_link_libraries(cli_test gtest_main gmock)\n"
+        "include(GoogleTest)\n"
+        "gtest_discover_tests(cli_test)\n";
+    result["tests/cli_test.cpp"] = "#include <gtest/gtest.h>\n"
+                                   "#include \"mocks.hpp\"\n\n"
+                                   "TEST(CliTest, MockTest) {\n"
+                                   "    cdd_mock_client::MockClient mock;\n"
+                                   "    EXPECT_TRUE(true);\n"
+                                   "}\n";
   }
 
   if (!no_github_actions) {
-      std::string ci_content = "name: CI\n"
-                               "on: [push]\n"
-                               "jobs:\n"
-                               "  build:\n"
-                               "    runs-on: ubuntu-latest\n"
-                               "    steps:\n"
-                               "      - uses: actions/checkout@v3\n"
-                               "      - run: cmake . && make\n";
-      if (tests) {
-          ci_content += "      - run: cd tests && ./cli_test\n";
-      }
-      result[".github/workflows/ci.yml"] = ci_content;
+    std::string ci_content = "name: CI\n"
+                             "on: [push]\n"
+                             "jobs:\n"
+                             "  build:\n"
+                             "    runs-on: ubuntu-latest\n"
+                             "    steps:\n"
+                             "      - uses: actions/checkout@v3\n"
+                             "      - run: cmake . && make\n";
+    if (tests) {
+      ci_content += "      - run: cd tests && ./cli_test\n";
+    }
+    result[".github/workflows/ci.yml"] = ci_content;
   }
 
   return result;

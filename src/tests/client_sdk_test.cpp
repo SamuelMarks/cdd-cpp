@@ -97,8 +97,8 @@ void test_emit_client() {
 
   auto generated_files = emit_client(spec);
   std::string generated = "";
-  for (const auto& [name, content] : generated_files) {
-      generated += content + "\\n";
+  for (const auto &[name, content] : generated_files) {
+    generated += content + "\\n";
   }
 
   assert(generated.find("/// @title Test API") != std::string::npos);
@@ -169,8 +169,8 @@ void test_emit_client() {
   spec.paths = paths;
   auto generated2_files = emit_client(spec);
   std::string generated2 = "";
-  for (const auto& [name, content] : generated2_files) {
-      generated2 += content + "\\n";
+  for (const auto &[name, content] : generated2_files) {
+    generated2 += content + "\\n";
   }
 
   std::cout << "client_sdk::test_emit_client passed.\n";
