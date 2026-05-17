@@ -237,8 +237,10 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
               << "\";\n";
 
         c_cpp << "        struct curl_slist *headers = NULL;\n";
-        c_cpp << "        headers = curl_slist_append(headers, \"api_key: special-key\");\n";
-        c_cpp << "        headers = curl_slist_append(headers, \"Authorization: Bearer special-key\");\n";
+        c_cpp << "        headers = curl_slist_append(headers, \"api_key: "
+                 "special-key\");\n";
+        c_cpp << "        headers = curl_slist_append(headers, "
+                 "\"Authorization: Bearer special-key\");\n";
 
         for (const auto &p : all_params) {
           std::string to_str = p.name;
@@ -265,12 +267,14 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
             c_cpp << "        full_url += \"" << p.name << "=\" + " << to_str
                   << ";\n";
           } else if (p.in == "header") {
-            c_cpp << "        headers = curl_slist_append(headers, (\"" << p.name << ": \" + " << to_str << ").c_str());\n";
+            c_cpp << "        headers = curl_slist_append(headers, (\""
+                  << p.name << ": \" + " << to_str << ").c_str());\n";
           }
         }
 
         c_cpp << "        curl_easy_setopt(curl, CURLOPT_URL, "
-                 "full_url.c_str());\n";        if (method != "GET") {
+                 "full_url.c_str());\n";
+        if (method != "GET") {
           c_cpp << "        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, \""
                 << method << "\");\n";
         }
@@ -288,14 +292,16 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
           if (content_type == "multipart/form-data") {
             header_val += "; boundary=boundary";
           }
-          c_cpp << "        headers = curl_slist_append(headers, \"" << header_val << "\");\n";
+          c_cpp << "        headers = curl_slist_append(headers, \""
+                << header_val << "\");\n";
           c_cpp << "        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, "
                    "headers);\n";
           c_cpp << "        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "
                    "body.c_str());\n";
         }
 
-        c_cpp << "        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);\n";
+        c_cpp
+            << "        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);\n";
         c_cpp << "        CURLcode res = curl_easy_perform(curl);\n";
         c_cpp << "        if(headers) curl_slist_free_all(headers);\n";
         c_cpp << "        if(res != CURLE_OK) {\n";
@@ -468,25 +474,31 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
           if (op->requestBody) {
             if (!call_args.empty())
               call_args += ", ";
-              
+
             std::string content_type = "application/json";
             if (!op->requestBody->content.empty()) {
               content_type = op->requestBody->content.begin()->first;
             }
-            
+
             std::string payload =
-                "\"{\\\"id\\\":1,\\\"username\\\":\\\"user1\\\",\\\"name\\\":\\\"test\\\",\\\"photoUrls\\\":[]}\"";
-                
+                "\"{\\\"id\\\":1,\\\"username\\\":\\\"user1\\\",\\\"name\\\":"
+                "\\\"test\\\",\\\"photoUrls\\\":[]}\"";
+
             if (content_type == "application/x-www-form-urlencoded") {
               payload = "\"name=test&status=available\"";
             } else if (content_type == "application/octet-stream") {
               payload = "\"file content\"";
             } else if (content_type == "multipart/form-data") {
-              payload = "\"--boundary\\r\\nContent-Disposition: form-data; name=\\\"additionalMetadata\\\"\\r\\n\\r\\ntest\\r\\n--boundary\\r\\nContent-Disposition: form-data; name=\\\"file\\\"; filename=\\\"test.png\\\"\\r\\nContent-Type: image/png\\r\\n\\r\\nPNG...\\r\\n--boundary--\\r\\n\"";
+              payload = "\"--boundary\\r\\nContent-Disposition: form-data; "
+                        "name=\\\"additionalMetadata\\\"\\r\\n\\r\\ntest\\r\\n-"
+                        "-boundary\\r\\nContent-Disposition: form-data; "
+                        "name=\\\"file\\\"; "
+                        "filename=\\\"test.png\\\"\\r\\nContent-Type: "
+                        "image/png\\r\\n\\r\\nPNG...\\r\\n--boundary--\\r\\n\"";
             } else if (func_name.find("Array") != std::string::npos ||
-                func_name.find("List") != std::string::npos) {
-              payload =
-                  "\"[{\\\"id\\\":1,\\\"username\\\":\\\"user1\\\",\\\"name\\\":\\\"test\\\",\\\"photoUrls\\\":[]}]\"";
+                       func_name.find("List") != std::string::npos) {
+              payload = "\"[{\\\"id\\\":1,\\\"username\\\":\\\"user1\\\","
+                        "\\\"name\\\":\\\"test\\\",\\\"photoUrls\\\":[]}]\"";
             }
             call_args += payload;
           }
@@ -494,25 +506,26 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
           t_cpp << "    cdd_client::Client client(get_server_url());\n";
           t_cpp << "    auto res = client." << func_name << "(" << call_args
                 << ");\n";
-                      bool has_success = false;
-            if (op->responses) {
-                for (const auto& [code, _] : *op->responses) {
-                    if (code == "default" || (code.length() > 0 && code[0] == '2')) {
-                        has_success = true; break;
-                    }
-                }
+          bool has_success = false;
+          if (op->responses) {
+            for (const auto &[code, _] : *op->responses) {
+              if (code == "default" || (code.length() > 0 && code[0] == '2')) {
+                has_success = true;
+                break;
+              }
             }
-            if (has_success) {
-                t_cpp << "    if (!res.has_value()) {\n";
-                t_cpp << "        FAIL() << \"Network error: \" << res.error();\n";
-                t_cpp << "    }\n";
-                t_cpp << "    if (!res.value().empty()) {\n";
-            } else {
-                t_cpp << "    if (res.has_value()) {\n";
-                t_cpp << "        FAIL() << \"Expected error but got success\";\n";
-                t_cpp << "    }\n";
-                t_cpp << "    if (false) {\n";
-            }
+          }
+          if (has_success) {
+            t_cpp << "    if (!res.has_value()) {\n";
+            t_cpp << "        FAIL() << \"Network error: \" << res.error();\n";
+            t_cpp << "    }\n";
+            t_cpp << "    if (!res.value().empty()) {\n";
+          } else {
+            t_cpp << "    if (res.has_value()) {\n";
+            t_cpp << "        FAIL() << \"Expected error but got success\";\n";
+            t_cpp << "    }\n";
+            t_cpp << "    if (false) {\n";
+          }
           t_cpp << "        simdjson::dom::parser parser;\n";
           t_cpp << "        simdjson::dom::element doc;\n";
           t_cpp << "        auto error = parser.parse(res.value()).get(doc);\n";

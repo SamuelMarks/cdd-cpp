@@ -38,5 +38,48 @@ if ! git diff --quiet README.md; then
     git add README.md
 fi
 
-echo "Pre-commit checks passed."
+cleanup() {
+    if command -v docker >/dev/null 2>&1; then
+        docker rm -f petstore_server_v2 >/dev/null 2>&1 || true
+        docker rm -f petstore_server_v3 >/dev/null 2>&1 || true
+    fi
+}
+trap cleanup EXIT
 
+# Swagger 2.0 Petstore test
+echo "Running Swagger 2.0 Petstore test..."
+rm -rf ../cdd-cpp-client-v2
+./build/cdd-cpp from_openapi to_sdk -i ../petstore.json -o ../cdd-cpp-client-v2 --tests || { echo "Swagger 2.0 SDK generation failed."; exit 1; }
+if command -v docker >/dev/null 2>&1; then
+    docker rm -f petstore_server_v2 >/dev/null 2>&1 || true
+    docker run -d -p 8080:8080 -e SWAGGER_HOST="http://localhost:8080" -e SWAGGER_BASE_PATH="/v2" --name petstore_server_v2 swaggerapi/petstore >/dev/null 2>&1 || true
+    sleep 3
+fi
+(cd ../cdd-cpp-client-v2 && cmake . -DFETCHCONTENT_UPDATES_DISCONNECTED=ON && cmake --build . && ./src/test_generated_client) || { echo "Swagger 2.0 tests failed."; exit 1; }
+if command -v docker >/dev/null 2>&1; then
+    docker rm -f petstore_server_v2 >/dev/null 2>&1 || true
+fi
+
+# OpenAPI 3.2.0 Petstore test
+echo "Running OpenAPI 3.2.0 Petstore test..."
+rm -rf ../cdd-cpp-client-v3
+./build/cdd-cpp from_openapi to_sdk -i ../petstore_oas3.json -o ../cdd-cpp-client-v3 --tests || { echo "OpenAPI 3.2.0 SDK generation failed."; exit 1; }
+if command -v docker >/dev/null 2>&1; then
+    docker rm -f petstore_server_v3 >/dev/null 2>&1 || true
+    docker run -d -p 8080:8080 -e SWAGGER_HOST="http://localhost:8080" -e SWAGGER_BASE_PATH="/api/v3" --name petstore_server_v3 swaggerapi/petstore >/dev/null 2>&1 || true
+    sleep 3
+fi
+(cd ../cdd-cpp-client-v3 && cmake . -DFETCHCONTENT_UPDATES_DISCONNECTED=ON && cmake --build . && ./src/test_generated_client) || { echo "OpenAPI 3.2.0 tests failed."; exit 1; }
+if command -v docker >/dev/null 2>&1; then
+    docker rm -f petstore_server_v3 >/dev/null 2>&1 || true
+fi
+
+# WASM build test
+echo "Building WASM..."
+if [ -f "make.bat" ]; then
+    make build_wasm || { echo "WASM build failed. Commit aborted."; exit 1; }
+else
+    make build_wasm || { echo "WASM build failed. Commit aborted."; exit 1; }
+fi
+
+echo "Pre-commit checks passed."

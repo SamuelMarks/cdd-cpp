@@ -10,7 +10,29 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake build-essential python3 curl git python3-pip
+
+      - name: Install cpplint
+        run: pip3 install --break-system-packages cpplint || pip3 install cpplint
+
+      - name: Install clang-format
+        run: sudo apt-get install -y clang-format
+
+      - name: Check code formatting
+        run: |
+          find src -name '*.cpp' -o -name '*.hpp' | xargs clang-format -i
+          if ! git diff --quiet src/; then
+            echo "Formatting check failed. Please format your code with clang-format."
+            git diff src/
+            exit 1
+          fi
+
+      - name: Lint code
+        run: |
+          find src -name '*.cpp' -o -name '*.hpp' | xargs cpplint --filter=-legal/copyright,-build/include_order,-build/include_subdir,-whitespace/comments,-build/include_what_you_use,-build/namespaces,-build/c++17,-readability/casting,-whitespace/indent,-whitespace/ending_newline,-readability/braces,-whitespace/blank_line,-build/include,-whitespace/newline,-readability/todo --linelength=120
 
       - name: Configure CMake
         run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON
@@ -21,10 +43,54 @@ jobs:
       - name: Test
         run: cd build && ctest --output-on-failure
 
-      - name: Pre-commit checks
+      - name: Pre-commit checks (Coverage)
         run: |
           python3 tools/test_coverage.py
           python3 tools/doc_coverage.py src
+
+      - name: Download test spec files
+        run: |
+          curl -sL https://raw.githubusercontent.com/cdd-openapi/cdd-openapi-test-harness/master/petstore.json -o ../petstore.json
+          curl -sL https://raw.githubusercontent.com/cdd-openapi/cdd-openapi-test-harness/master/petstore_oas3.json -o ../petstore_oas3.json
+
+      - name: Setup Swagger 2.0 Petstore
+        run: |
+          docker run -d -p 8080:8080 -e SWAGGER_HOST="http://localhost:8080" -e SWAGGER_BASE_PATH="/v2" --name petstore_server_v2 swaggerapi/petstore
+          sleep 3
+
+      - name: Test Swagger 2.0 SDK Generation and Execution
+        run: |
+          rm -rf ../cdd-cpp-client-v2
+          ./build/cdd-cpp from_openapi to_sdk -i ../petstore.json -o ../cdd-cpp-client-v2 --tests
+          cd ../cdd-cpp-client-v2
+          cmake . -DFETCHCONTENT_UPDATES_DISCONNECTED=ON
+          cmake --build .
+          ./src/test_generated_client
+
+      - name: Teardown Swagger 2.0 Petstore
+        if: always()
+        run: docker rm -f petstore_server_v2 || true
+
+      - name: Setup OpenAPI 3.2.0 Petstore
+        run: |
+          docker run -d -p 8080:8080 -e SWAGGER_HOST="http://localhost:8080" -e SWAGGER_BASE_PATH="/api/v3" --name petstore_server_v3 swaggerapi/petstore
+          sleep 3
+
+      - name: Test OpenAPI 3.2.0 SDK Generation and Execution
+        run: |
+          rm -rf ../cdd-cpp-client-v3
+          ./build/cdd-cpp from_openapi to_sdk -i ../petstore_oas3.json -o ../cdd-cpp-client-v3 --tests
+          cd ../cdd-cpp-client-v3
+          cmake . -DFETCHCONTENT_UPDATES_DISCONNECTED=ON
+          cmake --build .
+          ./src/test_generated_client
+
+      - name: Teardown OpenAPI 3.2.0 Petstore
+        if: always()
+        run: docker rm -f petstore_server_v3 || true
+
+      - name: Build WASM
+        run: make build_wasm
 
       - name: Release Build
         if: startsWith(github.ref, 'refs/tags/')
@@ -39,24 +105,3 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: custom_bin/cdd-cpp
-
-  build_wasm:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup emsdk
-        uses: mymindstorm/setup-emsdk@v14
-
-      - name: Build WASM
-        run: |
-          emcmake cmake -B build_wasm -S . -DCMAKE_BUILD_TYPE=Release -DCDD_EXTREME_CHECKS=OFF
-          cmake --build build_wasm -j4
-          mkdir -p custom_bin
-          cp build_wasm/cdd-cpp.* custom_bin/ 2>/dev/null || true
-
-      - name: Upload WASM Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: custom_bin/cdd-cpp.*

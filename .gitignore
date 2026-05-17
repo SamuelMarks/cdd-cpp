@@ -71,3 +71,10 @@ patch*.sh
 fix_*.py
 prompt.md
 test_curl*
+
+# Generated SDKs and Integration Test Workspaces
+../cdd-cpp-client-v2/
+../cdd-cpp-client-v3/
+../cdd-cpp-client/
+../petstore.json
+../petstore_oas3.json
