@@ -76,7 +76,7 @@ The `cdd-cpp` compiler leverages a unified architecture to support various facet
 **Uncommon Features:**
 
 `cdd-cpp` includes specific parsing features beyond the base specification:
-- **Format Upgrades:** Automatically parses older Swagger (2.0) and OpenAPI (3.0/3.1) and upgrades them to the OpenAPI 3.2.0 internal representation.
+- **Format Upgrades:** Automatically parses older Swagger (2.0) and OpenAPI (3.0/3.1) and upgrades them to the Swagger 2.0 and OpenAPI 3.2.0 internal representation.
 - **Google Discovery Integration:** Can parse Google Discovery API JSON files and map them to OpenAPI specifications natively.
 
 ---

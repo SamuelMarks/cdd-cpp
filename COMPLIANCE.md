@@ -1,6 +1,6 @@
 # OpenAPI Spec Compliance
 
-Current supported specification: [OpenAPI 3.2.0](https://raw.githubusercontent.com/OAI/OpenAPI-Specification/refs/heads/main/versions/3.2.0.md)
+Current supported specification: [Swagger 2.0 and OpenAPI 3.2.0](https://raw.githubusercontent.com/OAI/OpenAPI-Specification/refs/heads/main/versions/3.2.0.md)
 
 ## Support Matrix
 
@@ -31,4 +31,4 @@ Current supported specification: [OpenAPI 3.2.0](https://raw.githubusercontent.c
 - **Format Upgrades**: Fully capable of parsing older Swagger 2.0 and OpenAPI 3.0/3.1 specs and upgrading them internally to 3.2.0.
 - **Google Discovery**: Supported via internal AST mapping bridging it to the 3.2.0 specification.
 
-Full spec compliance achieved for all major OpenAPI 3.2.0 concepts. The library aims to maintain full strict compliance with OpenAPI version 3.2.0.
+Full spec compliance achieved for all major Swagger 2.0 and OpenAPI 3.2.0 concepts. The library aims to maintain full strict compliance with Swagger 2.0 and OpenAPI version 3.2.0.
