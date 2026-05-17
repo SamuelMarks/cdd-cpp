@@ -78,3 +78,16 @@ test_curl*
 ../cdd-cpp-client/
 ../petstore.json
 ../petstore_oas3.json
+# Coverage output
+*.gcda
+*.gcno
+*.gcov
+
+# CMake / C++ tools
+compile_commands.json
+.clangd/
+.cache/
+*.dSYM/
+
+# OS specific
+.DS_Store

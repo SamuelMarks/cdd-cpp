@@ -65,7 +65,7 @@ jobs:
           cd ../cdd-cpp-client-v2
           cmake . -DFETCHCONTENT_UPDATES_DISCONNECTED=ON
           cmake --build .
-          ./src/test_generated_client
+          ./tests/client_test
 
       - name: Teardown Swagger 2.0 Petstore
         if: always()
@@ -83,7 +83,7 @@ jobs:
           cd ../cdd-cpp-client-v3
           cmake . -DFETCHCONTENT_UPDATES_DISCONNECTED=ON
           cmake --build .
-          ./src/test_generated_client
+          ./tests/client_test
 
       - name: Teardown OpenAPI 3.2.0 Petstore
         if: always()
