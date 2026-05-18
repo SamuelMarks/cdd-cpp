@@ -525,7 +525,8 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
             t_cpp << "    if (!res.value().empty()) {\n";
           } else {
             t_cpp << "    if (res.has_value()) {\n";
-            t_cpp << "        SUCCEED(); // Expected error but got success, returning early.\n";
+            t_cpp << "        SUCCEED(); // Expected error but got success, "
+                     "returning early.\n";
             t_cpp << "        return;\n";
             t_cpp << "    }\n";
             t_cpp << "    if (false) {\n";
