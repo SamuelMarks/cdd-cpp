@@ -65,7 +65,7 @@ jobs:
           cd ../cdd-cpp-client-v2
           cmake . -DFETCHCONTENT_UPDATES_DISCONNECTED=ON
           cmake --build .
-          PETSTORE_URL="http://localhost:8080/v2" ./tests/client_test
+          PETSTORE_URL="http://localhost:8080/api/v3" ./tests/client_test
 
       - name: Teardown Swagger 2.0 Petstore
         if: always()
