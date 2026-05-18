@@ -382,7 +382,10 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
 
     std::stringstream t_cpp;
 
-    std::string server_url = "http://localhost:8080/v2";
+    std::string server_url = "http://localhost:8080";
+    if (spec.servers && !spec.servers->empty()) {
+      server_url = spec.servers->at(0).url;
+    }
 
     t_cpp << "#include <gtest/gtest.h>\n"
           << "#include \"../src/client.hpp\"\n"
@@ -392,7 +395,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
           << "    if (const char* env_url = std::getenv(\"PETSTORE_URL\")) {\n"
           << "        return std::string(env_url);\n"
           << "    }\n"
-          << "    return \"http://localhost:8080\";\n"
+          << "    return \"" << server_url << "\";\n"
           << "}\n\n";
 
     t_cpp << "TEST(ClientTest, PetstoreFindByStatusTest) {\n"

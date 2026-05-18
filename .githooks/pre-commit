@@ -69,7 +69,7 @@ if command -v docker >/dev/null 2>&1; then
     docker run -d -p 8080:8080 -e SWAGGER_HOST="http://localhost:8080" -e SWAGGER_BASE_PATH="/api/v3" --name petstore_server_v3 swaggerapi/petstore >/dev/null 2>&1 || true
     sleep 3
 fi
-(cd ../cdd-cpp-client-v3 && cmake . -DFETCHCONTENT_UPDATES_DISCONNECTED=ON && cmake --build . && ./tests/client_test) || { echo "OpenAPI 3.2.0 tests failed."; exit 1; }
+(cd ../cdd-cpp-client-v3 && cmake . -DFETCHCONTENT_UPDATES_DISCONNECTED=ON && cmake --build . && PETSTORE_URL="http://localhost:8080/api/v3" ./tests/client_test) || { echo "OpenAPI 3.2.0 tests failed."; exit 1; }
 if command -v docker >/dev/null 2>&1; then
     docker rm -f petstore_server_v3 >/dev/null 2>&1 || true
 fi
