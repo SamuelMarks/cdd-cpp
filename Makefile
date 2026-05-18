@@ -33,7 +33,7 @@ build:
 	cmake --build $(BIN_DIR) -j$$(nproc)
 
 test: build
-	./$(BIN_DIR)/cdd-tests
+	cd $(BIN_DIR) && ./cdd-tests
 
 run: build
 	./$(BIN_DIR)/cdd-cpp $(ARGS)

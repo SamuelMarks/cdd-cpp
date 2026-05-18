@@ -50,8 +50,8 @@ jobs:
 
       - name: Download test spec files
         run: |
-          curl -sL https://raw.githubusercontent.com/cdd-openapi/cdd-openapi-test-harness/master/petstore.json -o ../petstore.json
-          curl -sL https://raw.githubusercontent.com/cdd-openapi/cdd-openapi-test-harness/master/petstore_oas3.json -o ../petstore_oas3.json
+          curl -sL https://raw.githubusercontent.com/SamuelMarks/cdd-openapi-test-harness/master/petstore.json -o ../petstore.json
+          curl -sL https://raw.githubusercontent.com/SamuelMarks/cdd-openapi-test-harness/master/petstore_oas3.json -o ../petstore_oas3.json
 
       - name: Setup Swagger 2.0 Petstore
         run: |
