@@ -3,12 +3,26 @@
 
 namespace cdd_cpp::docstrings {
 
+static std::string format_multi(const std::string &indent,
+                                const std::string &text) {
+  std::string res;
+  for (char c : text) {
+    if (c == '\r')
+      continue;
+    res += c;
+    if (c == '\n')
+      res += indent;
+  }
+  return res;
+}
+
 std::string emit_api_docstrings(const openapi::OpenAPI &spec) noexcept {
   std::stringstream ss;
   ss << "/// @title " << spec.info.title << "\n";
   ss << "/// @version " << spec.info.version << "\n";
   if (spec.info.description)
-    ss << "/// @description " << *spec.info.description << "\n";
+    ss << "/// @description " << format_multi("/// ", *spec.info.description)
+       << "\n";
   if (spec.info.termsOfService)
     ss << "/// @termsOfService " << *spec.info.termsOfService << "\n";
   if (spec.info.contact) {
@@ -68,7 +82,7 @@ std::string emit_api_docstrings(const openapi::OpenAPI &spec) noexcept {
       ss << "\n";
       if (scheme.description)
         ss << "///   @securityScheme_description " << name << " "
-           << *scheme.description << "\n";
+           << format_multi("///   ", *scheme.description) << "\n";
       if (scheme.openIdConnectUrl)
         ss << "///   @securityScheme_openIdConnectUrl " << name << " "
            << *scheme.openIdConnectUrl << "\n";
@@ -86,18 +100,22 @@ std::string emit_api_docstrings(const openapi::OpenAPI &spec) noexcept {
 std::string emit_path_docstrings(const openapi::PathItem &pi) noexcept {
   std::stringstream ss;
   if (pi.summary)
-    ss << "        /// @summary " << *pi.summary << "\n";
+    ss << "        /// @summary " << format_multi("        /// ", *pi.summary)
+       << "\n";
   if (pi.description)
-    ss << "        /// @description " << *pi.description << "\n";
+    ss << "        /// @description "
+       << format_multi("        /// ", *pi.description) << "\n";
   return ss.str();
 }
 
 std::string emit_operation_docstrings(const openapi::Operation &op) noexcept {
   std::stringstream ss;
   if (op.summary)
-    ss << "        /// @summary " << *op.summary << "\n";
+    ss << "        /// @summary " << format_multi("        /// ", *op.summary)
+       << "\n";
   if (op.description)
-    ss << "        /// @description " << *op.description << "\n";
+    ss << "        /// @description "
+       << format_multi("        /// ", *op.description) << "\n";
   if (op.tags && !op.tags->empty()) {
     ss << "        /// @tags ";
     for (size_t i = 0; i < op.tags->size(); ++i) {

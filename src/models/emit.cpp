@@ -3,6 +3,19 @@
 
 namespace cdd_cpp::models {
 
+static std::string format_multi(const std::string &indent,
+                                const std::string &text) {
+  std::string res;
+  for (char c : text) {
+    if (c == '\r')
+      continue;
+    res += c;
+    if (c == '\n')
+      res += indent;
+  }
+  return res;
+}
+
 std::string map_type(const openapi::Schema &schema) noexcept {
   if (schema.ref.has_value()) {
     std::string ref = schema.ref.value().ref;
@@ -35,9 +48,11 @@ std::string map_type(const openapi::Schema &schema) noexcept {
 void emit_docstrings(std::stringstream &ss, const openapi::Schema &schema,
                      const std::string &indent) noexcept {
   if (schema.description)
-    ss << indent << "/// @description " << *schema.description << "\n";
+    ss << indent << "/// @description "
+       << format_multi(indent + "/// ", *schema.description) << "\n";
   if (schema.example)
-    ss << indent << "/// @example " << *schema.example << "\n";
+    ss << indent << "/// @example "
+       << format_multi(indent + "/// ", *schema.example) << "\n";
   if (schema.externalDocs) {
     if (schema.externalDocs->description)
       ss << indent << "/// @externalDocs.description "
