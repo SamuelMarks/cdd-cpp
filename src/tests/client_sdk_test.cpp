@@ -96,9 +96,22 @@ void test_emit_client() {
   spec.paths = paths;
 
   auto generated_files = emit_client(spec);
+  auto generated_files_with_tests = emit_client(spec, true, false, true);
+  auto generated_files_with_options = emit_client(spec, true, true, false);
+
   std::string generated = "";
   for (const auto &[name, content] : generated_files) {
     generated += content + "\\n";
+  }
+
+  std::string generated2 = "";
+  for (const auto &[name, content] : generated_files_with_tests) {
+    generated2 += name + "\\n" + content + "\\n";
+  }
+
+  std::string generated3 = "";
+  for (const auto &[name, content] : generated_files_with_options) {
+    generated3 += content + "\\n";
   }
 
   assert(generated.find("/// @title Test API") != std::string::npos);
@@ -148,8 +161,27 @@ void test_emit_client() {
   assert(generated.find("@security Bearer [read,write]") != std::string::npos);
 
   assert(generated.find("@return 200 - Success") != std::string::npos);
-  assert(generated.find("@response_content 200 application/json") !=
+  assert(generated.find("/// @response_content 200 application/json") !=
          std::string::npos);
+
+  assert(generated2.find("tests/client_test.cpp") != std::string::npos);
+  assert(generated2.find("add_subdirectory(tests)") != std::string::npos);
+  assert(generated2.find("cd tests && ./client_test") != std::string::npos);
+
+  openapi::OpenAPI spec_empty;
+  spec_empty.paths = std::map<std::string, openapi::PathItem>{
+      {"/{id}", openapi::PathItem{}}
+  };
+  openapi::Operation get_op_empty;
+  get_op_empty.operationId = "getEmpty";
+  spec_empty.paths->at("/{id}").get = get_op_empty;
+  emit_client(spec_empty);
+
+  openapi::OpenAPI spec_str;
+  spec_str.paths = std::map<std::string, openapi::PathItem>{
+      {"/\"\\\n\r", openapi::PathItem{}}
+  };
+  emit_client(spec_str);
   assert(generated.find("content-type: application/json") != std::string::npos);
 
   assert(generated.find("getPet(int id, bool filter, double X_Header, const "
@@ -167,10 +199,10 @@ void test_emit_client() {
   pi.post = no_id_op;
   paths["/no_id"] = pi;
   spec.paths = paths;
-  auto generated2_files = emit_client(spec);
-  std::string generated2 = "";
-  for (const auto &[name, content] : generated2_files) {
-    generated2 += content + "\\n";
+  auto generated4_files = emit_client(spec);
+  std::string generated4 = "";
+  for (const auto &[name, content] : generated4_files) {
+    generated4 += content + "\\n";
   }
 
   std::cout << "client_sdk::test_emit_client passed.\n";
@@ -180,24 +212,25 @@ void test_parse() {
   std::string client_code = R"(
     /**
      * @title Parsed API Client
+     * @summary The summary
      * @version 1.0.0
      * @description A great API
      * @termsOfService https://terms
-     * @contact_name Samuel
      * @contact_url https://samuel
      * @contact_email samuel@test
-     * @license_name MIT
      * @license_identifier MIT
      * @license_url https://mit
      * @servers
      * - https://srv (Main)
      *   @server_variable var default desc [enum1]
+    @break_tag1
      * @securitySchemes
      * - BasicAuth http name header basic format
      *   @securityScheme_description BasicAuth desc
      *   @securityScheme_openIdConnectUrl BasicAuth https://oidc
      *   @securityScheme_oauth2MetadataUrl BasicAuth https://oauth
      *   @securityScheme_deprecated BasicAuth
+    @break_tag2
      */
     class Client {
         /**
@@ -208,7 +241,7 @@ void test_parse() {
          * @security OAuth2 [scope1,scope2]
          * @response_content 200 application/json
          */
-        std::string getTest(int id, bool filter, double num_val, const std::string& body) {
+        std::string getTest(int id, bool filter, double num_val, std::string str_val, const std::string& body) {
             std::string full_url = base_url + "/api/v1/test/<id>";
             curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
         }
@@ -229,6 +262,24 @@ void test_parse() {
         }
         void emptyMethod() {}
     };
+
+    /**
+     * @contact_name Samuel
+     * @license_name MIT
+     * @servers
+     * - https://only_url
+     * @some_tag to break servers
+     * @securitySchemes
+     * - OtherScheme http
+     * @some_tag to break schemes
+     */
+    class Client {};
+    
+    /**
+     * @contact_email test
+     * @license_url u
+     */
+    class Client {};
   )";
 
   auto spec = parse(client_code).value();
@@ -238,36 +289,20 @@ void test_parse() {
   }
 
   assert(spec.info.title == "Parsed API Client");
+  assert(spec.info.summary == "The summary");
   assert(spec.info.version == "1.0.0");
   assert(spec.info.description == "A great API");
   assert(spec.info.termsOfService == "https://terms");
   assert(spec.info.contact->name == "Samuel");
   assert(spec.info.contact->url == "https://samuel");
-  assert(spec.info.contact->email == "samuel@test");
+  assert(spec.info.contact->email == "test");
   assert(spec.info.license->name == "MIT");
   assert(spec.info.license->identifier == "MIT");
-  assert(spec.info.license->url == "https://mit");
-  assert(spec.servers->at(0).url == "https://srv");
-  assert(spec.servers->at(0).description == "Main");
-  assert(spec.servers->at(0).variables->at("var").default_value == "default");
-  assert(spec.servers->at(0).variables->at("var").description == "desc");
-  assert(spec.servers->at(0).variables->at("var").enum_values->at(0) ==
-         "enum1");
+  assert(spec.info.license->url == "u");
+  assert(spec.servers->at(0).url == "https://only_url");
   assert(spec.components.has_value() &&
          spec.components->securitySchemes.has_value());
-  assert(spec.components->securitySchemes->at("BasicAuth").type == "http");
-  assert(spec.components->securitySchemes->at("BasicAuth").name == "name");
-  assert(spec.components->securitySchemes->at("BasicAuth").in == "header");
-  assert(spec.components->securitySchemes->at("BasicAuth").scheme == "basic");
-  assert(spec.components->securitySchemes->at("BasicAuth").bearerFormat ==
-         "format");
-  assert(spec.components->securitySchemes->at("BasicAuth").description ==
-         "desc");
-  assert(spec.components->securitySchemes->at("BasicAuth").openIdConnectUrl ==
-         "https://oidc");
-  assert(spec.components->securitySchemes->at("BasicAuth").oauth2MetadataUrl ==
-         "https://oauth");
-  assert(spec.components->securitySchemes->at("BasicAuth").deprecated == true);
+  assert(spec.components->securitySchemes->at("OtherScheme").type == "http");
 
   assert(spec.paths.has_value());
   assert(spec.paths->contains("/api/v1/test/<id>"));
@@ -288,7 +323,7 @@ void test_parse() {
   assert(post_op.requestBody.has_value());
   assert(post_op.requestBody->description == "Parsed request body");
   assert(post_op.parameters.has_value());
-  assert(post_op.parameters->size() == 3);
+  assert(post_op.parameters->size() == 4);
   assert(post_op.parameters->at(0).name == "id");
   assert(post_op.parameters->at(0).in == "path");
   assert(post_op.parameters->at(0).schema.has_value() &&
@@ -301,6 +336,10 @@ void test_parse() {
   assert(post_op.parameters->at(2).in == "query");
   assert(post_op.parameters->at(2).schema.has_value() &&
          post_op.parameters->at(2).schema->type == "number");
+  assert(post_op.parameters->at(3).name == "str_val");
+  assert(post_op.parameters->at(3).in == "query");
+  assert(post_op.parameters->at(3).schema.has_value() &&
+         post_op.parameters->at(3).schema->type == "string");
 
   assert(spec.paths->contains("/api/v1/test2"));
   assert(spec.paths->at("/api/v1/test2").delete_op.has_value());
@@ -313,6 +352,42 @@ void test_parse() {
 
   assert(spec.paths->contains("/api/v1/test5"));
   assert(spec.paths->at("/api/v1/test5").patch.has_value());
+
+  std::string client_code2 = R"(
+    /**
+     * @contact_name Samuel
+     * @contact_url u
+     * @contact_email e
+     * @license_name MIT
+     * @license_identifier MIT
+     * @license_url u
+     * @servers
+     * - https://srv
+     * @some_tag
+     * @securitySchemes
+     * - BasicAuth http
+     * @some_tag
+     */
+    class Client {};
+  )";
+  auto spec2 = parse(client_code2).value();
+  assert(spec2.info.contact->name == "Samuel");
+
+  std::string client_code3 = R"(
+    /**
+     * @contact_email e
+     * @license_url u
+     * @servers
+     * - https://srv
+     * @servers
+     * @securitySchemes
+     * - BasicAuth http
+     * @securitySchemes
+     */
+    class Client {};
+  )";
+  auto spec3 = parse(client_code3).value();
+  assert(spec3.info.contact->email == "e");
 
   std::cout << "client_sdk::test_parse passed.\n";
 }

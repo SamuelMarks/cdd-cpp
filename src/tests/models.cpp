@@ -1,8 +1,85 @@
 #include "../models/emit.hpp"
+#include "../models/parse.hpp"
 #include <cassert>
 #include <iostream>
 
 namespace cdd_cpp::models {
+void test_parse() {
+  openapi::OpenAPI spec;
+  utils::CppAST ast;
+
+  utils::CppClass cls1;
+  cls1.name = "Test1";
+  cls1.docstring = "/// @description Test description\n"
+                   "/// @example my_example\n"
+                   "/// @externalDocs.description More info\n"
+                   "/// @externalDocs.url https://docs\n"
+                   "/// @xml.name name\n"
+                   "/// @xml.namespace_url https://xml\n"
+                   "/// @xml.prefix prefix\n"
+                   "/// @xml.attribute true\n"
+                   "/// @xml.wrapped true\n"
+                   "/// @discriminator.propertyName prop\n"
+                   "/// @discriminator.mapping k1:v1\n";
+  
+  cls1.fields.push_back({"int", "f_int", "/// @description field int"});
+  cls1.fields.push_back({"double", "f_double", ""});
+  cls1.fields.push_back({"bool", "f_bool", ""});
+  cls1.fields.push_back({"std::string", "f_str", ""});
+  cls1.fields.push_back({"std::optional<int>", "f_opt", ""});
+  cls1.fields.push_back({"std::vector<int>", "f_vec_int", ""});
+  cls1.fields.push_back({"std::vector<double>", "f_vec_double", ""});
+  cls1.fields.push_back({"std::vector<bool>", "f_vec_bool", ""});
+  cls1.fields.push_back({"std::vector<std::string>", "f_vec_str", ""});
+  cls1.fields.push_back({"std::vector<Cust>", "f_vec_cust", ""});
+  cls1.fields.push_back({"Cust", "f_cust", ""});
+  
+  utils::CppClass cls_ext_url;
+  cls_ext_url.name = "TestExtUrl";
+  cls_ext_url.docstring = "/// @externalDocs.url url\n";
+
+  utils::CppClass cls_xml_ns;
+  cls_xml_ns.name = "TestXmlNs";
+  cls_xml_ns.docstring = "/// @xml.namespace_url url\n";
+  
+  utils::CppClass cls_xml_pref;
+  cls_xml_pref.name = "TestXmlPref";
+  cls_xml_pref.docstring = "/// @xml.prefix pref\n";
+
+  utils::CppClass cls_xml_attr;
+  cls_xml_attr.name = "TestXmlAttr";
+  cls_xml_attr.docstring = "/// @xml.attribute true\n";
+
+  utils::CppClass cls_xml_wrap;
+  cls_xml_wrap.name = "TestXmlWrap";
+  cls_xml_wrap.docstring = "/// @xml.wrapped true\n";
+
+  utils::CppClass cls_disc_map;
+  cls_disc_map.name = "TestDiscMap";
+  cls_disc_map.docstring = "/// @discriminator.mapping k1:v1\n";
+
+  utils::CppClass cls_none;
+  cls_none.name = "TestNone";
+                   
+  ast.classes.push_back(cls1);
+  ast.classes.push_back(cls_ext_url);
+  ast.classes.push_back(cls_xml_ns);
+  ast.classes.push_back(cls_xml_pref);
+  ast.classes.push_back(cls_xml_attr);
+  ast.classes.push_back(cls_xml_wrap);
+  ast.classes.push_back(cls_disc_map);
+  ast.classes.push_back(cls_none);
+
+  utils::parse_schemas(ast, spec);
+  
+  assert(spec.components.has_value());
+  assert(spec.components->schemas.has_value());
+  assert(spec.components->schemas->find("Test1") != spec.components->schemas->end());
+  assert(spec.components->schemas->find("TestExtUrl") != spec.components->schemas->end());
+
+  std::cout << "models::test_parse passed.\n";
+}
+
 void test_emit() {
   openapi::OpenAPI spec;
   spec.openapi = "3.2.0";
@@ -13,7 +90,7 @@ void test_emit() {
 
   openapi::Schema s;
   s.type = "object";
-  s.description = "Test description";
+  s.description = "Test description\r\nline2";
   s.example = "{\"name\": \"test\"}";
   s.externalDocs = openapi::ExternalDocumentation{"More info", "https://docs"};
   s.xml = openapi::XML{"name", "https://xml", "prefix", true, false};

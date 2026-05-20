@@ -14,17 +14,20 @@ void test_emit() {
           "type": "object",
           "properties": {
             "id": { "type": "integer" },
-            "name": { "type": "string" }
+            "name": { "type": "string" },
+            "score": { "type": "number" },
+            "active": { "type": "boolean" },
+            "custom": { "type": "unknown" }
           }
+        },
+        "NonObject": {
+          "type": "string"
         }
       }
     }
   })";
   auto spec = cdd_cpp::openapi::parse(json);
-  if (!spec) {
-    std::cerr << spec.error() << '\n';
-    exit(1);
-  }
+  assert(spec.has_value());
   std::string code = emit(*spec);
 
   assert(code.find("struct User") != std::string::npos);

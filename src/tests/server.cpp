@@ -129,6 +129,37 @@ void test_parse() {
              .patch->parameters->at(0)
              .schema->type == "boolean");
 
+  std::string input2 = R"(
+    /// @contact_url u
+    /// @contact_email e
+    /// @license_identifier MIT
+    /// @license_url u
+    
+    /// @response_content 200 application/json
+    void on_GET_out(std::function<std::string(int)> handler) { routes["GET /"] = handler; }
+
+    class Router2 {
+      void on_GET_res(std::function<std::string(Unknown x)> h) {}
+      
+      /// @response_content 200 application/json
+      void on_POST_res(std::function<std::string()> h) {}
+    };
+  )";
+  auto spec2 = parse(input2).value();
+  assert(spec2.info.contact->url == "u");
+
+  std::string input3 = R"(
+    /// @summary summary
+    /// @contact_email e
+    /// @license_url u
+    /// @securitySchemes
+    /// - Auth http
+    /// @break_schemes
+    class Router3 {};
+  )";
+  auto spec3 = parse(input3).value();
+  assert(spec3.info.summary == "summary");
+
   std::cout << "routes::test_parse passed.\n";
 }
 
@@ -215,7 +246,12 @@ void test_emit() {
   openapi::PathItem item2;
   openapi::Operation op2;
   item2.get = op2;
+  item2.parameters = std::vector<openapi::Parameter>{p1};
   spec.paths->insert({"/empty", item2});
+
+  openapi::PathItem item3;
+  item3.get = op2;
+  spec.paths->insert({"/really_empty", item3});
 
   std::string code = emit(spec);
   assert(code.find("on_GET_testRoute") != std::string::npos);
@@ -227,7 +263,9 @@ void test_emit() {
   assert(code.find("@termsOfService https://terms") != std::string::npos);
   assert(code.find("@contact_name Samuel") != std::string::npos);
   assert(code.find("@license_name MIT") != std::string::npos);
-  assert(code.find("@server_variable var default desc [enum1]") !=
+
+  std::string json_rpc = serve_json_rpc("");
+  assert(json_rpc.find("Method not found") != std::string::npos);  assert(code.find("@server_variable var default desc [enum1]") !=
          std::string::npos);
   assert(code.find("@securitySchemes") != std::string::npos);
   assert(code.find("- BasicAuth http name header basic format") !=

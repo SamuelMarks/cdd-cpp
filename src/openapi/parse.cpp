@@ -1050,7 +1050,11 @@ static OpenAPI parse_OpenAPI(simdjson::dom::object obj) noexcept {
 
 std::expected<OpenAPI, std::string> parse(const std::string &input) noexcept {
   simdjson::dom::parser parser;
-  simdjson::dom::element doc = parser.parse(input);
+  simdjson::simdjson_result<simdjson::dom::element> res = parser.parse(input);
+  if (res.error() != simdjson::SUCCESS) {
+    return std::unexpected("Failed to parse JSON");
+  }
+  simdjson::dom::element doc = res.value();
   if (doc.type() != simdjson::dom::element_type::OBJECT)
     return std::unexpected("OpenAPI doc must be an object");
   return parse_OpenAPI(doc.get_object());

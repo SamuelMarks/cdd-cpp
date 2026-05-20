@@ -9,6 +9,7 @@ void test_parse() noexcept;
 void test_emit() noexcept;
 } // namespace cdd_cpp::openapi
 namespace cdd_cpp::models {
+void test_parse() noexcept;
 void test_emit() noexcept;
 }
 namespace cdd_cpp::client_sdk {
@@ -53,6 +54,7 @@ int main() {
   std::cout << "Running full test suite...\n";
   cdd_cpp::openapi::test_parse();
   cdd_cpp::openapi::test_emit();
+  cdd_cpp::models::test_parse();
   cdd_cpp::models::test_emit();
   cdd_cpp::client_sdk::test_parse();
   cdd_cpp::client_sdk::test_emit_client();

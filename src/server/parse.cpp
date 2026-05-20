@@ -86,13 +86,14 @@ parse(const std::string &input) noexcept {
         std::string content = line;
         if (std::regex_match(line, m, prefix_re)) {
           content = m[1].str();
-        } else {
-          size_t first_non_space = line.find_first_not_of(" \t");
-          if (first_non_space != std::string::npos &&
-              line[first_non_space] == '@') {
-            if (line.find("@servers") == std::string::npos)
-              break;
-          }
+        }
+
+        size_t content_first_non_space = content.find_first_not_of(" \t");
+        if (content_first_non_space != std::string::npos &&
+            content[content_first_non_space] == '@') {
+          if (content.find("@servers") == std::string::npos &&
+              content.find("@server_variable") == std::string::npos)
+            break;
         }
 
         std::regex srv_re(R"(^\-\s+([^\s]+)(?:\s+\(([^)]+)\))?)");
@@ -135,10 +136,6 @@ parse(const std::string &input) noexcept {
                   std::map<std::string, openapi::ServerVariable>{};
             }
             (*current_server->variables)[var_name] = var;
-          } else if (content.find("@") != std::string::npos &&
-                     content.find("@server_variable") == std::string::npos) {
-            if (content.find("@servers") == std::string::npos)
-              break;
           }
         }
       }
@@ -162,13 +159,14 @@ parse(const std::string &input) noexcept {
         std::string lcontent = line;
         if (std::regex_match(line, m, prefix_re)) {
           lcontent = m[1].str();
-        } else {
-          size_t first_non_space = line.find_first_not_of(" \t");
-          if (first_non_space != std::string::npos &&
-              line[first_non_space] == '@') {
-            if (line.find("@securitySchemes") == std::string::npos)
-              break;
-          }
+        }
+
+        size_t content_first_non_space = lcontent.find_first_not_of(" \t");
+        if (content_first_non_space != std::string::npos &&
+            lcontent[content_first_non_space] == '@') {
+          if (lcontent.find("@securitySchemes") == std::string::npos &&
+              lcontent.find("@securityScheme") == std::string::npos)
+            break;
         }
 
         std::regex scheme_re(
@@ -227,18 +225,10 @@ parse(const std::string &input) noexcept {
               (*spec.components->securitySchemes)[key].deprecated = true;
             }
           }
-
-          if (lcontent.find("@") != std::string::npos &&
-              lcontent.find("@securityScheme") == std::string::npos) {
-            if (lcontent.find("@securitySchemes") == std::string::npos)
-              break;
-          }
         }
-      }
-    }
-  };
-
-  size_t class_start = input.find('{');
+        }
+        }
+        };  size_t class_start = input.find('{');
   std::string class_header =
       (class_start != std::string::npos) ? input.substr(0, class_start) : input;
   parse_doc(spec, class_header);

@@ -55,29 +55,65 @@ void test_emit_cli() {
       {"application/json", openapi::MediaType{}}};
   get_op.responses = std::map<std::string, openapi::Response>{{"200", resp}};
 
-  openapi::Parameter p1;
-  p1.name = "id";
+  openapi::Parameter p1, p2, p3;
+  p1.name = "id\"\\\n\r";
   p1.in = "query";
-  get_op.parameters = std::vector<openapi::Parameter>{p1};
+  p1.description = "The id";
+  p1.example = "123";
+  p1.deprecated = true;
+  
+  p2.name = "filter";
+  p2.in = "path";
+  
+  p3.name = "limit";
+  p3.in = "unknown";
+
+  get_op.parameters = std::vector<openapi::Parameter>{p1, p2, p3};
 
   openapi::RequestBody reqBody;
   reqBody.description = "The body";
   get_op.requestBody = reqBody;
 
   pi.get = get_op;
-  spec.paths = std::map<std::string, openapi::PathItem>{{"/pet", pi}};
+
+  openapi::PathItem pi2;
+  openapi::Operation get_op2;
+  get_op2.operationId = "getPetById";
+  pi2.get = get_op2;
+
+  openapi::PathItem pi3;
+  openapi::Operation get_op3;
+  get_op3.operationId = "getPetByStatus";
+  pi3.get = get_op3;
+  
+  spec.paths = std::map<std::string, openapi::PathItem>{
+      {"/pet", pi}, 
+      {"/pet/{petId}", pi2},
+      {"/pet/findByStatus", pi3}
+  };
 
   auto generated_files = emit_cli(spec);
+  auto generated_files_with_tests = emit_cli(spec, false, false, true);
+  auto generated_files_with_options = emit_cli(spec, true, true, false);
+
   std::string generated = "";
   for (const auto &[name, content] : generated_files) {
     generated += content + "\n";
   }
+  std::string generated2 = "";
+  for (const auto &[name, content] : generated_files_with_tests) {
+    generated2 += name + "\n" + content + "\n";
+  }
+  std::string generated3 = "";
+  for (const auto &[name, content] : generated_files_with_options) {
+    generated3 += content + "\n";
+  }
 
   assert(generated.find("Test CLI") != std::string::npos);
-  assert(generated.find("@tags cli") != std::string::npos);
-  assert(generated.find("@deprecated") != std::string::npos);
+  assert(generated.find("/// @tags cli") != std::string::npos);
+  assert(generated.find("/// @deprecated") != std::string::npos);
   assert(generated.find("@security ApiKey") != std::string::npos);
-  assert(generated.find("@response_content 200 application/json") !=
+  assert(generated.find("/// @response_content 200 application/json") !=
          std::string::npos);
   assert(generated.find("https://api.example.com") != std::string::npos);
   assert(generated.find("@securitySchemes") != std::string::npos);
@@ -95,6 +131,25 @@ void test_emit_cli() {
          std::string::npos);
   assert(generated.find("--id") != std::string::npos);
   assert(generated.find("--body") != std::string::npos);
+  
+  assert(generated2.find("add_subdirectory(tests)") != std::string::npos);
+  assert(generated2.find("tests/cli_test.cpp") != std::string::npos);
+  assert(generated2.find("cd tests && ./cli_test") != std::string::npos);
+
+  openapi::OpenAPI spec_empty;
+  spec_empty.paths = std::map<std::string, openapi::PathItem>{
+      {"/{id}", openapi::PathItem{}}
+  };
+  openapi::Operation get_op_empty;
+  get_op_empty.operationId = "getEmpty";
+  spec_empty.paths->at("/{id}").get = get_op_empty;
+  emit_cli(spec_empty);
+  
+  openapi::OpenAPI spec_str;
+  spec_str.paths = std::map<std::string, openapi::PathItem>{
+      {"/\"\\\n\r", openapi::PathItem{}}
+  };
+  emit_cli(spec_str);
 
   std::cout << "client_sdk_cli::test_emit_cli passed.\n";
 }
@@ -155,6 +210,45 @@ void test_parse() {
   assert(op->parameters.has_value());
   assert(op->parameters->at(0).name == "filter");
   assert(op->requestBody.has_value());
+
+    std::string cli_code2 = R"(
+    /**
+     * @contact_email e
+     * @contact_url u
+     * @license_identifier MIT
+     * @license_url u
+     * @servers
+     * - https://srv (Main)
+     *   @server_variable var default desc [enum1]
+     * @break_servers
+     * @securitySchemes
+     * - BasicAuth http
+     * @securitySchemes
+     */
+    if (command == "test2") {
+        // @param filter Filter
+        // @param_example filter 1
+        // @param_deprecated filter
+        if (arg == "--filter")
+    }
+    )";  auto spec2 = parse(cli_code2).value();
+  assert(spec2.info.contact->email == "e");
+  assert(spec2.info.license->url == "u");
+
+    std::string cli_code3 = R"(
+  /**
+   * @contact_email just_email
+   * @license_url just_url
+   * @servers
+   * - https://srv
+   * @some_other_tag
+   */
+  if (command == "test3") {
+      // @param filter 
+  }
+  )";  auto spec3 = parse(cli_code3).value();
+  assert(spec3.info.contact->email == "just_email");
+  assert(spec3.info.license->url == "just_url");
 
   std::cout << "client_sdk_cli::test_parse passed.\n";
 }

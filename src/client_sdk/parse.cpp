@@ -247,8 +247,7 @@ parse(const std::string &input) noexcept {
 
           if (lcontent.find("@") != std::string::npos &&
               lcontent.find("@securityScheme") == std::string::npos) {
-            if (lcontent.find("@securitySchemes") == std::string::npos)
-              break;
+            break;
           }
         }
       }

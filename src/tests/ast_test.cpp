@@ -1,3 +1,4 @@
+#include "../utils/cpp_ast.hpp"
 #include "../utils/cpp_parser.hpp"
 #include <cassert>
 #include <filesystem>
@@ -7,39 +8,70 @@
 namespace cdd_cpp::utils {
 void test_cpp_parser() {
   std::filesystem::create_directories("test_tmp_dir");
-  std::ofstream f("test_tmp_dir/test.hpp");
-  f << R"(
-  #pragma once
-  #include <string>
-  
-  namespace test_ns {
-      /// @brief This is a test class
-      class TestClass {
-      public:
-          /// @brief Test field
-          int testField = 0;
-          
-          /// @brief Test method
-          /// @param p1 Param 1
-          /// @return The result
-          std::string testMethod(int p1, const std::string& p2);
-      };
-      
-      struct TestStruct {
-          bool active;
-      };
-  }
-  )";
-  f.close();
 
+  std::ofstream f1("test_tmp_dir/test.hpp");
+  f1 << R"(
+  /// @brief The best class
+  class TestClass {
+      /// @brief A good field
+      int testInt;
+      long testLong;
+      float testFloat;
+      double testDouble;
+      bool testBool;
+      std::string testString;
+      std::vector<int> testVector;
+      TestStruct testObject;
+  };
+  )";
+  f1.close();
+
+  std::ofstream f2("test_tmp_dir/test2.cpp");
+  f2 << "class TestClass2 {};";
+  f2.close();
+
+  std::ofstream f3("test_tmp_dir/test3.h");
+  f3 << "class TestClass3 {};";
+  f3.close();
+
+  std::ofstream f4("test_tmp_dir/test4.c");
+  f4 << "class TestClass4 {};";
+  f4.close();
   auto spec = cdd_cpp::utils::parse_cpp_project("test_tmp_dir");
   assert(spec.openapi == "3.2.0");
   assert(spec.components.has_value());
   assert(spec.components->schemas.has_value());
   assert(spec.components->schemas->contains("TestClass"));
-  assert(spec.components->schemas->contains("TestStruct"));
+  assert(spec.components->schemas->contains("TestClass2"));
+  assert(spec.components->schemas->contains("TestClass3"));
+  assert(spec.components->schemas->contains("TestClass4"));
 
   std::filesystem::remove_all("test_tmp_dir");
+  
+  std::string cpp_code = R"(
+  /* @doc A */
+  class A {
+      int f1; // @doc f1
+      double f2;
+  };
+  /* @doc f */
+  int f(int a, double b) {
+      return 0;
+  }
+  )";
+  auto ast = parse_cpp(cpp_code);
+  assert(ast.classes.size() == 1);
+  assert(ast.classes[0].fields.size() == 2);
+  assert(ast.classes[0].fields[0].docstring.find("@doc f1") != std::string::npos);
+  assert(ast.functions.size() == 1);
+  assert(ast.functions[0].params.size() == 2);
+  assert(ast.functions[0].docstring.find("@doc f") != std::string::npos);
+  
+  std::string out_cpp = emit_cpp(ast);
+  assert(out_cpp.find("int a") != std::string::npos);
+  assert(out_cpp.find("double b") != std::string::npos);
+  assert(out_cpp.find("@doc f1") != std::string::npos);
+
   std::cout << "test_cpp_parser passed.\n";
 }
 } // namespace cdd_cpp::utils

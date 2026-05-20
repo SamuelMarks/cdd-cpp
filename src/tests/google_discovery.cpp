@@ -18,6 +18,7 @@ void test_parse() {
                     "kind": "discovery#directoryItem",
                     "title": "API 2",
                     "version": "v2",
+                    "description": "desc2",
                     "discoveryRestUrl": "https://api2.com"
                 }
             ]
@@ -27,32 +28,88 @@ void test_parse() {
   assert(list_res->size() == 2);
   assert((*list_res)[0].info.title == "API 1");
   assert((*list_res)[1].info.title == "API 2");
+  assert((*list_res)[1].info.description == "desc2");
 
   std::string rest_json = R"({
             "kind": "discovery#restDescription",
             "title": "Test Service",
             "version": "v1",
+            "description": "desc",
             "rootUrl": "https://api.test.com/",
             "servicePath": "v1/",
             "schemas": {
                 "User": {
                     "type": "object",
+                    "description": "A user",
                     "properties": {
-                        "id": {"type": "string"}
+                        "id": {"type": "string", "format": "uuid"},
+                        "arr": {
+                            "type": "array",
+                            "items": {"type": "string"}
+                        },
+                        "refProp": {"$ref": "Other"}
                     }
                 }
             },
+            "methods": {
+                "getTop": {
+                    "id": "getTop",
+                    "httpMethod": "GET",
+                    "path": "top"
+                },
+                "badMethod": "invalid"
+            },
             "resources": {
                 "users": {
+                    "resources": {
+                        "posts": {
+                             "methods": {
+                                  "getPost": {
+                                      "id": "getPost",
+                                      "httpMethod": "GET",
+                                      "path": "posts/{id}"
+                                  }
+                             }
+                        }
+                    },
                     "methods": {
                         "get": {
                             "id": "users.get",
                             "httpMethod": "GET",
+                            "description": "desc",
                             "path": "users/{+id}",
                             "parameters": {
-                                "id": {"type": "string", "location": "path"}
+                                "id": {
+                                    "type": "string",
+                                    "location": "path",
+                                    "required": true
+                                },
+                                "filter": {
+                                    "type": "string"
+                                }
                             },
+                            "request": {"$ref": "User"},
                             "response": {"$ref": "User"}
+                        },
+                        "post": {
+                            "id": "users.post",
+                            "httpMethod": "POST",
+                            "path": "users"
+                        },
+                        "put": {
+                            "id": "users.put",
+                            "httpMethod": "PUT",
+                            "path": "users/{id}"
+                        },
+                        "delete": {
+                            "id": "users.delete",
+                            "httpMethod": "DELETE",
+                            "path": "users/{id}"
+                        },
+                        "patch": {
+                            "id": "users.patch",
+                            "httpMethod": "PATCH",
+                            "path": "users/{id}"
                         }
                     }
                 }

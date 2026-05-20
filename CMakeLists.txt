@@ -51,8 +51,7 @@ if (USE_VCPKG)
 else()
     FetchContent_Declare(
         simdjson
-        GIT_REPOSITORY https://github.com/simdjson/simdjson.git
-        GIT_TAG v3.9.5
+        URL https://github.com/simdjson/simdjson/archive/refs/tags/v3.9.5.tar.gz
     )
     FetchContent_MakeAvailable(simdjson)
 endif()

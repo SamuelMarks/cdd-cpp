@@ -87,17 +87,17 @@ parse(const std::string &input) noexcept {
         std::string content = line;
         if (std::regex_match(line, m, prefix_re)) {
           content = m[1].str();
-        } else {
-          size_t first_non_space = line.find_first_not_of(" \t");
-          if (first_non_space != std::string::npos &&
-              line[first_non_space] == '@') {
-            if (line.find("@servers") == std::string::npos)
-              break;
-          }
         }
 
-        std::regex srv_re(R"(^\-\s+([^\s]+)(?:\s+\(([^)]+)\))?)");
-        if (std::regex_search(content, m, srv_re)) {
+        size_t content_first_non_space = content.find_first_not_of(" \t");
+        if (content_first_non_space != std::string::npos &&
+            content[content_first_non_space] == '@') {
+          if (content.find("@servers") == std::string::npos &&
+              content.find("@server_variable") == std::string::npos)
+            break;
+        }
+
+        std::regex srv_re(R"(^\-\s+([^\s]+)(?:\s+\(([^)]+)\))?)");        if (std::regex_search(content, m, srv_re)) {
           openapi::Server srv;
           srv.url = m[1].str();
           if (m[2].matched) {
@@ -136,10 +136,6 @@ parse(const std::string &input) noexcept {
                   std::map<std::string, openapi::ServerVariable>{};
             }
             (*current_server->variables)[var_name] = var;
-          } else if (content.find("@") != std::string::npos &&
-                     content.find("@server_variable") == std::string::npos) {
-            if (content.find("@servers") == std::string::npos)
-              break;
           }
         }
       }
