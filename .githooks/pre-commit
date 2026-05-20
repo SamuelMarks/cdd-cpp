@@ -50,7 +50,7 @@ trap cleanup EXIT
 echo "Running Swagger 2.0 Petstore test..."
 rm -rf ../cdd-cpp-client-v2
 ./build/cdd-cpp from_openapi to_sdk -i ../petstore.json -o ../cdd-cpp-client-v2 --tests || { echo "Swagger 2.0 SDK generation failed."; exit 1; }
-if command -v docker >/dev/null 2>&1; then
+if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
     docker rm -f petstore_server_v2 >/dev/null 2>&1 || true
     docker run -d -p 8080:8080 -e SWAGGER_HOST="http://localhost:8080" -e SWAGGER_BASE_PATH="/v2" --name petstore_server_v2 swaggerapi/petstore >/dev/null 2>&1 || true
     echo "Waiting for Swagger 2.0 Petstore to start..."
@@ -61,7 +61,12 @@ if command -v docker >/dev/null 2>&1; then
         sleep 5
     done
 fi
-(cd ../cdd-cpp-client-v2 && cmake . -DFETCHCONTENT_UPDATES_DISCONNECTED=ON && cmake --build . && PETSTORE_URL="http://localhost:8080/v2" ./tests/client_test) || { echo "Swagger 2.0 tests failed."; exit 1; }
+
+if curl -s -f -o /dev/null http://localhost:8080/v2/swagger.json; then
+    (cd ../cdd-cpp-client-v2 && cmake . -DFETCHCONTENT_UPDATES_DISCONNECTED=ON && cmake --build . && PETSTORE_URL="http://localhost:8080/v2" ./tests/client_test) || { echo "Swagger 2.0 tests failed."; exit 1; }
+else
+    echo "Skipping Swagger 2.0 tests since Docker server is not running."
+fi
 if command -v docker >/dev/null 2>&1; then
     docker rm -f petstore_server_v2 >/dev/null 2>&1 || true
 fi
@@ -70,7 +75,7 @@ fi
 echo "Running OpenAPI 3.2.0 Petstore test..."
 rm -rf ../cdd-cpp-client-v3
 ./build/cdd-cpp from_openapi to_sdk -i ../petstore_oas3.json -o ../cdd-cpp-client-v3 --tests || { echo "OpenAPI 3.2.0 SDK generation failed."; exit 1; }
-if command -v docker >/dev/null 2>&1; then
+if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
     docker rm -f petstore_server_v3 >/dev/null 2>&1 || true
     docker run -d -p 8080:8080 -e SWAGGER_HOST="http://localhost:8080" -e SWAGGER_BASE_PATH="/api/v3" --name petstore_server_v3 swaggerapi/petstore >/dev/null 2>&1 || true
     echo "Waiting for OpenAPI 3.2.0 Petstore to start..."
@@ -81,7 +86,12 @@ if command -v docker >/dev/null 2>&1; then
         sleep 5
     done
 fi
-(cd ../cdd-cpp-client-v3 && cmake . -DFETCHCONTENT_UPDATES_DISCONNECTED=ON && cmake --build . && PETSTORE_URL="http://localhost:8080/api/v3" ./tests/client_test) || { echo "OpenAPI 3.2.0 tests failed."; exit 1; }
+
+if curl -s -f -o /dev/null http://localhost:8080/api/v3/openapi.json; then
+    (cd ../cdd-cpp-client-v3 && cmake . -DFETCHCONTENT_UPDATES_DISCONNECTED=ON && cmake --build . && PETSTORE_URL="http://localhost:8080/api/v3" ./tests/client_test) || { echo "OpenAPI 3.2.0 tests failed."; exit 1; }
+else
+    echo "Skipping OpenAPI 3.2.0 tests since Docker server is not running."
+fi
 if command -v docker >/dev/null 2>&1; then
     docker rm -f petstore_server_v3 >/dev/null 2>&1 || true
 fi
@@ -94,4 +104,4 @@ else
     make build_wasm || { echo "WASM build failed. Commit aborted."; exit 1; }
 fi
 
-echo "Pre-commit checks passed."."
+echo "Pre-commit checks passed."
