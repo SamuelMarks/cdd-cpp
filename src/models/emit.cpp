@@ -103,28 +103,29 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
     std::set<std::string> in_progress;
 
     std::function<void(const openapi::Schema &, std::vector<std::string> &)>
-        extract_deps = [&](const openapi::Schema &schema,
-                           std::vector<std::string> &deps) {
-          if (schema.ref.has_value()) {
-            std::string ref = schema.ref.value().ref;
-            size_t last_slash = ref.find_last_of('/');
-            if (last_slash != std::string::npos) {
-              deps.push_back(ref.substr(last_slash + 1));
-            } else {
-              deps.push_back(ref);
-            }
-          }
-          if (schema.items) {
-            extract_deps(*schema.items, deps);
-          }
-          if (schema.properties) {
-            for (const auto &[_, prop_schema] : *schema.properties) {
-              extract_deps(prop_schema, deps);
-            }
-          }
-        };
+        extract_deps =
+            [&](const openapi::Schema &schema, std::vector<std::string> &deps) {
+              if (schema.ref.has_value()) {
+                std::string ref = schema.ref.value().ref;
+                size_t last_slash = ref.find_last_of('/');
+                if (last_slash != std::string::npos) {
+                  deps.push_back(ref.substr(last_slash + 1));
+                } else {
+                  deps.push_back(ref);
+                }
+              }
+              if (schema.items) {
+                extract_deps(*schema.items, deps);
+              }
+              if (schema.properties) {
+                for (const auto &[_, prop_schema] : *schema.properties) {
+                  extract_deps(prop_schema, deps);
+                }
+              }
+            };
 
-    auto get_deps = [&](const openapi::Schema &schema) -> std::vector<std::string> {
+    auto get_deps =
+        [&](const openapi::Schema &schema) -> std::vector<std::string> {
       std::vector<std::string> deps;
       extract_deps(schema, deps);
       return deps;
@@ -149,7 +150,6 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
           visited.insert(name);
           sorted_names.push_back(name);
         };
-
 
     for (const auto &[name, _] : *spec.components->schemas) {
       dfs(name);
