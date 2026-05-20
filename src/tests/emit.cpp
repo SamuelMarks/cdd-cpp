@@ -33,12 +33,45 @@ void test_emit() {
             "components": {
                 "mediaTypes": {
                     "application/json": {
+                        "schema": { "type": "string" },
+                        "examples": {
+                            "MyEx": { "summary": "ex" }
+                        },
                         "itemSchema": { "type": "string" },
                         "prefixEncoding": [
                             {"contentType": "text/plain"}
                         ],
                         "itemEncoding": {
                             "contentType": "application/json"
+                        },
+                        "encoding": {
+                            "encProp": {
+                                "encoding": { "inner": { "style": "simple" } },
+                                "style": "form",
+                                "contentType": "application/json",
+                                "headers": {
+                                    "X-Rate-Limit": {
+                                        "description": "calls per hour",
+                                        "required": true,
+                                        "deprecated": true,
+                                        "allowEmptyValue": true,
+                                        "explode": true,
+                                        "allowReserved": true,
+                                        "schema": { "type": "string" },
+                                        "examples": { "A": { "value": "B" } },
+                                        "content": { "application/json": { "schema": { "type": "string" } } }
+                                    }
+                                },
+                                "explode": true,
+                                "allowReserved": false,
+                                "itemSchema": { "type": "string" },
+                                "prefixEncoding": [
+                                    {"contentType": "text/plain"}
+                                ],
+                                "itemEncoding": {
+                                    "contentType": "application/json"
+                                }
+                            }
                         }
                     }
                 }

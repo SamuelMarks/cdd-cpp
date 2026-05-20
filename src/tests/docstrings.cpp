@@ -19,7 +19,7 @@ void test_emit() {
   sv.default_value = "def";
   sv.enum_values = std::vector<std::string>{"val1", "val2"};
   sv.description = "desc";
-  
+
   openapi::Server srv;
   srv.url = "http://localhost";
   srv.variables = std::map<std::string, openapi::ServerVariable>{{"myVar", sv}};
@@ -28,7 +28,7 @@ void test_emit() {
   openapi::Operation op;
   op.summary = "Op summary";
   op.description = "Op desc\r\nLine2";
-  
+
   openapi::Parameter p;
   p.name = "myParam";
   p.in = "query";

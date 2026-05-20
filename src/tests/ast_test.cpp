@@ -11,10 +11,10 @@ void test_cpp_parser() {
 
   std::ofstream f1("test_tmp_dir/test.hpp");
   f1 << R"(
-  /// @brief The best class
+  /* The best class */
   class TestClass {
-      /// @brief A good field
-      int testInt;
+      /* A good field */
+      int testInt; // A good field
       long testLong;
       float testFloat;
       double testDouble;
@@ -42,12 +42,19 @@ void test_cpp_parser() {
   assert(spec.components.has_value());
   assert(spec.components->schemas.has_value());
   assert(spec.components->schemas->contains("TestClass"));
+  assert(spec.components->schemas->at("TestClass").description ==
+         "/* The best class */");
+  assert(spec.components->schemas->at("TestClass")
+             .properties->contains("testInt"));
+  assert(spec.components->schemas->at("TestClass")
+             .properties->at("testInt")
+             .description == "// A good field");
   assert(spec.components->schemas->contains("TestClass2"));
   assert(spec.components->schemas->contains("TestClass3"));
   assert(spec.components->schemas->contains("TestClass4"));
 
   std::filesystem::remove_all("test_tmp_dir");
-  
+
   std::string cpp_code = R"(
   /* @doc A */
   class A {
@@ -62,11 +69,12 @@ void test_cpp_parser() {
   auto ast = parse_cpp(cpp_code);
   assert(ast.classes.size() == 1);
   assert(ast.classes[0].fields.size() == 2);
-  assert(ast.classes[0].fields[0].docstring.find("@doc f1") != std::string::npos);
+  assert(ast.classes[0].fields[0].docstring.find("@doc f1") !=
+         std::string::npos);
   assert(ast.functions.size() == 1);
   assert(ast.functions[0].params.size() == 2);
   assert(ast.functions[0].docstring.find("@doc f") != std::string::npos);
-  
+
   std::string out_cpp = emit_cpp(ast);
   assert(out_cpp.find("int a") != std::string::npos);
   assert(out_cpp.find("double b") != std::string::npos);

@@ -97,7 +97,8 @@ parse(const std::string &input) noexcept {
             break;
         }
 
-        std::regex srv_re(R"(^\-\s+([^\s]+)(?:\s+\(([^)]+)\))?)");        if (std::regex_search(content, m, srv_re)) {
+        std::regex srv_re(R"(^\-\s+([^\s]+)(?:\s+\(([^)]+)\))?)");
+        if (std::regex_search(content, m, srv_re)) {
           openapi::Server srv;
           srv.url = m[1].str();
           if (m[2].matched) {

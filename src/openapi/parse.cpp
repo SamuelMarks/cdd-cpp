@@ -82,7 +82,7 @@ parse_security(simdjson::dom::object obj, std::string_view key) {
   return std::nullopt;
 }
 
-static Reference parse_Reference(simdjson::dom::object obj) noexcept;
+inline static Reference parse_Reference(simdjson::dom::object obj) noexcept;
 static Contact parse_Contact(simdjson::dom::object obj) noexcept;
 static License parse_License(simdjson::dom::object obj) noexcept;
 static Info parse_Info(simdjson::dom::object obj) noexcept;
@@ -110,7 +110,7 @@ static PathItem parse_PathItem(simdjson::dom::object obj) noexcept;
 static Components parse_Components(simdjson::dom::object obj) noexcept;
 static OpenAPI parse_OpenAPI(simdjson::dom::object obj) noexcept;
 
-static Reference parse_Reference(simdjson::dom::object obj) noexcept {
+inline static Reference parse_Reference(simdjson::dom::object obj) noexcept {
   Reference res;
   res.ref = get_optional_string(obj, "$ref").value_or("");
   res.summary = get_optional_string(obj, "summary");
@@ -229,9 +229,8 @@ static Schema parse_Schema(simdjson::dom::object obj) noexcept {
   res.description = get_optional_string(obj, "description");
   res.format = get_optional_string(obj, "format");
   simdjson::dom::element el_ref;
-  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS &&
-      el_ref.type() == simdjson::dom::element_type::OBJECT) {
-    res.ref = parse_Reference(el_ref.get_object());
+  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
+    res.ref = parse_Reference(obj);
   }
   simdjson::dom::element el_discriminator;
   if (obj["discriminator"].get(el_discriminator) == simdjson::SUCCESS &&
@@ -351,9 +350,8 @@ static Example parse_Example(simdjson::dom::object obj) noexcept {
   res.value = get_optional_string(obj, "value");
   res.externalValue = get_optional_string(obj, "externalValue");
   simdjson::dom::element el_ref;
-  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS &&
-      el_ref.type() == simdjson::dom::element_type::OBJECT) {
-    res.ref = parse_Reference(el_ref.get_object());
+  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
+    res.ref = parse_Reference(obj);
   }
   return res;
 }
@@ -497,9 +495,8 @@ static Header parse_Header(simdjson::dom::object obj) noexcept {
     res.content = m;
   }
   simdjson::dom::element el_ref;
-  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS &&
-      el_ref.type() == simdjson::dom::element_type::OBJECT) {
-    res.ref = parse_Reference(el_ref.get_object());
+  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
+    res.ref = parse_Reference(obj);
   }
   return res;
 }
@@ -519,9 +516,8 @@ static RequestBody parse_RequestBody(simdjson::dom::object obj) noexcept {
   }
   res.required = get_optional_bool(obj, "required").value_or(false);
   simdjson::dom::element el_ref;
-  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS &&
-      el_ref.type() == simdjson::dom::element_type::OBJECT) {
-    res.ref = parse_Reference(el_ref.get_object());
+  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
+    res.ref = parse_Reference(obj);
   }
   return res;
 }
@@ -539,9 +535,8 @@ static Link parse_Link(simdjson::dom::object obj) noexcept {
     res.server = parse_Server(el_server.get_object());
   }
   simdjson::dom::element el_ref;
-  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS &&
-      el_ref.type() == simdjson::dom::element_type::OBJECT) {
-    res.ref = parse_Reference(el_ref.get_object());
+  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
+    res.ref = parse_Reference(obj);
   }
   return res;
 }
@@ -580,9 +575,8 @@ static Response parse_Response(simdjson::dom::object obj) noexcept {
     res.links = m;
   }
   simdjson::dom::element el_ref;
-  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS &&
-      el_ref.type() == simdjson::dom::element_type::OBJECT) {
-    res.ref = parse_Reference(el_ref.get_object());
+  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
+    res.ref = parse_Reference(obj);
   }
   return res;
 }
@@ -626,9 +620,8 @@ static Parameter parse_Parameter(simdjson::dom::object obj) noexcept {
     res.content = m;
   }
   simdjson::dom::element el_ref;
-  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS &&
-      el_ref.type() == simdjson::dom::element_type::OBJECT) {
-    res.ref = parse_Reference(el_ref.get_object());
+  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
+    res.ref = parse_Reference(obj);
   }
   return res;
 }
@@ -693,9 +686,8 @@ static SecurityScheme parse_SecurityScheme(simdjson::dom::object obj) noexcept {
   res.oauth2MetadataUrl = get_optional_string(obj, "oauth2MetadataUrl");
   res.deprecated = get_optional_bool(obj, "deprecated");
   simdjson::dom::element el_ref;
-  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS &&
-      el_ref.type() == simdjson::dom::element_type::OBJECT) {
-    res.ref = parse_Reference(el_ref.get_object());
+  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
+    res.ref = parse_Reference(obj);
   }
   return res;
 }

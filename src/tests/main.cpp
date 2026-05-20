@@ -11,7 +11,7 @@ void test_emit() noexcept;
 namespace cdd_cpp::models {
 void test_parse() noexcept;
 void test_emit() noexcept;
-}
+} // namespace cdd_cpp::models
 namespace cdd_cpp::client_sdk {
 void test_parse() noexcept;
 void test_emit_client() noexcept;

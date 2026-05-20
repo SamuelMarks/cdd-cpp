@@ -226,9 +226,10 @@ parse(const std::string &input) noexcept {
             }
           }
         }
-        }
-        }
-        };  size_t class_start = input.find('{');
+      }
+    }
+  };
+  size_t class_start = input.find('{');
   std::string class_header =
       (class_start != std::string::npos) ? input.substr(0, class_start) : input;
   parse_doc(spec, class_header);

@@ -265,7 +265,8 @@ void test_emit() {
   assert(code.find("@license_name MIT") != std::string::npos);
 
   std::string json_rpc = serve_json_rpc("");
-  assert(json_rpc.find("Method not found") != std::string::npos);  assert(code.find("@server_variable var default desc [enum1]") !=
+  assert(json_rpc.find("Method not found") != std::string::npos);
+  assert(code.find("@server_variable var default desc [enum1]") !=
          std::string::npos);
   assert(code.find("@securitySchemes") != std::string::npos);
   assert(code.find("- BasicAuth http name header basic format") !=

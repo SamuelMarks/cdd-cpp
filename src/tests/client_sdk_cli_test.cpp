@@ -61,10 +61,10 @@ void test_emit_cli() {
   p1.description = "The id";
   p1.example = "123";
   p1.deprecated = true;
-  
+
   p2.name = "filter";
   p2.in = "path";
-  
+
   p3.name = "limit";
   p3.in = "unknown";
 
@@ -85,12 +85,9 @@ void test_emit_cli() {
   openapi::Operation get_op3;
   get_op3.operationId = "getPetByStatus";
   pi3.get = get_op3;
-  
+
   spec.paths = std::map<std::string, openapi::PathItem>{
-      {"/pet", pi}, 
-      {"/pet/{petId}", pi2},
-      {"/pet/findByStatus", pi3}
-  };
+      {"/pet", pi}, {"/pet/{petId}", pi2}, {"/pet/findByStatus", pi3}};
 
   auto generated_files = emit_cli(spec);
   auto generated_files_with_tests = emit_cli(spec, false, false, true);
@@ -131,24 +128,22 @@ void test_emit_cli() {
          std::string::npos);
   assert(generated.find("--id") != std::string::npos);
   assert(generated.find("--body") != std::string::npos);
-  
+
   assert(generated2.find("add_subdirectory(tests)") != std::string::npos);
   assert(generated2.find("tests/cli_test.cpp") != std::string::npos);
   assert(generated2.find("cd tests && ./cli_test") != std::string::npos);
 
   openapi::OpenAPI spec_empty;
-  spec_empty.paths = std::map<std::string, openapi::PathItem>{
-      {"/{id}", openapi::PathItem{}}
-  };
+  spec_empty.paths =
+      std::map<std::string, openapi::PathItem>{{"/{id}", openapi::PathItem{}}};
   openapi::Operation get_op_empty;
   get_op_empty.operationId = "getEmpty";
   spec_empty.paths->at("/{id}").get = get_op_empty;
   emit_cli(spec_empty);
-  
+
   openapi::OpenAPI spec_str;
   spec_str.paths = std::map<std::string, openapi::PathItem>{
-      {"/\"\\\n\r", openapi::PathItem{}}
-  };
+      {"/\"\\\n\r", openapi::PathItem{}}};
   emit_cli(spec_str);
 
   std::cout << "client_sdk_cli::test_emit_cli passed.\n";
@@ -211,7 +206,7 @@ void test_parse() {
   assert(op->parameters->at(0).name == "filter");
   assert(op->requestBody.has_value());
 
-    std::string cli_code2 = R"(
+  std::string cli_code2 = R"(
     /**
      * @contact_email e
      * @contact_url u
@@ -231,11 +226,12 @@ void test_parse() {
         // @param_deprecated filter
         if (arg == "--filter")
     }
-    )";  auto spec2 = parse(cli_code2).value();
+    )";
+  auto spec2 = parse(cli_code2).value();
   assert(spec2.info.contact->email == "e");
   assert(spec2.info.license->url == "u");
 
-    std::string cli_code3 = R"(
+  std::string cli_code3 = R"(
   /**
    * @contact_email just_email
    * @license_url just_url
@@ -246,7 +242,8 @@ void test_parse() {
   if (command == "test3") {
       // @param filter 
   }
-  )";  auto spec3 = parse(cli_code3).value();
+  )";
+  auto spec3 = parse(cli_code3).value();
   assert(spec3.info.contact->email == "just_email");
   assert(spec3.info.license->url == "just_url");
 

@@ -38,6 +38,52 @@ void test_emit_client() {
   spec.components->securitySchemes =
       std::map<std::string, openapi::SecurityScheme>{{"BasicAuth", scheme}};
 
+  openapi::Schema prop1;
+  prop1.type = "integer";
+  openapi::Schema prop2;
+  prop2.type = "number";
+  openapi::Schema prop3;
+  prop3.type = "boolean";
+  openapi::Schema prop4;
+  prop4.type = "string";
+
+  openapi::Schema arr_items;
+  arr_items.type = "string";
+  openapi::Schema prop5;
+  prop5.type = "array";
+  prop5.items = std::make_shared<openapi::Schema>(arr_items);
+
+  openapi::Schema prop6;
+  prop6.type = "array"; // no items
+
+  openapi::Schema prop7;
+  prop7.ref = openapi::Reference{"#/components/schemas/Other"};
+
+  openapi::Schema prop8;
+  prop8.ref = openapi::Reference{"Other"}; // no slash
+
+  openapi::Schema prop9;
+  prop9.type = "unknown";
+
+  openapi::Schema obj_schema;
+  obj_schema.type = "object";
+  obj_schema.properties =
+      std::make_shared<std::map<std::string, openapi::Schema>>(
+          std::initializer_list<std::pair<const std::string, openapi::Schema>>{
+              {"p1", prop1},
+              {"p2", prop2},
+              {"p3", prop3},
+              {"p4", prop4},
+              {"p5", prop5},
+              {"p6", prop6},
+              {"p7", prop7},
+              {"p8", prop8},
+              {"p9", prop9}});
+  obj_schema.required = std::vector<std::string>{"p1"};
+
+  spec.components->schemas =
+      std::map<std::string, openapi::Schema>{{"MyObj", obj_schema}};
+
   openapi::PathItem pi;
   pi.summary = "Path Summary";
   pi.description = "Path Description";
@@ -78,6 +124,8 @@ void test_emit_client() {
 
   openapi::RequestBody req_body;
   req_body.description = "Body Description";
+  req_body.content = std::map<std::string, openapi::MediaType>{
+      {"multipart/form-data", openapi::MediaType{}}};
   get_op.requestBody = req_body;
 
   openapi::Response resp_200;
@@ -88,15 +136,33 @@ void test_emit_client() {
       std::map<std::string, openapi::Response>{{"200", resp_200}};
 
   pi.get = get_op;
-  pi.patch = get_op; // just to test patch method
-  pi.patch->operationId = "patchPet";
+
+  openapi::Operation patch_op = get_op;
+  patch_op.operationId = "patchPet";
+  patch_op.requestBody->content = std::map<std::string, openapi::MediaType>{
+      {"application/x-www-form-urlencoded", openapi::MediaType{}}};
+  pi.patch = patch_op;
+
+  openapi::Operation put_op = get_op;
+  put_op.operationId = "putPetStream";
+  put_op.requestBody->content = std::map<std::string, openapi::MediaType>{
+      {"application/octet-stream", openapi::MediaType{}}};
+  pi.put = put_op;
+
+  openapi::Operation post_op = get_op;
+  post_op.operationId = "createArray";
+  post_op.responses =
+      std::map<std::string, openapi::Response>{{"400", resp_200}};
+  post_op.requestBody->content = std::map<std::string, openapi::MediaType>{
+      {"application/json", openapi::MediaType{}}};
+  pi.post = post_op;
 
   std::map<std::string, openapi::PathItem> paths;
   paths["/pet/{id}"] = pi;
   spec.paths = paths;
 
   auto generated_files = emit_client(spec);
-  auto generated_files_with_tests = emit_client(spec, true, false, true);
+  auto generated_files_with_tests = emit_client(spec, false, false, true);
   auto generated_files_with_options = emit_client(spec, true, true, false);
 
   std::string generated = "";
@@ -169,9 +235,8 @@ void test_emit_client() {
   assert(generated2.find("cd tests && ./client_test") != std::string::npos);
 
   openapi::OpenAPI spec_empty;
-  spec_empty.paths = std::map<std::string, openapi::PathItem>{
-      {"/{id}", openapi::PathItem{}}
-  };
+  spec_empty.paths =
+      std::map<std::string, openapi::PathItem>{{"/{id}", openapi::PathItem{}}};
   openapi::Operation get_op_empty;
   get_op_empty.operationId = "getEmpty";
   spec_empty.paths->at("/{id}").get = get_op_empty;
@@ -179,10 +244,11 @@ void test_emit_client() {
 
   openapi::OpenAPI spec_str;
   spec_str.paths = std::map<std::string, openapi::PathItem>{
-      {"/\"\\\n\r", openapi::PathItem{}}
-  };
+      {"/\"\\\n\r", openapi::PathItem{}}};
   emit_client(spec_str);
-  assert(generated.find("content-type: application/json") != std::string::npos);
+  assert(
+      generated.find("content-type: multipart/form-data; boundary=boundary") !=
+      std::string::npos);
 
   assert(generated.find("getPet(int id, bool filter, double X_Header, const "
                         "std::string& body)") != std::string::npos);

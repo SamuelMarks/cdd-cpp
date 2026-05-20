@@ -338,30 +338,6 @@ int main_impl(int argc, char **argv, std::ostream &out,
       fs << spec_str << "\n";
     }
 
-  } else if (command == "serve_json_rpc") {
-    for (int i = 2; i < argc; ++i) {
-      std::string arg = argv[i];
-      if (arg == "--help" || arg == "-h") {
-        out << "Usage:\n  cdd-cpp serve_json_rpc --port <port> --listen "
-               "<host>\n";
-        return 0;
-      }
-    }
-
-    std::string port = "8080";
-    std::string listen = "127.0.0.1";
-    for (int i = 2; i < argc; ++i) {
-      std::string arg = argv[i];
-      if (arg == "--port" && i + 1 < argc)
-        port = argv[++i];
-      else if (arg == "--listen" && i + 1 < argc)
-        listen = argv[++i];
-    }
-    port = get_arg_or_env(port, "CDD_CPP_PORT", "8080");
-    listen = get_arg_or_env(listen, "CDD_CPP_LISTEN", "127.0.0.1");
-    out << "Starting JSON-RPC server on " << listen << ":" << port << " ...\n";
-    // placeholder for json rpc server logic
-
   } else if (command == "to_docs_json") {
     for (int i = 2; i < argc; ++i) {
       std::string arg = argv[i];

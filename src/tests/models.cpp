@@ -21,7 +21,7 @@ void test_parse() {
                    "/// @xml.wrapped true\n"
                    "/// @discriminator.propertyName prop\n"
                    "/// @discriminator.mapping k1:v1\n";
-  
+
   cls1.fields.push_back({"int", "f_int", "/// @description field int"});
   cls1.fields.push_back({"double", "f_double", ""});
   cls1.fields.push_back({"bool", "f_bool", ""});
@@ -33,7 +33,7 @@ void test_parse() {
   cls1.fields.push_back({"std::vector<std::string>", "f_vec_str", ""});
   cls1.fields.push_back({"std::vector<Cust>", "f_vec_cust", ""});
   cls1.fields.push_back({"Cust", "f_cust", ""});
-  
+
   utils::CppClass cls_ext_url;
   cls_ext_url.name = "TestExtUrl";
   cls_ext_url.docstring = "/// @externalDocs.url url\n";
@@ -41,7 +41,7 @@ void test_parse() {
   utils::CppClass cls_xml_ns;
   cls_xml_ns.name = "TestXmlNs";
   cls_xml_ns.docstring = "/// @xml.namespace_url url\n";
-  
+
   utils::CppClass cls_xml_pref;
   cls_xml_pref.name = "TestXmlPref";
   cls_xml_pref.docstring = "/// @xml.prefix pref\n";
@@ -60,7 +60,7 @@ void test_parse() {
 
   utils::CppClass cls_none;
   cls_none.name = "TestNone";
-                   
+
   ast.classes.push_back(cls1);
   ast.classes.push_back(cls_ext_url);
   ast.classes.push_back(cls_xml_ns);
@@ -71,11 +71,13 @@ void test_parse() {
   ast.classes.push_back(cls_none);
 
   utils::parse_schemas(ast, spec);
-  
+
   assert(spec.components.has_value());
   assert(spec.components->schemas.has_value());
-  assert(spec.components->schemas->find("Test1") != spec.components->schemas->end());
-  assert(spec.components->schemas->find("TestExtUrl") != spec.components->schemas->end());
+  assert(spec.components->schemas->find("Test1") !=
+         spec.components->schemas->end());
+  assert(spec.components->schemas->find("TestExtUrl") !=
+         spec.components->schemas->end());
 
   std::cout << "models::test_parse passed.\n";
 }

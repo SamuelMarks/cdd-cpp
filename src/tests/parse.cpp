@@ -10,6 +10,10 @@ void test_parse() {
       std::string err = spec_res.error();
     }
   }
+  {
+    auto spec_res = parse("\"string\"");
+    assert(!spec_res.has_value());
+  }
   std::string json = R"({
             "openapi": "3.2.0",
             "info": {
@@ -116,7 +120,20 @@ void test_parse() {
           "required": ["name"],
           "deprecated": true,
           "multipleOf": 1.5,
-          "maxItems": 10
+          "maxItems": 10,
+          "$defs": {
+              "Def": { "type": "string" }
+          },
+          "maximum": 10.0,
+          "exclusiveMaximum": 9.9,
+          "minimum": 0.0,
+          "exclusiveMinimum": 0.1,
+          "minLength": 1,
+          "minItems": 1,
+          "maxContains": 5,
+          "minContains": 1,
+          "maxProperties": 10,
+          "minProperties": 1
         }
       }
     }
@@ -158,6 +175,15 @@ void test_parse() {
         "kind": "entity"
       }
     ],
+    "paths": {
+        "/sec": {
+            "get": {
+                "security": [
+                    { "oauth2": ["read", "write"] }
+                ]
+            }
+        }
+    },
     "components": {
       "schemas": {
         "Pet": {
@@ -166,7 +192,57 @@ void test_parse() {
             "propertyName": "petType",
             "defaultMapping": "#/components/schemas/Dog"
           }
+        },
+        "RefToPet": {
+            "$ref": "#/components/schemas/Pet",
+            "summary": "ref sum",
+            "description": "ref desc"
         }
+      },
+      "callbacks": {
+          "cb": {
+              "ev": {
+                  "summary": "event"
+              }
+          }
+      },
+      "examples": {
+          "Ex1": {
+              "summary": "s",
+              "description": "d",
+              "value": "v",
+              "externalValue": "e",
+              "$ref": "r"
+          }
+      },
+      "mediaTypes": {
+          "application/json": {
+              "itemSchema": { "type": "string" },
+              "itemEncoding": { "contentType": "application/json" },
+              "prefixEncoding": [
+                  { "contentType": "text/plain" }
+              ],
+              "examples": {
+                  "MyEx": { "summary": "ex" }
+              },
+              "encoding": {
+                  "history": {
+                      "contentType": "application/json",
+                      "headers": {
+                          "X-Rate-Limit": {
+                              "description": "calls per hour",
+                              "schema": { "type": "integer" },
+                              "content": {
+                                  "application/json": {
+                                      "schema": { "type": "integer" }
+                                  }
+                              },
+                              "examples": { "A": { "value": "B" } }
+                          }
+                      }
+                  }
+              }
+          }
       }
     }
   })";
@@ -181,7 +257,18 @@ void test_parse() {
   assert(spec_latest.tags->at(0).kind == "entity");
   assert(spec_latest.components.has_value() &&
          spec_latest.components->schemas.has_value());
-  assert(spec_latest.components->schemas->at("Pet").discriminator.has_value());
+  assert(spec_latest.components->mediaTypes != nullptr);
+  auto mt = spec_latest.components->mediaTypes->at("application/json");
+  assert(mt.itemSchema != nullptr);
+  assert(mt.itemEncoding != nullptr);
+  assert(mt.prefixEncoding != nullptr && mt.prefixEncoding->size() == 1);
+  assert(mt.examples.has_value() && mt.examples->contains("MyEx"));
+
+  assert(spec_latest.components->schemas->at("RefToPet").ref.has_value());
+  assert(spec_latest.components->schemas->at("RefToPet").ref->summary ==
+         "ref sum");
+  assert(spec_latest.components->schemas->at("RefToPet").ref->ref ==
+         "#/components/schemas/Pet");
   assert(
       spec_latest.components->schemas->at("Pet").discriminator->propertyName ==
       "petType");
