@@ -1,4 +1,6 @@
 #include "emit.hpp"
+#include <functional>
+#include <set>
 #include <sstream>
 
 namespace cdd_cpp::models {
@@ -96,7 +98,69 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   ss << "namespace cdd_models {\n\n";
 
   if (spec.components && spec.components->schemas) {
-    for (const auto &[name, schema] : *spec.components->schemas) {
+    std::vector<std::string> sorted_names;
+    std::set<std::string> visited;
+    std::set<std::string> in_progress;
+
+    std::function<void(const openapi::Schema &, std::vector<std::string> &)>
+        extract_deps = [&](const openapi::Schema &schema,
+                           std::vector<std::string> &deps) {
+          if (schema.ref.has_value()) {
+            std::string ref = schema.ref.value().ref;
+            size_t last_slash = ref.find_last_of('/');
+            if (last_slash != std::string::npos) {
+              deps.push_back(ref.substr(last_slash + 1));
+            } else {
+              deps.push_back(ref);
+            }
+          }
+          if (schema.items) {
+            extract_deps(*schema.items, deps);
+          }
+          if (schema.properties) {
+            for (const auto &[_, prop_schema] : *schema.properties) {
+              extract_deps(prop_schema, deps);
+            }
+          }
+        };
+
+    auto get_deps = [&](const openapi::Schema &schema) -> std::vector<std::string> {
+      std::vector<std::string> deps;
+      extract_deps(schema, deps);
+      return deps;
+    };
+
+    std::function<void(const std::string &)> dfs =
+        [&](const std::string &name) {
+          if (visited.count(name))
+            return;
+          if (in_progress.count(name))
+            return;
+          in_progress.insert(name);
+
+          auto it = spec.components->schemas->find(name);
+          if (it != spec.components->schemas->end()) {
+            for (const auto &dep : get_deps(it->second)) {
+              dfs(dep);
+            }
+          }
+
+          in_progress.erase(name);
+          visited.insert(name);
+          sorted_names.push_back(name);
+        };
+
+
+    for (const auto &[name, _] : *spec.components->schemas) {
+      dfs(name);
+    }
+
+    for (const auto &name : sorted_names) {
+      auto it = spec.components->schemas->find(name);
+      if (it == spec.components->schemas->end())
+        continue;
+      const auto &schema = it->second;
+
       emit_docstrings(ss, schema, "    ");
       ss << "    struct " << name << " {\n";
       if (schema.properties) {

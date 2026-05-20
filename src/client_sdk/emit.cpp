@@ -44,41 +44,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
   std::map<std::string, std::string> result;
 
   // 1. models.hpp
-  std::stringstream m_hpp;
-  m_hpp << "#pragma once\n";
-  m_hpp << "#define SIMDJSON_STATIC_REFLECTION 1\n";
-  m_hpp << "#include <string>\n";
-  m_hpp << "#include <vector>\n";
-  m_hpp << "#include <optional>\n";
-  m_hpp << "#include <simdjson.h>\n\n";
-  m_hpp << "namespace cdd_models {\n\n";
-
-  if (spec.components && spec.components->schemas) {
-    for (const auto &[name, schema] : *spec.components->schemas) {
-      m_hpp << "    struct " << name << " {\n";
-      if (schema.properties) {
-        for (const auto &[prop_name, prop_schema] : *schema.properties) {
-          bool is_required = false;
-          if (schema.required) {
-            for (const auto &req : *schema.required) {
-              if (req == prop_name)
-                is_required = true;
-            }
-          }
-          if (is_required) {
-            m_hpp << "        " << map_type(prop_schema) << " " << prop_name
-                  << ";\n";
-          } else {
-            m_hpp << "        std::optional<" << map_type(prop_schema) << "> "
-                  << prop_name << ";\n";
-          }
-        }
-      }
-      m_hpp << "    };\n\n";
-    }
-  }
-  m_hpp << "}\n";
-  result["src/models.hpp"] = m_hpp.str();
+  result["src/models.hpp"] = models::emit(spec);
 
   // 2. models.cpp (Empty because we use C++26 reflection in the header)
   std::stringstream m_cpp;
