@@ -22,7 +22,7 @@ def get_coverage():
             
         # Extract coverage summary
         result = subprocess.run(
-            ["gcovr", "--print-summary", "-r", ".", "--filter", "src/"],
+            ["gcovr", "--print-summary", "-r", ".", "--filter", "src/", "--gcov-ignore-parse-errors=all"],
             capture_output=True, text=True, check=True
         )
         
