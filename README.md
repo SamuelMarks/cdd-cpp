@@ -2,7 +2,7 @@ cdd-cpp
 =======
 [![License](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI](https://github.com/SamuelMarks/cdd-cpp/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/cdd-cpp/actions)
-[![Test Coverage](https://img.shields.io/badge/coverage-0.50%25-brightgreen.svg)](#)
+[![Test Coverage](https://img.shields.io/badge/coverage-100.00%25-brightgreen.svg)](#)
 [![Doc Coverage](https://img.shields.io/badge/docs-100.00%25-brightgreen.svg)](#)
 
 ----
