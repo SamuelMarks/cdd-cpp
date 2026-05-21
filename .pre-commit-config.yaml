@@ -1,9 +1,28 @@
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+        exclude: \.(bat|cmd|ps1)$
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v22.1.5
+    hooks:
+      - id: clang-format
+        types_or: [c++, c]
+  - repo: https://github.com/cpplint/cpplint
+    rev: 1.6.1
+    hooks:
+      - id: cpplint
+        args:
+          - "--filter=-legal/copyright,-build/include_order,-build/include_subdir,-whitespace/comments,-build/include_what_you_use,-build/namespaces,-build/c++17,-readability/casting,-whitespace/indent,-whitespace/ending_newline,-readability/braces,-whitespace/blank_line,-build/include,-whitespace/newline,-readability/todo,-build/c++11,-runtime/references,-runtime/int,-runtime/explicit,-whitespace/braces,-whitespace/semicolon,-runtime/arrays,-build/storage_class,-build/header_guard,-whitespace/line_length"
+          - "--linelength=120"
   - repo: local
     hooks:
-      - id: run-tests-and-coverage
-        name: Run Tests, Lint, Format & Update Coverage Badges
-        entry: .githooks/pre-commit
-        language: script
+      - id: run-custom-checks
+        name: Run Build, Tests, Coverage, and Docker Checks
+        entry: python scripts/run_pre_commit_checks.py
+        language: python
         pass_filenames: false
         always_run: true
+        verbose: true

@@ -197,6 +197,84 @@ void test_to_docs_json() {
   auto serve_err = exec("./cdd-cpp serve_json_rpc --help");
   assert(serve_err && serve_err->find("Usage:") != std::string::npos);
 
+  std::cout << "Testing read_file error\n";
+  auto err_read_file =
+      exec("./cdd-cpp from_openapi to_sdk -i nonexistent.json -o out_dir");
+  assert(err_read_file &&
+         err_read_file->find("Error reading file") != std::string::npos);
+
+  std::cout << "Testing empty args\n";
+  auto empty_args = exec("./cdd-cpp");
+  assert(empty_args && empty_args->find("Usage:") != std::string::npos);
+
+  std::cout << "Testing to_docs_json -i error\n";
+  auto to_docs_err_no_i = exec("./cdd-cpp to_docs_json");
+  assert(to_docs_err_no_i &&
+         to_docs_err_no_i->find("Missing -i") != std::string::npos);
+
+  std::cout << "Testing to_docs_json help\n";
+  auto to_docs_help = exec("./cdd-cpp to_docs_json --help");
+  assert(to_docs_help && to_docs_help->find("Usage:") != std::string::npos);
+
+  std::cout << "Testing to_docs_json -o flag\n";
+  auto to_docs_out =
+      exec("./cdd-cpp to_docs_json -i test_spec.json -o out.json");
+  assert(to_docs_out && std::filesystem::exists("out.json"));
+
+  std::cout << "Testing openapi::parse error in to_docs_json\n";
+  FILE *f_bad = fopen("bad.json", "w");
+  if (f_bad) {
+    std::string bad = "{bad}";
+    fwrite(bad.c_str(), 1, bad.size(), f_bad);
+    fclose(f_bad);
+  }
+  auto to_docs_bad = exec("./cdd-cpp to_docs_json -i bad.json");
+  assert(to_docs_bad && to_docs_bad->find("Error:") != std::string::npos);
+
+  std::cout << "Testing from_openapi parsing error with valid json\n";
+  auto from_server_bad_parse = exec("./cdd-cpp from_openapi to_server -i bad.json -o out_dir");
+  assert(from_server_bad_parse && from_server_bad_parse->find("Error:") != std::string::npos);
+
+  std::cout << "Testing output file open error\n";
+  std::filesystem::create_directories("read_only_dir");
+  std::filesystem::permissions("read_only_dir", std::filesystem::perms::none);
+  auto err_out_file = exec("./cdd-cpp from_openapi to_sdk -i test_spec.json -o "
+                           "read_only_dir/file.json");
+  assert(err_out_file &&
+         err_out_file->find("Could not open output file") != std::string::npos);
+  std::filesystem::permissions("read_only_dir", std::filesystem::perms::all);
+  std::filesystem::remove_all("read_only_dir");
+
+  std::cout << "Testing env vars logic\n";
+  auto env_var_res = exec("CDD_CPP_NO_IMPORTS=true CDD_CPP_NO_WRAPPING=1 "
+                          "CDD_CPP_INPUT=test_spec.json "
+                          "CDD_CPP_OUTPUT=env_out.json ./cdd-cpp to_docs_json");
+  assert(env_var_res);
+  assert(std::filesystem::exists("env_out.json"));
+
+  std::filesystem::create_directories("test_tmp_dir");
+  auto env_var_res2 = exec(
+      "CDD_CPP_DIR=test_tmp_dir CDD_CPP_SPEC=test_spec.json ./cdd-cpp sync");
+  assert(env_var_res2);
+
+  auto env_var_res3 =
+      exec("CDD_CPP_INPUT=test_spec.json CDD_CPP_OUTPUT=env_out_sdk "
+           "CDD_CPP_NO_GITHUB_ACTIONS=1 CDD_CPP_NO_INSTALLABLE_PACKAGE=1 "
+           "CDD_CPP_TESTS=1 ./cdd-cpp from_openapi to_sdk");
+  assert(env_var_res3);
+
+  std::cout << "Testing serve_json_rpc execution and graceful stop\n";
+  auto serve_res = exec(
+      "./cdd-cpp serve_json_rpc --port 8085 --listen 127.0.0.1 > /dev/null 2>&1 & "
+      "PID=$!; "
+      "sleep 0.5 && "
+      "curl -s -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"ping\",\"id\":1}' http://127.0.0.1:8085 > /dev/null && "
+      "curl -s -X OPTIONS http://127.0.0.1:8085 > /dev/null && "
+      "curl -s -X GET http://127.0.0.1:8085/stop > /dev/null && "
+      "wait $PID || true");
+  assert(serve_res);
+  assert(serve_res);
+
   std::cout << "cli::test_to_docs_json passed.\n";
 }
 } // namespace cdd_cpp::cli

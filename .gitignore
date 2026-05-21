@@ -91,3 +91,44 @@ compile_commands.json
 
 # OS specific
 .DS_Store
+
+# Catch-all rules for temporary/scratch files to make 'git add .' safer
+*.tmp
+*.temp
+*tmp*
+*temp*
+*.bak*
+*.log
+*.swp
+*~
+*.md.bak
+*.json.bak
+*.cpp.bak
+*.hpp.bak
+
+# Test scratch files and dirs
+test_tmp_dir*/
+test_sync_dir/
+test_sync_spec.json
+out.json
+bad.json
+env_out.json
+env_out_sdk/
+out_dir/
+parse_test_tmp*
+upgrader_test_temp*
+upgrader_test_tmp*
+upgrader_tmp.json
+test_fwd.cpp
+debug.cpp
+exhaustive_openapi.json
+
+# Coverage metrics and reports
+coverage_out/
+*.info
+
+# Petstore SDK test output
+cdd-cpp-client-v2/
+cdd-cpp-client-v3/
+petstore.json
+petstore_oas3.json

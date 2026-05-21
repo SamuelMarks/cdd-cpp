@@ -1,9 +1,9 @@
 #include "emit.hpp"
 #include "../utils/json_writer.hpp"
+#include <stdio.h>
 
 namespace cdd_cpp::openapi {
 
-void emit_Reference(utils::JsonWriter &jw, const Reference &obj) noexcept;
 void emit_Contact(utils::JsonWriter &jw, const Contact &obj) noexcept;
 void emit_License(utils::JsonWriter &jw, const License &obj) noexcept;
 void emit_Info(utils::JsonWriter &jw, const Info &obj) noexcept;
@@ -33,14 +33,6 @@ void emit_Operation(utils::JsonWriter &jw, const Operation &obj) noexcept;
 void emit_PathItem(utils::JsonWriter &jw, const PathItem &obj) noexcept;
 void emit_Components(utils::JsonWriter &jw, const Components &obj) noexcept;
 void emit_OpenAPI(utils::JsonWriter &jw, const OpenAPI &obj) noexcept;
-
-void emit_Reference(utils::JsonWriter &jw, const Reference &obj) noexcept {
-  jw.start_object();
-  jw.key_value("$ref", obj.ref);
-  jw.key_optional("summary", obj.summary);
-  jw.key_optional("description", obj.description);
-  jw.end_object();
-}
 
 void emit_Contact(utils::JsonWriter &jw, const Contact &obj) noexcept {
   jw.start_object();
@@ -222,6 +214,8 @@ void emit_Encoding(utils::JsonWriter &jw, const Encoding &obj) noexcept {
     }
     jw.end_object();
   }
+  if (obj.encoding != nullptr)
+    printf("encoding size: %zu\n", obj.encoding->size());
   if (obj.encoding != nullptr && !obj.encoding->empty()) {
     jw.key("encoding");
     jw.start_object();
@@ -278,6 +272,8 @@ void emit_MediaType(utils::JsonWriter &jw, const MediaType &obj) noexcept {
     }
     jw.end_object();
   }
+  if (obj.encoding != nullptr)
+    printf("encoding size: %zu\n", obj.encoding->size());
   if (obj.encoding != nullptr && !obj.encoding->empty()) {
     jw.key("encoding");
     jw.start_object();

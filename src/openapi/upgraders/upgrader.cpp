@@ -110,15 +110,8 @@ void process_element_3_0(simdjson::dom::element el,
         jw.key(std::string(field.key));
         // Deep check for schemas in known paths like "schema", "items",
         // "properties" could be better, but recursive heuristic mostly works.
-        if (std::string(field.key) == "schema" ||
-            std::string(field.key) == "items") {
-          if (field.value.is_object())
-            process_schema_3_0(field.value.get_object(), jw);
-          else
-            process_element_3_0(field.value, jw);
-        } else {
-          process_element_3_0(field.value, jw);
-        }
+
+        process_element_3_0(field.value, jw);
       }
       jw.end_object();
     }
@@ -560,19 +553,6 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
       jw.start_object();
       if (p.value.is_object()) {
         auto p_obj = p.value.get_object().value();
-        for (auto pp : p_obj) {
-          std::string pk(pp.key);
-          if (pk == "type" || pk == "format" || pk == "items" ||
-              pk == "collectionFormat" || pk == "default" || pk == "maximum" ||
-              pk == "exclusiveMaximum" || pk == "minimum" ||
-              pk == "exclusiveMinimum" || pk == "maxLength" ||
-              pk == "minLength" || pk == "pattern" || pk == "maxItems" ||
-              pk == "minItems" || pk == "uniqueItems" || pk == "enum" ||
-              pk == "multipleOf")
-            continue; // Move to schema
-          jw.key(pk);
-          jw.raw_value(simdjson::minify(pp.value));
-        }
         jw.key("schema");
         jw.start_object();
         for (auto pp : p_obj) {
@@ -700,10 +680,7 @@ upgrade_to_latest(const std::string &json_spec) noexcept {
     return std::unexpected("Invalid JSON document");
   }
 
-  simdjson::dom::object root;
-  if (doc.get(root) != simdjson::SUCCESS) {
-    return std::unexpected("Invalid root object");
-  }
+  simdjson::dom::object root = doc.get_object().value();
 
   simdjson::dom::element version_el;
   if (root["swagger"].get(version_el) == simdjson::SUCCESS) {

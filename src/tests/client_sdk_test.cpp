@@ -157,8 +157,23 @@ void test_emit_client() {
       {"application/json", openapi::MediaType{}}};
   pi.post = post_op;
 
+  openapi::Operation skip_op1 = get_op;
+  skip_op1.operationId = "findPetsByStatus";
+  openapi::Operation skip_op2 = get_op;
+  skip_op2.operationId = "getInventory";
+  openapi::Operation list_op = get_op;
+  list_op.operationId = "listItems";
+  list_op.requestBody->content = std::map<std::string, openapi::MediaType>{
+      {"application/json", openapi::MediaType{}}};
+
+  openapi::PathItem pi_extra;
+  pi_extra.get = skip_op1;
+  pi_extra.post = skip_op2;
+  pi_extra.put = list_op;
+
   std::map<std::string, openapi::PathItem> paths;
   paths["/pet/{id}"] = pi;
+  paths["/extra"] = pi_extra;
   spec.paths = paths;
 
   auto generated_files = emit_client(spec);

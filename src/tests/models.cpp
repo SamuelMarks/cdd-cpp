@@ -150,6 +150,25 @@ void test_emit() {
 
   spec.components->schemas->insert({"TestStruct", s});
 
+  openapi::Schema circ1;
+  circ1.type = "object";
+  circ1.properties = std::make_shared<std::map<std::string, openapi::Schema>>();
+  openapi::Schema prop_circ2;
+  prop_circ2.ref = openapi::Reference{"#/components/schemas/Circ2",
+                                      std::nullopt, std::nullopt};
+  circ1.properties->insert({"c2", prop_circ2});
+
+  openapi::Schema circ2;
+  circ2.type = "object";
+  circ2.properties = std::make_shared<std::map<std::string, openapi::Schema>>();
+  openapi::Schema prop_circ1;
+  prop_circ1.ref = openapi::Reference{"#/components/schemas/Circ1",
+                                      std::nullopt, std::nullopt};
+  circ2.properties->insert({"c1", prop_circ1});
+
+  spec.components->schemas->insert({"Circ1", circ1});
+  spec.components->schemas->insert({"Circ2", circ2});
+
   std::string code = emit(spec);
   assert(code.find("struct TestStruct") != std::string::npos);
   assert(code.find("std::string name;") != std::string::npos);

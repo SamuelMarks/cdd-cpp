@@ -101,11 +101,15 @@ public:
 
   /// @brief Auto-generated doc.
   void null_value() noexcept {
+    if (!first)
+      ss << ",";
     ss << "null";
     first = false;
   }
   /// @brief Write string value
   void value(const std::string &v) noexcept {
+    if (!first)
+      ss << ",";
     escape_string(v);
     first = false;
   }
@@ -115,18 +119,24 @@ public:
 
   /// @brief Auto-generated doc.
   void value(bool v) noexcept {
+    if (!first)
+      ss << ",";
     ss << (v ? "true" : "false");
     first = false;
   }
 
   /// @brief Auto-generated doc.
   void value(int v) noexcept {
+    if (!first)
+      ss << ",";
     ss << v;
     first = false;
   }
 
   /// @brief Auto-generated doc.
   void value(double v) noexcept {
+    if (!first)
+      ss << ",";
     ss << v;
     first = false;
   }

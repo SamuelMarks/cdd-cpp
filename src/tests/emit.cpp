@@ -4,6 +4,38 @@
 #include <iostream>
 
 namespace cdd_cpp::openapi {
+
+void test_exhaustive() {
+  std::FILE *f = std::fopen("exhaustive_openapi.json", "r");
+  if (!f)
+    return;
+  std::fseek(f, 0, SEEK_END);
+  size_t size = std::ftell(f);
+  std::fseek(f, 0, SEEK_SET);
+  std::string json(size, '\0');
+  std::fread(&json[0], 1, size, f);
+  std::fclose(f);
+
+  auto spec_res = parse(json);
+  if (!spec_res) {
+    std::cerr << "Exhaustive Parse Error: " << spec_res.error() << '\n';
+    exit(1);
+  }
+  OpenAPI spec = *spec_res;
+  std::string out = emit(spec);
+
+  // Also parse the emitted code to ensure idempotency and double down on
+  // parse.cpp coverage
+  auto spec_res2 = parse(out);
+  if (!spec_res2) {
+    std::cerr << out << "\n";
+    std::cerr << "Exhaustive Second Parse Error: " << spec_res2.error() << '\n';
+    exit(1);
+  }
+
+  std::cout << "test_exhaustive passed.\n";
+}
+
 void test_emit() {
   std::string json = R"({
             "openapi": "3.2.0",
@@ -142,6 +174,8 @@ void test_emit() {
   assert(out_3.find("\"kind\":\"entity\"") != std::string::npos);
   assert(out_3.find("\"defaultMapping\":\"#/components/schemas/Dog\"") !=
          std::string::npos);
+
+  test_exhaustive();
 
   std::cout << "test_emit passed.\n";
 }

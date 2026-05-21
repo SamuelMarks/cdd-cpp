@@ -503,6 +503,10 @@ int main(int argc, char **argv) noexcept {
           res.set_content("", "text/plain");
         });
 
+    svr.Get("/stop", [&](const httplib::Request &, httplib::Response &) {
+      svr.stop();
+    });
+
     std::cout << "JSON RPC server listening on " << listen_host << ":" << port
               << std::endl;
     svr.listen(listen_host, std::stoi(port));

@@ -8,35 +8,6 @@
 
 namespace cdd_cpp::client_sdk {
 
-std::string map_type(const openapi::Schema &schema) noexcept {
-  if (schema.ref.has_value()) {
-    std::string ref = schema.ref.value().ref;
-    size_t last_slash = ref.find_last_of('/');
-    if (last_slash != std::string::npos) {
-      return ref.substr(last_slash + 1);
-    }
-    return ref;
-  }
-  if (!schema.type.has_value())
-    return "std::string";
-
-  std::string t = schema.type.value();
-  if (t == "integer")
-    return "int";
-  if (t == "number")
-    return "double";
-  if (t == "boolean")
-    return "bool";
-  if (t == "string")
-    return "std::string";
-  if (t == "array") {
-    if (schema.items)
-      return "std::vector<" + map_type(*schema.items) + ">";
-    return "std::vector<std::string>";
-  }
-  return "std::string";
-}
-
 std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
                                                bool no_github_actions,
                                                bool no_installable_package,
