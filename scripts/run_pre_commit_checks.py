@@ -6,6 +6,8 @@ import urllib.request
 import shutil
 import platform
 import tarfile
+import zipfile
+import atexit
 
 def run_cmd(cmd, cwd=None, env=None, capture_output=False, check=True):
     print(f"Running: {cmd if isinstance(cmd, str) else ' '.join(cmd)}")
@@ -116,12 +118,67 @@ def build_wasm():
         wasm_bin += ".exe"
     shutil.copy2(wasm_bin, os.path.join("bin", "cdd-cpp.wasm"))
 
-def docker_available():
-    try:
-        res = subprocess.run(["docker", "info"], capture_output=True)
-        return res.returncode == 0
-    except FileNotFoundError:
-        return False
+
+def start_local_petstore(base_path, port=8080):
+    v2_dir = os.path.abspath(os.path.join("..", "swagger-petstore-v2"))
+    jetty_jar = os.path.join(v2_dir, "target", "lib", "jetty-runner.jar")
+    
+    if not os.path.exists(jetty_jar):
+        print("Building local swagger-petstore-v2...")
+        run_cmd(["mvn", "package", "-DskipTests"], cwd=v2_dir)
+
+    war_path = None
+    for f in os.listdir(os.path.join(v2_dir, "target")):
+        if f.startswith("swagger-petstore-v2-") and f.endswith(".war"):
+            war_path = os.path.join(v2_dir, "target", f)
+            break
+            
+    if not war_path:
+        raise Exception("Could not find swagger-petstore-v2 war file.")
+        
+    webapp_dir = os.path.abspath(os.path.join("build", f"petstore_webapp_{port}"))
+    if os.path.exists(webapp_dir):
+        shutil.rmtree(webapp_dir)
+    os.makedirs(webapp_dir)
+    
+    with zipfile.ZipFile(war_path, 'r') as zip_ref:
+        zip_ref.extractall(webapp_dir)
+        
+    web_xml = os.path.join(webapp_dir, "WEB-INF", "web.xml")
+    with open(web_xml, "r") as f:
+        xml_content = f.read()
+        
+    url = f"http://127.0.0.1:{port}"
+    full_path = f"{url}{base_path}"
+    
+    xml_content = xml_content.replace("SWAGGER_HOST", url)
+    xml_content = xml_content.replace("BASE_PATH", base_path)
+    xml_content = xml_content.replace("FULL_SWAGGER_PATH", full_path)
+    
+    with open(web_xml, "w") as f:
+        f.write(xml_content)
+        
+    index_html = os.path.join(webapp_dir, "index.html")
+    if os.path.exists(index_html):
+        with open(index_html, "r") as f:
+            idx_content = f.read()
+        idx_content = idx_content.replace("SWAGGER_HOST", url)
+        idx_content = idx_content.replace("FULL_SWAGGER_PATH", full_path)
+        with open(index_html, "w") as f:
+            f.write(idx_content)
+            
+    print(f"Starting local petstore server on port {port} with base path {base_path}...")
+    log_file = open(os.path.abspath(os.path.join("build", f"petstore_{port}.log")), "w")
+    proc = subprocess.Popen(["java", "-jar", jetty_jar, "--port", str(port), webapp_dir], stdout=log_file, stderr=subprocess.STDOUT)
+    return proc
+
+def cleanup_petstore(proc):
+    if proc:
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
 
 def wait_for_url(url, timeout=150):
     start_time = time.time()
@@ -138,11 +195,6 @@ def wait_for_url(url, timeout=150):
         time.sleep(5)
     print(f"Timeout waiting for {url}")
     return False
-
-def cleanup_docker():
-    if docker_available():
-        subprocess.run(["docker", "rm", "-f", "petstore_server_v2"], capture_output=True)
-        subprocess.run(["docker", "rm", "-f", "petstore_server_v3"], capture_output=True)
 
 def main():
     try:
@@ -186,12 +238,11 @@ def main():
         petstore_json = os.path.abspath(os.path.join("..", "petstore.json"))
         run_cmd([cdd_cpp_bin, "from_openapi", "to_sdk", "-i", petstore_json, "-o", v2_out_dir, "--tests"])
         
-        if docker_available():
-            subprocess.run(["docker", "rm", "-f", "petstore_server_v2"], capture_output=True)
-            run_cmd("docker run -d -p 8080:8080 -e SWAGGER_HOST=\"http://127.0.0.1:8080\" -e SWAGGER_BASE_PATH=\"/v2\" --name petstore_server_v2 swaggerapi/petstore")
-            if wait_for_url("http://127.0.0.1:8080/v2/swagger.json"):
+        petstore_proc = start_local_petstore("/v2", 8081)
+        try:
+            if wait_for_url("http://127.0.0.1:8081/v2/swagger.json"):
                 v2_env = os.environ.copy()
-                v2_env["PETSTORE_URL"] = "http://127.0.0.1:8080/v2"
+                v2_env["PETSTORE_URL"] = "http://127.0.0.1:8081/v2"
                 run_cmd(["cmake", ".", "-DFETCHCONTENT_UPDATES_DISCONNECTED=ON"], cwd=v2_out_dir)
                 run_cmd(["cmake", "--build", "."], cwd=v2_out_dir)
                 client_test_bin = None
@@ -204,10 +255,9 @@ def main():
                     client_test_bin = os.path.join(v2_out_dir, "tests", "client_test")
                 run_cmd([client_test_bin], cwd=v2_out_dir, env=v2_env)
             else:
-                print("Skipping Swagger 2.0 tests since Docker server did not start in time.")
-            subprocess.run(["docker", "rm", "-f", "petstore_server_v2"], capture_output=True)
-        else:
-            print("Skipping Swagger 2.0 tests since Docker is not available.")
+                print("Skipping Swagger 2.0 tests since Java server did not start in time.")
+        finally:
+            cleanup_petstore(petstore_proc)
             
         # OpenAPI 3.2.0 Petstore test
         print("Running OpenAPI 3.2.0 Petstore test...")
@@ -218,12 +268,11 @@ def main():
         petstore_oas3_json = os.path.abspath(os.path.join("..", "petstore_oas3.json"))
         run_cmd([cdd_cpp_bin, "from_openapi", "to_sdk", "-i", petstore_oas3_json, "-o", v3_out_dir, "--tests"])
         
-        if docker_available():
-            subprocess.run(["docker", "rm", "-f", "petstore_server_v3"], capture_output=True)
-            run_cmd("docker run -d -p 8080:8080 -e SWAGGER_HOST=\"http://127.0.0.1:8080\" -e SWAGGER_BASE_PATH=\"/api/v3\" --name petstore_server_v3 swaggerapi/petstore")
-            if wait_for_url("http://127.0.0.1:8080/api/v3/swagger.json"):
+        petstore_proc = start_local_petstore("/api/v3", 8082)
+        try:
+            if wait_for_url("http://127.0.0.1:8082/api/v3/swagger.json"):
                 v3_env = os.environ.copy()
-                v3_env["PETSTORE_URL"] = "http://127.0.0.1:8080/api/v3"
+                v3_env["PETSTORE_URL"] = "http://127.0.0.1:8082/api/v3"
                 run_cmd(["cmake", "."], cwd=v3_out_dir)
                 run_cmd(["cmake", "--build", "."], cwd=v3_out_dir)
                 client_test_bin = None
@@ -236,17 +285,16 @@ def main():
                     client_test_bin = os.path.join(v3_out_dir, "tests", "client_test")
                 run_cmd([client_test_bin], cwd=v3_out_dir, env=v3_env)
             else:
-                print("Skipping OpenAPI 3.2.0 tests since Docker server did not start in time.")
-            subprocess.run(["docker", "rm", "-f", "petstore_server_v3"], capture_output=True)
-        else:
-            print("Skipping OpenAPI 3.2.0 tests since Docker is not available.")
+                print("Skipping OpenAPI 3.2.0 tests since Java server did not start in time.")
+        finally:
+            cleanup_petstore(petstore_proc)
             
         build_wasm()
         
         print("Pre-commit checks passed.")
     except Exception as e:
         print(f"Error during pre-commit checks: {e}")
-        cleanup_docker()
+        
         sys.exit(1)
 
 if __name__ == "__main__":
