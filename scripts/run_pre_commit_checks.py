@@ -188,10 +188,10 @@ def main():
         
         if docker_available():
             subprocess.run(["docker", "rm", "-f", "petstore_server_v2"], capture_output=True)
-            run_cmd("docker run -d -p 8080:8080 -e SWAGGER_HOST=\"http://localhost:8080\" -e SWAGGER_BASE_PATH=\"/v2\" --name petstore_server_v2 swaggerapi/petstore")
-            if wait_for_url("http://localhost:8080/v2/swagger.json"):
+            run_cmd("docker run -d -p 8080:8080 -e SWAGGER_HOST=\"http://127.0.0.1:8080\" -e SWAGGER_BASE_PATH=\"/v2\" --name petstore_server_v2 swaggerapi/petstore")
+            if wait_for_url("http://127.0.0.1:8080/v2/swagger.json"):
                 v2_env = os.environ.copy()
-                v2_env["PETSTORE_URL"] = "http://localhost:8080/v2"
+                v2_env["PETSTORE_URL"] = "http://127.0.0.1:8080/v2"
                 run_cmd(["cmake", ".", "-DFETCHCONTENT_UPDATES_DISCONNECTED=ON"], cwd=v2_out_dir)
                 run_cmd(["cmake", "--build", "."], cwd=v2_out_dir)
                 client_test_bin = None
@@ -220,10 +220,10 @@ def main():
         
         if docker_available():
             subprocess.run(["docker", "rm", "-f", "petstore_server_v3"], capture_output=True)
-            run_cmd("docker run -d -p 8080:8080 -e SWAGGER_HOST=\"http://localhost:8080\" -e SWAGGER_BASE_PATH=\"/api/v3\" --name petstore_server_v3 swaggerapi/petstore")
-            if wait_for_url("http://localhost:8080/api/v3/openapi.json"):
+            run_cmd("docker run -d -p 8080:8080 -e SWAGGER_HOST=\"http://127.0.0.1:8080\" -e SWAGGER_BASE_PATH=\"/api/v3\" --name petstore_server_v3 swaggerapi/petstore")
+            if wait_for_url("http://127.0.0.1:8080/api/v3/swagger.json"):
                 v3_env = os.environ.copy()
-                v3_env["PETSTORE_URL"] = "http://localhost:8080/api/v3"
+                v3_env["PETSTORE_URL"] = "http://127.0.0.1:8080/api/v3"
                 run_cmd(["cmake", "."], cwd=v3_out_dir)
                 run_cmd(["cmake", "--build", "."], cwd=v3_out_dir)
                 client_test_bin = None

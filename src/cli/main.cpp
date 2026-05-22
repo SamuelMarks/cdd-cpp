@@ -265,7 +265,7 @@ int main_impl(int argc, char **argv, std::ostream &out,
       if (!no_github_actions) {
         std::string ci_content =
             "name: CI\non: [push]\njobs:\n  build:\n    runs-on: "
-            "ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n    "
+            "ubuntu-latest\n    steps:\n      - uses: actions/checkout@v6\n    "
             "  - run: cmake . && cmake --build .\n";
         if (tests) {
           ci_content += "      - run: cd tests && ./server_test\n";
