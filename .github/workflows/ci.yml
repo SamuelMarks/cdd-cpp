@@ -15,24 +15,11 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y cmake build-essential python3 curl git python3-pip
 
-      - name: Install cpplint
-        run: pip3 install --break-system-packages cpplint || pip3 install cpplint
+      - name: Install pre-commit
+        run: pip3 install --break-system-packages pre-commit || pip3 install pre-commit
 
-      - name: Install clang-format
-        run: pip3 install --break-system-packages clang-format || pip3 install clang-format
-
-      - name: Check code formatting
-        run: |
-          find src -name '*.cpp' -o -name '*.hpp' | xargs clang-format -i
-          if ! git diff --quiet src/; then
-            echo "Formatting check failed. Please format your code with clang-format."
-            git diff src/
-            exit 1
-          fi
-
-      - name: Lint code
-        run: |
-          find src -name '*.cpp' -o -name '*.hpp' | xargs cpplint --filter=-legal/copyright,-build/include_order,-build/include_subdir,-whitespace/comments,-build/include_what_you_use,-build/namespaces,-build/c++17,-readability/casting,-whitespace/indent,-whitespace/ending_newline,-readability/braces,-whitespace/blank_line,-build/include,-whitespace/newline,-readability/todo --linelength=120
+      - name: Check code formatting and lint
+        run: pre-commit run clang-format --all-files && pre-commit run cpplint --all-files
 
       - name: Configure CMake
         run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON
@@ -104,7 +91,7 @@ jobs:
         run: docker rm -f petstore_server_v3 || true
 
       - name: Build WASM
-        run: make build_wasm
+        run: python3 -c "import sys; sys.path.append('scripts'); import run_pre_commit_checks as r; r.build_wasm()"
 
       - name: Release Build
         if: startsWith(github.ref, 'refs/tags/')

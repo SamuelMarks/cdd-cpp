@@ -9,11 +9,11 @@
 
 ## Steps to build
 
-1. Run `make install_base`
-2. Run `make install_deps`
-3. Generate project using `make build`
-4. Run tests using `make test`
+1. Install required packages (CMake, Python3, C++ Compiler)
+2. Generate project using `cmake -B build -S .` and build with `cmake --build build`
+3. Run tests using `./build/cdd-tests`
+4. Or run the unified pre-commit checks: `python3 scripts/run_pre_commit_checks.py`
 
 ## Docker build
 
-Docker images can be tested via `make build_docker`. This tests compilation inside an isolated Alpine and Debian 12 environment.
+Docker images can be tested via `docker build -t cdd-cpp-alpine -f alpine.Dockerfile .`. This tests compilation inside an isolated Alpine and Debian 12 environment.

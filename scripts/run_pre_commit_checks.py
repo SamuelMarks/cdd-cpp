@@ -4,6 +4,8 @@ import subprocess
 import time
 import urllib.request
 import shutil
+import platform
+import tarfile
 
 def run_cmd(cmd, cwd=None, env=None, capture_output=False, check=True):
     print(f"Running: {cmd if isinstance(cmd, str) else ' '.join(cmd)}")
@@ -16,11 +18,97 @@ def run_cmd(cmd, cwd=None, env=None, capture_output=False, check=True):
         sys.exit(result.returncode)
     return result
 
-def run_make(target):
+def build_project():
+    print("Building project...")
+    run_cmd(["cmake", "-B", "build", "-S", ".", "-DCMAKE_BUILD_TYPE=Release"])
+    run_cmd(["cmake", "--build", "build", "--config", "Release"])
+
+def run_tests():
+    print("Running tests...")
+    test_bin = None
     if sys.platform == "win32":
-        run_cmd(f"make.bat {target}")
+        test_bin_rel = os.path.join("build", "Release", "cdd-tests.exe")
+        test_bin_root = os.path.join("build", "cdd-tests.exe")
+        if os.path.exists(test_bin_rel):
+            test_bin = test_bin_rel
+        else:
+            test_bin = test_bin_root
     else:
-        run_cmd(["make", target])
+        test_bin = os.path.join("build", "cdd-tests")
+    run_cmd([test_bin])
+
+def build_wasm():
+    print("Building WASM via wasi-sdk...")
+    wasi_dir = "wasi-sdk"
+    if not os.path.exists(wasi_dir):
+        os_name = platform.system().lower()
+        arch = platform.machine().lower()
+        if os_name == "darwin":
+            wasi_os = "macos"
+        elif os_name == "windows":
+            wasi_os = "windows"
+        else:
+            wasi_os = "linux"
+            
+        if arch in ["x86_64", "amd64"]:
+            wasi_arch = "x86_64"
+        elif arch in ["arm64", "aarch64"]:
+            wasi_arch = "arm64"
+        else:
+            wasi_arch = "x86_64"
+            
+        url = f"https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-24/wasi-sdk-24.0-{wasi_arch}-{wasi_os}.tar.gz"
+        tar_path = f"wasi-sdk-24.0-{wasi_arch}-{wasi_os}.tar.gz"
+        print(f"Downloading {url}...")
+        urllib.request.urlretrieve(url, tar_path)
+        
+        print("Extracting wasi-sdk...")
+        with tarfile.open(tar_path) as tar:
+            tar.extractall()
+        os.remove(tar_path)
+        
+        for d in os.listdir("."):
+            if d.startswith("wasi-sdk-24.0") and os.path.isdir(d):
+                os.rename(d, wasi_dir)
+                break
+                
+    cmake_path = os.path.join(wasi_dir, "share", "cmake", "wasi-sdk.cmake")
+    with open(cmake_path, "r") as f:
+        content = f.read()
+    content = content.replace("VERSION 3.4.0", "VERSION 3.11")
+    with open(cmake_path, "w") as f:
+        f.write(content)
+        
+    build_dir = "build_wasm"
+    if os.path.exists(build_dir):
+        shutil.rmtree(build_dir)
+    os.makedirs(build_dir)
+    
+    toolchain_file = os.path.abspath(os.path.join(wasi_dir, "share", "cmake", "wasi-sdk.cmake"))
+    cmake_args = [
+        "cmake", "..",
+        f"-DCMAKE_TOOLCHAIN_FILE={toolchain_file}",
+        "-DCDD_EXTREME_CHECKS=OFF",
+        "-DSIMDJSON_ENABLE_THREADS=OFF",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DCMAKE_CXX_FLAGS=-fno-exceptions -DSIMDJSON_EXCEPTIONS=1",
+        "-DCMAKE_C_FLAGS=-fno-exceptions"
+    ]
+    if sys.platform == "win32":
+        cmake_args.extend(["-G", "MinGW Makefiles"])
+    run_cmd(cmake_args, cwd=build_dir)
+    
+    run_cmd([sys.executable, "../patch_simdjson_simple.py"], cwd=build_dir)
+    
+    run_cmd(["cmake", "--build", ".", "--target", "cdd-cpp"], cwd=build_dir)
+    
+    if not os.path.exists("bin"):
+        os.makedirs("bin")
+    
+    wasm_bin = os.path.join(build_dir, "cdd-cpp")
+    if sys.platform == "win32" and os.path.exists(wasm_bin + ".exe"):
+        wasm_bin += ".exe"
+    shutil.copy2(wasm_bin, os.path.join("bin", "cdd-cpp.wasm"))
 
 def docker_available():
     try:
@@ -52,11 +140,9 @@ def cleanup_docker():
 
 def main():
     try:
-        print("Building project...")
-        run_make("build")
+        build_project()
         
-        print("Running tests...")
-        run_make("test")
+        run_tests()
         
         print("Calculating coverage...")
         test_cov_res = run_cmd([sys.executable, "tools/test_coverage.py"], capture_output=True, check=False)
@@ -132,7 +218,7 @@ def main():
             if wait_for_url("http://localhost:8080/api/v3/openapi.json"):
                 v3_env = os.environ.copy()
                 v3_env["PETSTORE_URL"] = "http://localhost:8080/api/v3"
-                run_cmd(["cmake", ".", "-DFETCHCONTENT_UPDATES_DISCONNECTED=ON"], cwd=v3_out_dir)
+                run_cmd(["cmake", "."], cwd=v3_out_dir)
                 run_cmd(["cmake", "--build", "."], cwd=v3_out_dir)
                 client_test_bin = None
                 if sys.platform == "win32":
@@ -149,8 +235,7 @@ def main():
         else:
             print("Skipping OpenAPI 3.2.0 tests since Docker is not available.")
             
-        print("Building WASM...")
-        run_make("build_wasm")
+        build_wasm()
         
         print("Pre-commit checks passed.")
     except Exception as e:

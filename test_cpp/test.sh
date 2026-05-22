@@ -2,5 +2,5 @@
 cd "$(dirname "$0")/.."
 mkdir -p build && cd build
 cmake -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON ..
-make -j$(nproc)
+cmake --build . -j$(nproc)
 ctest --output-on-failure

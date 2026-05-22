@@ -503,7 +503,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
                              "    runs-on: ubuntu-latest\n"
                              "    steps:\n"
                              "      - uses: actions/checkout@v3\n"
-                             "      - run: cmake . && make\n";
+                             "      - run: cmake . && cmake --build .\n";
     if (tests) {
       ci_content += "      - run: cd tests && ./client_test\n";
     }

@@ -132,3 +132,4 @@ cdd-cpp-client-v2/
 cdd-cpp-client-v3/
 petstore.json
 petstore_oas3.json
+*.obj

@@ -56,12 +56,10 @@ void print_version(std::ostream &out) noexcept {
 std::expected<std::string, std::string>
 read_file(const std::string &path) noexcept {
   std::ifstream fs(path);
-  if (!fs)
-    return std::unexpected("Could not open file: " + path);
+  if (!fs.is_open())
+    return std::unexpected("Could not open input file: " + path);
   std::string content((std::istreambuf_iterator<char>(fs)),
                       std::istreambuf_iterator<char>());
-  if (fs.bad())
-    return std::unexpected("Error reading file: " + path);
   return content;
 }
 
@@ -215,12 +213,7 @@ int main_impl(int argc, char **argv, std::ostream &out,
       err << "Error: " << upgraded_spec_res.error() << "\n";
       return 1;
     }
-    auto spec_res = openapi::parse(*upgraded_spec_res);
-    if (!spec_res) {
-      err << "Error: " << spec_res.error() << "\n";
-      return 1;
-    }
-    auto spec = *spec_res;
+    auto spec = *openapi::parse(*upgraded_spec_res);
 
     std::map<std::string, std::string> multiple_files;
 
@@ -273,7 +266,7 @@ int main_impl(int argc, char **argv, std::ostream &out,
         std::string ci_content =
             "name: CI\non: [push]\njobs:\n  build:\n    runs-on: "
             "ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n    "
-            "  - run: cmake . && make\n";
+            "  - run: cmake . && cmake --build .\n";
         if (tests) {
           ci_content += "      - run: cd tests && ./server_test\n";
         }
@@ -503,9 +496,8 @@ int main(int argc, char **argv) noexcept {
           res.set_content("", "text/plain");
         });
 
-    svr.Get("/stop", [&](const httplib::Request &, httplib::Response &) {
-      svr.stop();
-    });
+    svr.Get("/stop",
+            [&](const httplib::Request &, httplib::Response &) { svr.stop(); });
 
     std::cout << "JSON RPC server listening on " << listen_host << ":" << port
               << std::endl;

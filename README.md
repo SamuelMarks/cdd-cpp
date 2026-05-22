@@ -1,6 +1,7 @@
 cdd-cpp
 =======
 [![License](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![interactive WASM web demo](https://img.shields.io/badge/interactive-WASM_web_demo-blue.svg)](https://offscale.io/wasm_web_demo)
 [![CI](https://github.com/SamuelMarks/cdd-cpp/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/cdd-cpp/actions)
 [![Test Coverage](https://img.shields.io/badge/coverage-100.00%25-brightgreen.svg)](#)
 [![Doc Coverage](https://img.shields.io/badge/docs-100.00%25-brightgreen.svg)](#)
@@ -46,19 +47,16 @@ cmake -B build && cmake --build build
 
 ## Development
 
-You can use standard tooling commands or the included cross-platform Makefiles to fetch dependencies, build, and test:
+You can use standard CMake commands or the included cross-platform python script to build and test:
 
 ```bash
-cmake -B build && cmake --build build
+# Standard CMake build & test
+cmake -B build -S .
+cmake --build build
 ctest --test-dir build
-# or
-make deps
-make build
-make test
-# or on Windows
-.\make.bat deps
-.\make.bat build
-.\make.bat test
+
+# Or use the unified pre-commit checks script
+python3 scripts/run_pre_commit_checks.py
 ```
 
 See [PUBLISH.md](PUBLISH.md) for packaging and releasing.

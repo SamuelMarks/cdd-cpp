@@ -232,8 +232,10 @@ void test_to_docs_json() {
   assert(to_docs_bad && to_docs_bad->find("Error:") != std::string::npos);
 
   std::cout << "Testing from_openapi parsing error with valid json\n";
-  auto from_server_bad_parse = exec("./cdd-cpp from_openapi to_server -i bad.json -o out_dir");
-  assert(from_server_bad_parse && from_server_bad_parse->find("Error:") != std::string::npos);
+  auto from_server_bad_parse =
+      exec("./cdd-cpp from_openapi to_server -i bad.json -o out_dir");
+  assert(from_server_bad_parse &&
+         from_server_bad_parse->find("Error:") != std::string::npos);
 
   std::cout << "Testing output file open error\n";
   std::filesystem::create_directories("read_only_dir");
@@ -264,14 +266,17 @@ void test_to_docs_json() {
   assert(env_var_res3);
 
   std::cout << "Testing serve_json_rpc execution and graceful stop\n";
-  auto serve_res = exec(
-      "./cdd-cpp serve_json_rpc --port 8085 --listen 127.0.0.1 > /dev/null 2>&1 & "
-      "PID=$!; "
-      "sleep 0.5 && "
-      "curl -s -X POST -H 'Content-Type: application/json' -d '{\"jsonrpc\":\"2.0\",\"method\":\"ping\",\"id\":1}' http://127.0.0.1:8085 > /dev/null && "
-      "curl -s -X OPTIONS http://127.0.0.1:8085 > /dev/null && "
-      "curl -s -X GET http://127.0.0.1:8085/stop > /dev/null && "
-      "wait $PID || true");
+  auto serve_res =
+      exec("./cdd-cpp serve_json_rpc --port 8085 --listen 127.0.0.1 > "
+           "/dev/null 2>&1 & "
+           "PID=$!; "
+           "sleep 0.5 && "
+           "curl -s -X POST -H 'Content-Type: application/json' -d "
+           "'{\"jsonrpc\":\"2.0\",\"method\":\"ping\",\"id\":1}' "
+           "http://127.0.0.1:8085 > /dev/null && "
+           "curl -s -X OPTIONS http://127.0.0.1:8085 > /dev/null && "
+           "curl -s -X GET http://127.0.0.1:8085/stop > /dev/null && "
+           "wait $PID || true");
   assert(serve_res);
   assert(serve_res);
 

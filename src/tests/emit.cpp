@@ -8,6 +8,8 @@ namespace cdd_cpp::openapi {
 void test_exhaustive() {
   std::FILE *f = std::fopen("exhaustive_openapi.json", "r");
   if (!f)
+    f = std::fopen("../exhaustive_openapi.json", "r");
+  if (!f)
     return;
   std::fseek(f, 0, SEEK_END);
   size_t size = std::ftell(f);
