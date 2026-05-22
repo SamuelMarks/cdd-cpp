@@ -74,6 +74,12 @@ void process_schema_3_0(simdjson::dom::object schema,
       continue;
     }
 
+    if (key == "items" && field.value.is_array()) {
+      jw.key("prefixItems");
+      process_element_3_0(field.value, jw);
+      continue;
+    }
+
     jw.key(key);
     process_element_3_0(field.value, jw);
   }

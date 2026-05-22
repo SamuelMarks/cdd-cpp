@@ -165,3 +165,6 @@ venv/
 .venv/
 env/
 .env/
+*.profraw
+test_simdjson*
+debug_upgrader

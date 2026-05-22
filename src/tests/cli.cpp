@@ -82,7 +82,7 @@ void test_to_docs_json() {
   std::cout << "Testing non existent file\n";
   auto err_file = exec("./cdd-cpp to_docs_json -i non_existent_file.json");
   assert(err_file &&
-         err_file->find("Could not open file") != std::string::npos);
+         err_file->find("Could not open input file") != std::string::npos);
 
   std::cout << "Testing unknown command\n";
   auto err_cmd = exec("./cdd-cpp unknown_command");
@@ -201,7 +201,7 @@ void test_to_docs_json() {
   auto err_read_file =
       exec("./cdd-cpp from_openapi to_sdk -i nonexistent.json -o out_dir");
   assert(err_read_file &&
-         err_read_file->find("Error reading file") != std::string::npos);
+         err_read_file->find("Could not open input file") != std::string::npos);
 
   std::cout << "Testing empty args\n";
   auto empty_args = exec("./cdd-cpp");

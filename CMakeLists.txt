@@ -122,6 +122,12 @@ set(CDD_LIB_SRCS
     src/orm/emit.cpp
 )
 
+
+if(COVERAGE)
+    message(STATUS "Adding coverage flags")
+    add_compile_options(--coverage)
+    add_link_options(--coverage)
+endif()
 add_library(cdd_lib STATIC ${CDD_LIB_SRCS})
 target_include_directories(cdd_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 enable_extreme_checks(cdd_lib)
@@ -156,11 +162,6 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Ems
     enable_testing()
     add_test(NAME CDDTests COMMAND cdd-tests)
 
-    if(COVERAGE)
-        message(STATUS "Adding coverage flags")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --coverage")
-    endif()
 
     # Append ast_test to tests
     list(APPEND CDD_TEST_SRCS src/tests/ast_test.cpp)
