@@ -9,6 +9,12 @@ import tarfile
 
 def run_cmd(cmd, cwd=None, env=None, capture_output=False, check=True):
     print(f"Running: {cmd if isinstance(cmd, str) else ' '.join(cmd)}")
+    
+    if env is None:
+        env = os.environ.copy()
+    for key in ['GIT_DIR', 'GIT_INDEX_FILE', 'GIT_WORK_TREE']:
+        env.pop(key, None)
+        
     result = subprocess.run(cmd, cwd=cwd, env=env, shell=isinstance(cmd, str), capture_output=capture_output, text=True)
     if check and result.returncode != 0:
         print(f"Command failed with exit code {result.returncode}")
