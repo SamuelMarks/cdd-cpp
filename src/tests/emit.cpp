@@ -73,14 +73,15 @@ void test_emit() {
                         },
                         "itemSchema": { "type": "string" },
                         "prefixEncoding": [
-                            {"contentType": "text/plain"}
+                            {"contentType": "text/plain", "encoding": { "innerEnc1": { "style": "simple" } } }
                         ],
                         "itemEncoding": {
-                            "contentType": "application/json"
+                            "contentType": "application/json",
+                            "encoding": { "innerEnc2": { "style": "simple" } }
                         },
                         "encoding": {
                             "encProp": {
-                                "encoding": { "inner": { "style": "simple" } },
+                                "encoding": { "inner": { "style": "simple", "encoding": { "innerinner": { "style": "simple" } } } },
                                 "style": "form",
                                 "contentType": "application/json",
                                 "headers": {
@@ -93,17 +94,18 @@ void test_emit() {
                                         "allowReserved": true,
                                         "schema": { "type": "string" },
                                         "examples": { "A": { "value": "B" } },
-                                        "content": { "application/json": { "schema": { "type": "string" } } }
+                                        "content": { "application/json": { "schema": { "type": "string" }, "encoding": { "innerEnc": { "style": "simple" } } } }
                                     }
                                 },
                                 "explode": true,
                                 "allowReserved": false,
                                 "itemSchema": { "type": "string" },
                                 "prefixEncoding": [
-                                    {"contentType": "text/plain"}
+                                    {"contentType": "text/plain", "encoding": { "innerEnc3": { "style": "simple" } } }
                                 ],
                                 "itemEncoding": {
-                                    "contentType": "application/json"
+                                    "contentType": "application/json",
+                                    "encoding": { "innerEnc4": { "style": "simple" } }
                                 }
                             }
                         }

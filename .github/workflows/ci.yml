@@ -13,7 +13,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y cmake build-essential python3 curl git python3-pip
@@ -107,7 +107,7 @@ jobs:
 
       - name: Upload Binary Release
         if: success() && startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
           files: |

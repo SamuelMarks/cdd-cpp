@@ -373,6 +373,17 @@ static Encoding parse_Encoding(simdjson::dom::object obj) noexcept {
     res.headers = m;
   }
 
+  simdjson::dom::element el_encoding;
+  if (obj["encoding"].get(el_encoding) == simdjson::SUCCESS &&
+      el_encoding.type() == simdjson::dom::element_type::OBJECT) {
+    auto m = std::make_shared<std::map<std::string, Encoding>>();
+    for (auto field : el_encoding.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        (*m)[std::string(field.key)] = parse_Encoding(field.value.get_object());
+    }
+    res.encoding = m;
+  }
+
   simdjson::dom::element el_itemSchema;
   if (obj["itemSchema"].get(el_itemSchema) == simdjson::SUCCESS &&
       el_itemSchema.type() == simdjson::dom::element_type::OBJECT) {

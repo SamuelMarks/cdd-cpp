@@ -4,6 +4,13 @@
 #include <iostream>
 
 namespace cdd_cpp::functions {
-void test_parse() { std::cout << "functions::test_parse passed.\n"; }
-void test_emit() { std::cout << "functions::test_emit passed.\n"; }
+void test_parse() {
+  parse("{}");
+  std::cout << "functions::test_parse passed.\n";
+}
+void test_emit() {
+  std::string res = emit();
+  assert(res == "{}");
+  std::cout << "functions::test_emit passed.\n";
+}
 } // namespace cdd_cpp::functions

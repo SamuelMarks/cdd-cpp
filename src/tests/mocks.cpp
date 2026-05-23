@@ -4,7 +4,10 @@
 #include <iostream>
 
 namespace cdd_cpp::mocks {
-void test_parse() { std::cout << "mocks::test_parse passed.\n"; }
+void test_parse() {
+  parse("{}");
+  std::cout << "mocks::test_parse passed.\n";
+}
 void test_emit() {
   openapi::OpenAPI spec;
   spec.paths = std::map<std::string, openapi::PathItem>{};
