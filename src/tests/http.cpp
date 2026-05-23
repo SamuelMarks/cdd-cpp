@@ -58,7 +58,7 @@ void test_http() {
   // Assuming curl is present or it fails
   if (res) {
     assert(res->find("body") != std::string::npos ||
-           res->find("html") != std::string::npos || res->size() >= 0);
+           res->find("html") != std::string::npos || !res->empty());
   } else {
     assert(res.error().find("curl") != std::string::npos ||
            res.error().find("not implemented") != std::string::npos);
