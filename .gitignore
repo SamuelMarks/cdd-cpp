@@ -8,6 +8,7 @@ build/
 build_*/
 *.orig
 *.patch
+patch*.py
 *.rej
 /build_wasm/
 
@@ -66,7 +67,7 @@ tmp/
 test_tag.s
 
 # Temporary script files
-patch*.py
+# patch*.py (disabled to allow patch_simdjson_simple.py)
 patch*.sh
 fix_*.py
 prompt.md

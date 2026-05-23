@@ -119,22 +119,52 @@ def build_wasm():
     shutil.copy2(wasm_bin, os.path.join("bin", "cdd-cpp.wasm"))
 
 
+
+def is_docker_running():
+    try:
+        subprocess.run(["docker", "info"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
+
+def run_docker_petstore(base_path, port):
+    container_name = f"petstore_server_{port}"
+    subprocess.run(["docker", "rm", "-f", container_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    cmd = [
+        "docker", "run", "-d", "-p", f"{port}:8080",
+        "-e", f"SWAGGER_HOST=http://127.0.0.1:{port}",
+        "-e", f"SWAGGER_BASE_PATH={base_path}",
+        "--name", container_name,
+        "swaggerapi/petstore"
+    ]
+    run_cmd(cmd)
+    return {"type": "docker", "name": container_name}
+
 def start_local_petstore(base_path, port=8080):
+    if is_docker_running():
+        print(f"Starting petstore with Docker on port {port}...")
+        return run_docker_petstore(base_path, port)
+        
+    print(f"Docker not found or not running. Falling back to native JVM for port {port}...")
     v2_dir = os.path.abspath(os.path.join("..", "swagger-petstore-v2"))
     jetty_jar = os.path.join(v2_dir, "target", "lib", "jetty-runner.jar")
     
+    if not os.path.exists(v2_dir):
+        print(f"Cloning swagger-petstore-v2 to {v2_dir}...")
+        run_cmd(["git", "clone", "https://github.com/swagger-api/swagger-petstore.git", v2_dir])
+        
     if not os.path.exists(jetty_jar):
         print("Building local swagger-petstore-v2...")
         run_cmd(["mvn", "package", "-DskipTests"], cwd=v2_dir)
 
     war_path = None
     for f in os.listdir(os.path.join(v2_dir, "target")):
-        if f.startswith("swagger-petstore-v2-") and f.endswith(".war"):
+        if f.startswith("swagger-petstore-") and f.endswith(".war"):
             war_path = os.path.join(v2_dir, "target", f)
             break
             
     if not war_path:
-        raise Exception("Could not find swagger-petstore-v2 war file.")
+        raise Exception("Could not find swagger-petstore war file.")
         
     webapp_dir = os.path.abspath(os.path.join("build", f"petstore_webapp_{port}"))
     if os.path.exists(webapp_dir):
@@ -170,15 +200,25 @@ def start_local_petstore(base_path, port=8080):
     print(f"Starting local petstore server on port {port} with base path {base_path}...")
     log_file = open(os.path.abspath(os.path.join("build", f"petstore_{port}.log")), "w")
     proc = subprocess.Popen(["java", "-jar", jetty_jar, "--port", str(port), webapp_dir], stdout=log_file, stderr=subprocess.STDOUT)
-    return proc
+    return {"type": "jvm", "proc": proc}
 
-def cleanup_petstore(proc):
-    if proc:
-        proc.terminate()
-        try:
-            proc.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            proc.kill()
+
+def cleanup_petstore(proc_info):
+    if not proc_info:
+        return
+    if isinstance(proc_info, dict) and proc_info.get("type") == "docker":
+        print(f"Stopping docker container {proc_info['name']}...")
+        subprocess.run(["docker", "rm", "-f", proc_info["name"]], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        proc = proc_info.get("proc") if isinstance(proc_info, dict) else proc_info
+        if proc:
+            print("Stopping JVM petstore...")
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+
 
 def wait_for_url(url, timeout=150):
     start_time = time.time()
