@@ -169,3 +169,4 @@ env/
 *.profraw
 test_simdjson*
 debug_upgrader
+!patch_simdjson_simple.py

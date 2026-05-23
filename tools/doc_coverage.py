@@ -35,7 +35,12 @@ def check_doc_coverage(verbose=False):
     if total == 0: total = 1
     if verbose:
         print(f"Total: {total}, Documented: {documented}")
-    print(f"{documented/total*100:.2f}")
+    cov = documented/total*100
+    print(f"{cov:.2f}")
+    return cov
 
 if __name__ == '__main__':
-    check_doc_coverage(False)
+    import sys
+    cov = check_doc_coverage(False)
+    if cov < 100.0:
+        sys.exit(1)
