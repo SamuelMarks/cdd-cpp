@@ -106,8 +106,6 @@ def build_wasm():
         cmake_args.extend(["-G", "MinGW Makefiles"])
     run_cmd(cmake_args, cwd=build_dir)
     
-    run_cmd([sys.executable, "../patch_simdjson_simple.py"], cwd=build_dir)
-    
     run_cmd(["cmake", "--build", ".", "--target", "cdd-cpp"], cwd=build_dir)
     
     if not os.path.exists("bin"):
