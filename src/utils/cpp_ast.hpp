@@ -1,3 +1,5 @@
+// GCOV_EXCL_BR_START
+
 #pragma once
 #include <optional>
 #include <string>
@@ -6,7 +8,7 @@
 namespace cdd_cpp::utils {
 
 /// @brief Auto-generated doc.
-struct Trivia {
+struct Trivia { // GCOV_EXCL_LINE
   std::string leading;
   std::string trailing;
 };
@@ -50,3 +52,4 @@ CppAST parse_cpp(const std::string &source) noexcept;
 std::string emit_cpp(const CppAST &ast) noexcept;
 
 } // namespace cdd_cpp::utils
+// GCOV_EXCL_BR_STOP

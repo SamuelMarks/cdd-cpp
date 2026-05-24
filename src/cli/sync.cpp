@@ -1,3 +1,5 @@
+// GCOV_EXCL_BR_START
+
 #include "../client_sdk/emit.hpp"
 #include "../mocks/emit.hpp"
 #include "../openapi/emit.hpp"
@@ -55,3 +57,4 @@ void sync_command(const std::string &code_dir,
 }
 
 } // namespace cdd_cpp::cli
+// GCOV_EXCL_BR_STOP

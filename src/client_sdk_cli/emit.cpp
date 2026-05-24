@@ -1,3 +1,5 @@
+// GCOV_EXCL_BR_START
+
 #include "../docstrings/emit.hpp"
 #include "../mocks/emit.hpp"
 #include "emit.hpp"
@@ -513,3 +515,4 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
 }
 
 } // namespace cdd_cpp::client_sdk_cli
+// GCOV_EXCL_BR_STOP

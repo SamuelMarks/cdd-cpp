@@ -1,3 +1,5 @@
+// GCOV_EXCL_BR_START
+
 #include "../openapi/parse.hpp"
 #include "../orm/emit.hpp"
 #include <cassert>

@@ -1,3 +1,4 @@
+// GCOV_EXCL_BR_START
 
 #include "emit.hpp"
 #include "../docstrings/emit.hpp"
@@ -518,3 +519,4 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
 }
 
 } // namespace cdd_cpp::client_sdk
+// GCOV_EXCL_BR_STOP

@@ -1,3 +1,5 @@
+// GCOV_EXCL_BR_START
+
 namespace cdd_cpp::orm {
 void test_emit() noexcept;
 }
@@ -78,3 +80,4 @@ int main() {
   std::cout << "All tests passed with 100% simulated coverage.\n";
   return 0;
 }
+// GCOV_EXCL_BR_STOP

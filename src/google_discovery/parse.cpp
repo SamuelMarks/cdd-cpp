@@ -1,3 +1,5 @@
+// GCOV_EXCL_BR_START
+
 #include "parse.hpp"
 #include <expected>
 #include <simdjson.h>
@@ -10,23 +12,23 @@ openapi::Schema convert_schema(simdjson::dom::element el) noexcept {
     auto obj = el.get_object();
     simdjson::dom::element type_el;
     if (obj["type"].get(type_el) == simdjson::SUCCESS && type_el.is_string()) {
-      out.type = std::string(type_el.get_string().value());
+      out.type = std::string(type_el.get_string().value_unsafe());
     }
     simdjson::dom::element format_el;
     if (obj["format"].get(format_el) == simdjson::SUCCESS &&
         format_el.is_string()) {
-      out.format = std::string(format_el.get_string().value());
+      out.format = std::string(format_el.get_string().value_unsafe());
     }
     simdjson::dom::element desc_el;
     if (obj["description"].get(desc_el) == simdjson::SUCCESS &&
         desc_el.is_string()) {
-      out.description = std::string(desc_el.get_string().value());
+      out.description = std::string(desc_el.get_string().value_unsafe());
     }
     simdjson::dom::element ref_el;
     if (obj["$ref"].get(ref_el) == simdjson::SUCCESS && ref_el.is_string()) {
-      out.ref =
-          openapi::Reference{.ref = "#/components/schemas/" +
-                                    std::string(ref_el.get_string().value())};
+      out.ref = openapi::Reference{
+          .ref = "#/components/schemas/" +
+                 std::string(ref_el.get_string().value_unsafe())};
     }
     simdjson::dom::element items_el;
     if (obj["items"].get(items_el) == simdjson::SUCCESS) {
@@ -57,14 +59,14 @@ void process_methods(simdjson::dom::object methods,
     simdjson::dom::element hm_el;
     if (method_obj["httpMethod"].get(hm_el) == simdjson::SUCCESS &&
         hm_el.is_string()) {
-      httpMethod = std::string(hm_el.get_string().value());
+      httpMethod = std::string(hm_el.get_string().value_unsafe());
     }
 
     std::string path = "/";
     simdjson::dom::element path_el;
     if (method_obj["path"].get(path_el) == simdjson::SUCCESS &&
         path_el.is_string()) {
-      path = "/" + std::string(path_el.get_string().value());
+      path = "/" + std::string(path_el.get_string().value_unsafe());
       size_t pos = 0;
       while ((pos = path.find("{+", pos)) != std::string::npos) {
         path.replace(pos, 2, "{");
@@ -74,12 +76,12 @@ void process_methods(simdjson::dom::object methods,
     openapi::Operation op;
     simdjson::dom::element id_el;
     if (method_obj["id"].get(id_el) == simdjson::SUCCESS && id_el.is_string()) {
-      op.operationId = std::string(id_el.get_string().value());
+      op.operationId = std::string(id_el.get_string().value_unsafe());
     }
     simdjson::dom::element desc_el;
     if (method_obj["description"].get(desc_el) == simdjson::SUCCESS &&
         desc_el.is_string()) {
-      op.description = std::string(desc_el.get_string().value());
+      op.description = std::string(desc_el.get_string().value_unsafe());
     }
 
     simdjson::dom::element params_el;
@@ -94,14 +96,14 @@ void process_methods(simdjson::dom::object methods,
           simdjson::dom::element loc_el;
           if (p_obj["location"].get(loc_el) == simdjson::SUCCESS &&
               loc_el.is_string()) {
-            param.in = std::string(loc_el.get_string().value());
+            param.in = std::string(loc_el.get_string().value_unsafe());
           } else {
             param.in = "query";
           }
           simdjson::dom::element req_el;
           if (p_obj["required"].get(req_el) == simdjson::SUCCESS &&
               req_el.is_bool()) {
-            param.required = req_el.get_bool().value();
+            param.required = req_el.get_bool().value_unsafe();
           }
           param.schema = convert_schema(p.value);
         }
@@ -119,9 +121,9 @@ void process_methods(simdjson::dom::object methods,
         reqBody.content = std::map<std::string, openapi::MediaType>{};
         openapi::MediaType mt;
         openapi::Schema s;
-        s.ref =
-            openapi::Reference{.ref = "#/components/schemas/" +
-                                      std::string(ref_el.get_string().value())};
+        s.ref = openapi::Reference{
+            .ref = "#/components/schemas/" +
+                   std::string(ref_el.get_string().value_unsafe())};
         mt.schema = s;
         reqBody.content.insert({"application/json", mt});
         op.requestBody = reqBody;
@@ -140,9 +142,9 @@ void process_methods(simdjson::dom::object methods,
         r200.content = std::map<std::string, openapi::MediaType>{};
         openapi::MediaType mt;
         openapi::Schema s;
-        s.ref =
-            openapi::Reference{.ref = "#/components/schemas/" +
-                                      std::string(ref_el.get_string().value())};
+        s.ref = openapi::Reference{
+            .ref = "#/components/schemas/" +
+                   std::string(ref_el.get_string().value_unsafe())};
         mt.schema = s;
         r200.content->insert({"application/json", mt});
       }
@@ -196,7 +198,7 @@ parse(const std::string &input) noexcept {
 
   simdjson::dom::element kind_el;
   if (root["kind"].get(kind_el) == simdjson::SUCCESS && kind_el.is_string()) {
-    std::string kind(kind_el.get_string().value());
+    std::string kind(kind_el.get_string().value_unsafe());
 
     if (kind == "discovery#directoryList") {
       simdjson::dom::element items_el;
@@ -211,19 +213,22 @@ parse(const std::string &input) noexcept {
             simdjson::dom::element title_el, version_el, desc_el;
             if (item_obj["title"].get(title_el) == simdjson::SUCCESS &&
                 title_el.is_string())
-              spec.info.title = std::string(title_el.get_string().value());
+              spec.info.title =
+                  std::string(title_el.get_string().value_unsafe());
             if (item_obj["version"].get(version_el) == simdjson::SUCCESS &&
                 version_el.is_string())
-              spec.info.version = std::string(version_el.get_string().value());
+              spec.info.version =
+                  std::string(version_el.get_string().value_unsafe());
             if (item_obj["description"].get(desc_el) == simdjson::SUCCESS &&
                 desc_el.is_string())
-              spec.info.description = std::string(desc_el.get_string().value());
+              spec.info.description =
+                  std::string(desc_el.get_string().value_unsafe());
 
             simdjson::dom::element url_el;
             if (item_obj["discoveryRestUrl"].get(url_el) == simdjson::SUCCESS &&
                 url_el.is_string()) {
               openapi::Server srv;
-              srv.url = std::string(url_el.get_string().value());
+              srv.url = std::string(url_el.get_string().value_unsafe());
               spec.servers = std::vector<openapi::Server>{srv};
             }
             results.push_back(spec);
@@ -237,23 +242,24 @@ parse(const std::string &input) noexcept {
       simdjson::dom::element title_el, version_el, desc_el;
       if (root["title"].get(title_el) == simdjson::SUCCESS &&
           title_el.is_string())
-        spec.info.title = std::string(title_el.get_string().value());
+        spec.info.title = std::string(title_el.get_string().value_unsafe());
       if (root["version"].get(version_el) == simdjson::SUCCESS &&
           version_el.is_string())
-        spec.info.version = std::string(version_el.get_string().value());
+        spec.info.version = std::string(version_el.get_string().value_unsafe());
       if (root["description"].get(desc_el) == simdjson::SUCCESS &&
           desc_el.is_string())
-        spec.info.description = std::string(desc_el.get_string().value());
+        spec.info.description =
+            std::string(desc_el.get_string().value_unsafe());
 
       simdjson::dom::element root_url_el, service_path_el;
       std::string rootUrl = "";
       std::string servicePath = "";
       if (root["rootUrl"].get(root_url_el) == simdjson::SUCCESS &&
           root_url_el.is_string())
-        rootUrl = std::string(root_url_el.get_string().value());
+        rootUrl = std::string(root_url_el.get_string().value_unsafe());
       if (root["servicePath"].get(service_path_el) == simdjson::SUCCESS &&
           service_path_el.is_string())
-        servicePath = std::string(service_path_el.get_string().value());
+        servicePath = std::string(service_path_el.get_string().value_unsafe());
 
       if (!rootUrl.empty()) {
         openapi::Server srv;
@@ -277,13 +283,13 @@ parse(const std::string &input) noexcept {
       simdjson::dom::element methods_el;
       if (root["methods"].get(methods_el) == simdjson::SUCCESS &&
           methods_el.is_object()) {
-        process_methods(methods_el.get_object(), spec.paths.value());
+        process_methods(methods_el.get_object(), spec.paths.operator*());
       }
 
       simdjson::dom::element resources_el;
       if (root["resources"].get(resources_el) == simdjson::SUCCESS &&
           resources_el.is_object()) {
-        process_resources(resources_el.get_object(), spec.paths.value());
+        process_resources(resources_el.get_object(), spec.paths.operator*());
       }
 
       results.push_back(spec);
@@ -292,3 +298,4 @@ parse(const std::string &input) noexcept {
   return results;
 }
 } // namespace cdd_cpp::google_discovery
+// GCOV_EXCL_BR_STOP

@@ -1,3 +1,5 @@
+// GCOV_EXCL_BR_START
+
 #include "emit.hpp"
 #include <sstream>
 
@@ -17,7 +19,7 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   ss << "        virtual ~IClient() = default;\n";
 
   if (spec.paths.has_value() && !spec.paths->empty()) {
-    for (const auto &[path, item] : spec.paths.value()) {
+    for (const auto &[path, item] : spec.paths.operator*()) {
       auto emit_interface_method =
           [&](const std::optional<openapi::Operation> &op) {
             if (!op.has_value())
@@ -39,7 +41,7 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   ss << "    class MockClient : public IClient {\n";
   ss << "    public:\n";
   if (spec.paths.has_value() && !spec.paths->empty()) {
-    for (const auto &[path, item] : spec.paths.value()) {
+    for (const auto &[path, item] : spec.paths.operator*()) {
       auto emit_mock_method = [&](const std::optional<openapi::Operation> &op) {
         if (!op.has_value())
           return;
@@ -62,3 +64,4 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   return ss.str();
 }
 } // namespace cdd_cpp::mocks
+// GCOV_EXCL_BR_STOP

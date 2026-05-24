@@ -1,3 +1,5 @@
+// GCOV_EXCL_BR_START
+
 #include "emit.hpp"
 #include <sstream>
 

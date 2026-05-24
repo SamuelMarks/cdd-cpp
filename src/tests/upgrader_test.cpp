@@ -1,3 +1,5 @@
+// GCOV_EXCL_BR_START
+
 #include "../openapi/upgraders/upgrader.hpp"
 #include <cassert>
 #include <iostream>
@@ -160,3 +162,4 @@ void test_upgraders() {
   std::cout << "openapi::upgraders::test_upgraders passed.\n";
 }
 } // namespace cdd_cpp::openapi::upgraders
+// GCOV_EXCL_BR_STOP

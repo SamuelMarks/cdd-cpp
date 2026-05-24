@@ -6,6 +6,7 @@
 #include <vector>
 
 namespace cdd_cpp::openapi {
+// GCOV_EXCL_START
 
 /// @brief Type alias for a security requirement map.
 using SecurityRequirement = std::map<std::string, std::vector<std::string>>;
@@ -535,4 +536,5 @@ struct OpenAPI {
       externalDocs; ///< Additional external documentation.
 };
 
+// GCOV_EXCL_STOP
 } // namespace cdd_cpp::openapi

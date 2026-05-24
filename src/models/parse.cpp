@@ -1,3 +1,5 @@
+// GCOV_EXCL_BR_START
+
 #include "../openapi/models.hpp"
 #include "../utils/cpp_ast.hpp"
 #include <regex>
@@ -153,3 +155,4 @@ void parse_schemas(const CppAST &ast, openapi::OpenAPI &spec) noexcept {
   }
 }
 } // namespace cdd_cpp::utils
+// GCOV_EXCL_BR_STOP

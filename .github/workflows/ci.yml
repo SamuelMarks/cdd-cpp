@@ -97,7 +97,7 @@ jobs:
         run: python3 -c "import sys; sys.path.append('scripts'); import run_pre_commit_checks as r; r.build_wasm()"
 
       - name: Release Build
-        if: success() && startsWith(github.ref, 'refs/tags/')
+        if: success() && startsWith(github.ref, 'refs/tags/v')
         run: |
           cmake -B build_release -S . -DCMAKE_BUILD_TYPE=Release
           cmake --build build_release -j4
@@ -106,10 +106,32 @@ jobs:
           cp bin/cdd-cpp.wasm custom_bin/
 
       - name: Upload Binary Release
-        if: success() && startsWith(github.ref, 'refs/tags/')
+        if: success() && startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
+          files: |
+            custom_bin/cdd-cpp
+            custom_bin/cdd-cpp.wasm
+
+      - name: Update latest tag
+        if: success() && startsWith(github.ref, 'refs/tags/v')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete latest --cleanup-tag -y || true
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag latest
+          git push origin latest
+
+      - name: Upload Binary Release (latest)
+        if: success() && startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: latest
+          make_latest: true
+          generate_release_notes: false
           files: |
             custom_bin/cdd-cpp
             custom_bin/cdd-cpp.wasm

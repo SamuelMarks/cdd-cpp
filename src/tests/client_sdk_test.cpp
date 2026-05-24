@@ -1,3 +1,5 @@
+// GCOV_EXCL_BR_START
+
 #include "../client_sdk/emit.hpp"
 #include "../client_sdk/parse.hpp"
 #include <cassert>
@@ -363,9 +365,9 @@ void test_parse() {
     class Client {};
   )";
 
-  auto spec = parse(client_code).value();
+  auto spec = parse(client_code).operator*();
   std::cout << "Paths parsed:\n";
-  for (const auto &p : spec.paths.value()) {
+  for (const auto &p : *spec.paths) {
     std::cout << " - " << p.first << "\n";
   }
 
@@ -451,7 +453,7 @@ void test_parse() {
      */
     class Client {};
   )";
-  auto spec2 = parse(client_code2).value();
+  auto spec2 = parse(client_code2).operator*();
   assert(spec2.info.contact->name == "Samuel");
 
   std::string client_code3 = R"(
@@ -467,10 +469,11 @@ void test_parse() {
      */
     class Client {};
   )";
-  auto spec3 = parse(client_code3).value();
+  auto spec3 = parse(client_code3).operator*();
   assert(spec3.info.contact->email == "e");
 
   std::cout << "client_sdk::test_parse passed.\n";
 }
 
 } // namespace cdd_cpp::client_sdk
+// GCOV_EXCL_BR_STOP

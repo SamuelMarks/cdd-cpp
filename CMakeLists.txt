@@ -179,3 +179,12 @@ if(EMSCRIPTEN)
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
     set_target_properties(cdd-cpp PROPERTIES LINK_FLAGS "-s WASM=1 -s STANDALONE_WASM=1")
 endif()
+set_source_files_properties(
+    src/cli/main.cpp
+    src/cli/sync.cpp
+    src/client_sdk/emit.cpp
+    src/client_sdk/parse.cpp
+    src/client_sdk_cli/emit.cpp
+    src/client_sdk_cli/parse.cpp
+    PROPERTIES COMPILE_OPTIONS -fno-exceptions
+)

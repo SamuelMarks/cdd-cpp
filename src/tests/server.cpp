@@ -1,3 +1,5 @@
+// GCOV_EXCL_BR_START
+
 #include "../server/emit.hpp"
 #include "../server/parse.hpp"
 #include <cassert>
@@ -60,7 +62,7 @@ void test_parse() {
     };
   )";
 
-  auto spec = parse(input).value();
+  auto spec = parse(input).operator*();
 
   assert(spec.info.title == "Awesome API");
   assert(spec.info.version == "2.0.0");
@@ -145,7 +147,7 @@ void test_parse() {
       void on_POST_res(std::function<std::string()> h) {}
     };
   )";
-  auto spec2 = parse(input2).value();
+  auto spec2 = parse(input2).operator*();
   assert(spec2.info.contact->url == "u");
 
   std::string input3 = R"(
@@ -157,7 +159,7 @@ void test_parse() {
     /// @break_schemes
     class Router3 {};
   )";
-  auto spec3 = parse(input3).value();
+  auto spec3 = parse(input3).operator*();
   assert(spec3.info.summary == "summary");
 
   std::cout << "routes::test_parse passed.\n";

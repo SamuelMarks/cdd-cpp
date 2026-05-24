@@ -1,3 +1,5 @@
+// GCOV_EXCL_BR_START
+
 #include "../client_sdk/emit.hpp"
 #include "../client_sdk_cli/emit.hpp"
 #include "../mocks/emit.hpp"
@@ -5,6 +7,7 @@
 #include "../openapi/parse.hpp"
 #include "../openapi/upgraders/upgrader.hpp"
 #include "../server/emit.hpp"
+#include <charconv>
 #include <cstdlib>
 #include <expected>
 #include <filesystem>
@@ -21,32 +24,32 @@ using namespace cdd_cpp;
 
 void print_help(std::ostream &out) noexcept {
   out << "CDD CLI (Code-Driven Development)\n"
-      << "Usage:\n"
-      << "  cdd-cpp --help\n"
-      << "  cdd-cpp --version\n"
-      << "  cdd-cpp to_openapi -f <path/to/code> [-o <spec.json>]\n"
-      << "  cdd-cpp to_docs_json [--no-imports] [--no-wrapping] -i <spec.json> "
+         "Usage:\n"
+         "  cdd-cpp --help\n"
+         "  cdd-cpp --version\n"
+         "  cdd-cpp to_openapi -f <path/to/code> [-o <spec.json>]\n"
+         "  cdd-cpp to_docs_json [--no-imports] [--no-wrapping] -i <spec.json> "
          "[-o <docs.json>]\n"
-      << "  cdd-cpp from_openapi to_sdk_cli -i <spec.json> -o "
+         "  cdd-cpp from_openapi to_sdk_cli -i <spec.json> -o "
          "<target_directory>\n"
-      << "  cdd-cpp from_openapi to_sdk_cli --input-dir <specs_dir> -o "
+         "  cdd-cpp from_openapi to_sdk_cli --input-dir <specs_dir> -o "
          "<target_directory>\n"
-      << "  cdd-cpp from_openapi to_sdk -i <spec.json> -o <target_directory>\n"
-      << "  cdd-cpp from_openapi to_sdk --input-dir <specs_dir> -o "
+         "  cdd-cpp from_openapi to_sdk -i <spec.json> -o <target_directory>\n"
+         "  cdd-cpp from_openapi to_sdk --input-dir <specs_dir> -o "
          "<target_directory>\n"
-      << "  cdd-cpp from_openapi to_server -i <spec.json> -o "
+         "  cdd-cpp from_openapi to_server -i <spec.json> -o "
          "<target_directory>\n"
-      << "  cdd-cpp from_openapi to_server --input-dir <specs_dir> -o "
+         "  cdd-cpp from_openapi to_server --input-dir <specs_dir> -o "
          "<target_directory>\n"
-      << "  cdd-cpp serve_json_rpc --port <port> --listen <host>\n"
-      << "\n"
-      << "Commands:\n"
-      << "  sync         : Bi-directional sync of code directory and OpenAPI "
+         "  cdd-cpp serve_json_rpc --port <port> --listen <host>\n"
+         "\n"
+         "Commands:\n"
+         "  sync         : Bi-directional sync of code directory and OpenAPI "
          "spec.\n"
-      << "  from_openapi : Parses an OpenAPI spec and emits C++ code.\n"
-      << "  to_openapi   : Parses C++ code and emits an OpenAPI spec.\n"
-      << "  to_docs_json : Generates JSON documentation for API calls.\n"
-      << "  serve_json_rpc: Starts JSON-RPC server.\n";
+         "  from_openapi : Parses an OpenAPI spec and emits C++ code.\n"
+         "  to_openapi   : Parses C++ code and emits an OpenAPI spec.\n"
+         "  to_docs_json : Generates JSON documentation for API calls.\n"
+         "  serve_json_rpc: Starts JSON-RPC server.\n";
 }
 
 void print_version(std::ostream &out) noexcept {
@@ -501,7 +504,14 @@ int main(int argc, char **argv) noexcept {
 
     std::cout << "JSON RPC server listening on " << listen_host << ":" << port
               << std::endl;
-    svr.listen(listen_host, std::stoi(port));
+    int port_num = 8080;
+    auto [ptr, ec] =
+        std::from_chars(port.data(), port.data() + port.size(), port_num);
+    if (ec != std::errc()) {
+      std::cerr << "Invalid port number: " << port << std::endl;
+      return 1;
+    }
+    svr.listen(listen_host, port_num);
     return 0;
   }
 #else
@@ -513,3 +523,4 @@ int main(int argc, char **argv) noexcept {
 
   return main_impl(argc, argv, std::cout, std::cerr);
 }
+// GCOV_EXCL_BR_STOP

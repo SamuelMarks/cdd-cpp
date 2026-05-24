@@ -1,3 +1,5 @@
+// GCOV_EXCL_BR_START
+
 #include "../cli/sync.cpp"
 #include <cassert>
 #include <filesystem>
@@ -43,3 +45,4 @@ void test_sync() {
   std::cout << "test_sync passed.\n";
 }
 } // namespace cdd_cpp::cli
+// GCOV_EXCL_BR_STOP

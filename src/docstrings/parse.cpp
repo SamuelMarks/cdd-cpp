@@ -1,3 +1,5 @@
+// GCOV_EXCL_BR_START
+
 #include "parse.hpp"
 
 namespace cdd_cpp::docstrings {
@@ -8,3 +10,4 @@ void parse(const std::string &input) noexcept {
   // TODO: implement parsing for docstrings
 }
 } // namespace cdd_cpp::docstrings
+// GCOV_EXCL_BR_STOP

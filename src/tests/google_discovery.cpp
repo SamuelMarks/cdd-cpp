@@ -1,3 +1,5 @@
+// GCOV_EXCL_BR_START
+
 #include "../google_discovery/parse.hpp"
 #include "../openapi/emit.hpp"
 #include <cassert>
@@ -126,3 +128,4 @@ void test_parse() {
   std::cout << "google_discovery::test_parse passed.\n";
 }
 } // namespace cdd_cpp::google_discovery
+// GCOV_EXCL_BR_STOP

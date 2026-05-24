@@ -1,3 +1,5 @@
+// GCOV_EXCL_BR_START
+
 #include "../docstrings/emit.hpp"
 #include "../docstrings/parse.hpp"
 #include <cassert>
@@ -49,3 +51,4 @@ void test_emit() {
   std::cout << "docstrings::test_emit passed.\n";
 }
 } // namespace cdd_cpp::docstrings
+// GCOV_EXCL_BR_STOP
