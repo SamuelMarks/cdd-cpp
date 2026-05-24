@@ -15,8 +15,12 @@ void test_exhaustive() {
   size_t size = std::ftell(f);
   std::fseek(f, 0, SEEK_SET);
   std::string json(size, '\0');
-  std::fread(&json[0], 1, size, f);
+  size_t bytes_read = std::fread(&json[0], 1, size, f);
   std::fclose(f);
+  if (bytes_read != size) {
+    std::cerr << "Exhaustive Read Error\n";
+    exit(1);
+  }
 
   auto spec_res = parse(json);
   if (!spec_res) {
