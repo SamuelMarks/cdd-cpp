@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 
+// GCOV_EXCL_BR_START
 namespace cdd_cpp::server {
 
 void test_parse() {
@@ -292,3 +293,4 @@ void test_emit() {
   std::cout << "routes::test_emit passed.\n";
 }
 } // namespace cdd_cpp::server
+// GCOV_EXCL_BR_STOP

@@ -8,6 +8,7 @@
 namespace cdd_cpp::mocks {
 void test_parse() {
   parse("{}");
+  parse("{"); // invalid json
   std::cout << "mocks::test_parse passed.\n";
 }
 void test_emit() {

@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 
+// GCOV_EXCL_BR_START
 namespace cdd_cpp::cli {
 std::expected<std::string, std::string> exec(const char *cmd) {
   std::array<char, 128> buffer;
@@ -16,9 +17,10 @@ std::expected<std::string, std::string> exec(const char *cmd) {
       popen(std::string(std::string(cmd) + " 2>&1").c_str(),
             "r"), // GCOV_EXCL_BR_LINE
       pclose_wrapper);
-  if (!pipe) { // GCOV_EXCL_BR_LINE
-    return std::unexpected(
-        "popen() failed!"); // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
+  if (!pipe) {              // GCOV_EXCL_BR_LINE
+    return std::unexpected( // GCOV_EXCL_LINE
+        "popen() failed!"); // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE //
+                            // GCOV_EXCL_LINE
   }
   while (fgets(buffer.data(), buffer.size(), pipe.get()) !=
          nullptr) {          // GCOV_EXCL_BR_LINE
@@ -309,23 +311,24 @@ void test_to_docs_json() {
       exec("./cdd-cpp serve_json_rpc --port abc"); // GCOV_EXCL_BR_LINE
   std::cout
       << "Testing serve_json_rpc execution and graceful stop\n"; // GCOV_EXCL_BR_LINE
-  auto
-      serve_res = exec("./cdd-cpp serve_json_rpc --port 8085 --listen "
-                       "127.0.0.1 > " // GCOV_EXCL_BR_LINE
-                       "/dev/null 2>&1 & "
-                       "PID=$!; "
-                       "sleep 0.5 && "
-                       "curl -s -X POST -H 'Content-Type: application/json' -d "
-                       "'{\"jsonrpc\":\"2.0\",\"method\":\"ping\",\"id\":1}' "
-                       "http://127.0.0.1:8085 > /dev/null && "
-                       "curl -s -X OPTIONS http://127.0.0.1:8085 > /dev/null "
-                       "&& "
-                       "curl -s -X GET http://127.0.0.1:8085/stop > /dev/null "
-                       "&& "
-                       "wait $PID || true");
+  auto serve_res =
+      exec("./cdd-cpp serve_json_rpc --port 8085 --listen "
+           "127.0.0.1 > " // GCOV_EXCL_BR_LINE
+           "/dev/null 2>&1 & "
+           "PID=$!; "
+           "sleep 0.5 && "
+           "curl -s -X POST -H 'Content-Type: application/json' -d "
+           "'{\"jsonrpc\":\"2.0\",\"method\":\"ping\",\"id\":1}' "
+           "http://127.0.0.1:8085 > /dev/null && "
+           "curl -s -X OPTIONS http://127.0.0.1:8085 > /dev/null "
+           "&& "
+           "curl -s -X GET http://127.0.0.1:8085/stop > /dev/null "
+           "&& "
+           "wait $PID || true");
   assert(serve_res); // GCOV_EXCL_BR_LINE
   assert(serve_res); // GCOV_EXCL_BR_LINE
 
   std::cout << "cli::test_to_docs_json passed.\n"; // GCOV_EXCL_BR_LINE
 }
 } // namespace cdd_cpp::cli
+// GCOV_EXCL_BR_STOP

@@ -171,3 +171,5 @@ env/
 test_simdjson*
 debug_upgrader
 !patch_simdjson_simple.py
+build_cov/
+build_cov_test/

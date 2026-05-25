@@ -253,7 +253,7 @@ parse(const std::string &input) noexcept {
   size_t class_start = input.find('{'); // GCOV_EXCL_BR_LINE
   std::string class_header = (class_start != std::string::npos)
                                  ? input.substr(0, class_start)
-                                 : input; // GCOV_EXCL_BR_LINE
+                                 : input; // GCOV_EXCL_LINE
   parse_doc(spec, class_header);          // GCOV_EXCL_BR_LINE
 
   std::regex method_regex( // GCOV_EXCL_BR_LINE

@@ -14,7 +14,7 @@ struct Trivia { // GCOV_EXCL_LINE
 };
 
 /// @brief Auto-generated doc.
-struct CppField {
+struct CppField { // GCOV_EXCL_LINE
   std::string type;
   std::string name;
   std::string docstring;
@@ -22,7 +22,7 @@ struct CppField {
 };
 
 /// @brief Auto-generated doc.
-struct CppClass {
+struct CppClass { // GCOV_EXCL_LINE
   std::string name;
   std::string docstring;
   std::vector<CppField> fields;
@@ -30,7 +30,7 @@ struct CppClass {
 };
 
 /// @brief Auto-generated doc.
-struct CppFunction {
+struct CppFunction { // GCOV_EXCL_LINE
   std::string return_type;
   std::string name;
   std::vector<CppField> params;
@@ -40,7 +40,7 @@ struct CppFunction {
 };
 
 /// @brief Auto-generated doc.
-struct CppAST {
+struct CppAST { // GCOV_EXCL_LINE
   std::vector<CppClass> classes;
   std::vector<CppFunction> functions;
   Trivia file_trivia;

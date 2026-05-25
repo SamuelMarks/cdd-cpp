@@ -5,6 +5,7 @@
 #include <cassert>
 #include <iostream>
 
+// GCOV_EXCL_BR_START
 namespace cdd_cpp::client_sdk_cli {
 
 void test_emit_cli() {
@@ -284,3 +285,4 @@ void test_parse() {
 }
 
 } // namespace cdd_cpp::client_sdk_cli
+// GCOV_EXCL_BR_STOP

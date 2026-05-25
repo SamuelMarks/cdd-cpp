@@ -5,6 +5,7 @@
 #include <cassert>
 #include <iostream>
 
+// GCOV_EXCL_BR_START
 namespace cdd_cpp::orm {
 void test_emit() {
   std::string json = R"({
@@ -42,3 +43,4 @@ void test_emit() {
   std::cout << "orm::test_emit passed.\n";
 }
 } // namespace cdd_cpp::orm
+// GCOV_EXCL_BR_STOP
