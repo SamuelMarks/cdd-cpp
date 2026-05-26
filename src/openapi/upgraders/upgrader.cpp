@@ -102,9 +102,9 @@ void process_element_3_0(simdjson::dom::element el,
     simdjson::dom::element type_el;
     bool is_schema = false;
     if (obj["type"].get(type_el) == simdjson::SUCCESS && type_el.is_string()) {
-      is_schema = true; // rough heuristic
+      is_schema = true;                          // rough heuristic
     } else if (obj["properties"].get(type_el) == // GCOV_EXCL_BR_LINE
-                   simdjson::SUCCESS || // GCOV_EXCL_BR_LINE
+                   simdjson::SUCCESS ||          // GCOV_EXCL_BR_LINE
                obj["items"].get(type_el) == simdjson::SUCCESS) {
       is_schema = true;
     }
@@ -233,8 +233,8 @@ std::string upgrade_swagger_1_2(simdjson::dom::object root) noexcept {
                           nickname_el) ==     // GCOV_EXCL_BR_LINE
                       simdjson::SUCCESS) {
                     jw.key_value(
-                        "operationId", // GCOV_EXCL_BR_LINE
-                        std::string(nickname_el // GCOV_EXCL_BR_LINE
+                        "operationId",                     // GCOV_EXCL_BR_LINE
+                        std::string(nickname_el            // GCOV_EXCL_BR_LINE
                                         .get_string()      // GCOV_EXCL_BR_LINE
                                         .value_unsafe())); // GCOV_EXCL_BR_LINE
                   }
@@ -338,7 +338,7 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
 
   // Helper lambda to process parameters
   auto process_parameters = [&](simdjson::dom::element // GCOV_EXCL_BR_LINE
-                                    params_el) { // GCOV_EXCL_BR_LINE
+                                    params_el) {       // GCOV_EXCL_BR_LINE
     std::string body_param_raw = "";
     std::vector<std::string> form_params;
     jw.key("parameters");                             // GCOV_EXCL_BR_LINE
@@ -349,7 +349,7 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
           auto p_obj = p.get_object().value_unsafe(); // GCOV_EXCL_BR_LINE
           simdjson::dom::element in_el;
           if (p_obj["in"].get(in_el) == simdjson::SUCCESS) {
-            std::string in_val( // GCOV_EXCL_BR_LINE
+            std::string in_val(                     // GCOV_EXCL_BR_LINE
                 in_el.get_string().value_unsafe()); // GCOV_EXCL_BR_LINE
             if (in_val == "body") {
               simdjson::dom::element schema_el;
@@ -361,18 +361,18 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
             } else if (in_val == "formData") {
               form_params.push_back(simdjson::minify(p)); // GCOV_EXCL_BR_LINE
             } else {
-              jw.start_object();                      // GCOV_EXCL_BR_LINE
-              for (auto pp : p_obj) {                 // GCOV_EXCL_BR_LINE
-                std::string pk(pp.key);               // GCOV_EXCL_BR_LINE
-                if (pk == "type" || pk == "format" || // GCOV_EXCL_BR_LINE
-                    pk == "items" ||                  // GCOV_EXCL_BR_LINE
-                    pk == "collectionFormat" ||       // GCOV_EXCL_BR_LINE
-                    pk == "default" ||                // GCOV_EXCL_BR_LINE
-                    pk == "maximum" ||                // GCOV_EXCL_BR_LINE
-                    pk == "exclusiveMaximum" ||       // GCOV_EXCL_BR_LINE
-                    pk == "minimum" ||                // GCOV_EXCL_BR_LINE
-                    pk == "exclusiveMinimum" ||       // GCOV_EXCL_BR_LINE
-                    pk == "maxLength" || // GCOV_EXCL_BR_LINE
+              jw.start_object();                            // GCOV_EXCL_BR_LINE
+              for (auto pp : p_obj) {                       // GCOV_EXCL_BR_LINE
+                std::string pk(pp.key);                     // GCOV_EXCL_BR_LINE
+                if (pk == "type" || pk == "format" ||       // GCOV_EXCL_BR_LINE
+                    pk == "items" ||                        // GCOV_EXCL_BR_LINE
+                    pk == "collectionFormat" ||             // GCOV_EXCL_BR_LINE
+                    pk == "default" ||                      // GCOV_EXCL_BR_LINE
+                    pk == "maximum" ||                      // GCOV_EXCL_BR_LINE
+                    pk == "exclusiveMaximum" ||             // GCOV_EXCL_BR_LINE
+                    pk == "minimum" ||                      // GCOV_EXCL_BR_LINE
+                    pk == "exclusiveMinimum" ||             // GCOV_EXCL_BR_LINE
+                    pk == "maxLength" ||                    // GCOV_EXCL_BR_LINE
                     pk == "minLength" ||                    // GCOV_EXCL_BR_LINE
                     pk == "pattern" ||                      // GCOV_EXCL_BR_LINE
                     pk == "maxItems" || pk == "minItems" || // GCOV_EXCL_BR_LINE
@@ -395,9 +395,9 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
                     pk == "maxLength" ||                    // GCOV_EXCL_BR_LINE
                     pk == "minLength" || pk == "pattern" || // GCOV_EXCL_BR_LINE
                     pk == "maxItems" ||                     // GCOV_EXCL_BR_LINE
-                    pk == "minItems" || // GCOV_EXCL_BR_LINE
-                    pk == "uniqueItems" || // GCOV_EXCL_BR_LINE
-                    pk == "enum" ||        // GCOV_EXCL_BR_LINE
+                    pk == "minItems" ||                     // GCOV_EXCL_BR_LINE
+                    pk == "uniqueItems" ||                  // GCOV_EXCL_BR_LINE
+                    pk == "enum" ||                         // GCOV_EXCL_BR_LINE
                     pk == "multipleOf") {
                   jw.key(pk);                               // GCOV_EXCL_BR_LINE
                   jw.raw_value(simdjson::minify(pp.value)); // GCOV_EXCL_BR_LINE
@@ -407,7 +407,7 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
               jw.end_object(); // GCOV_EXCL_BR_LINE
             }
           } else {
-            jw.raw_value( // GCOV_EXCL_BR_LINE
+            jw.raw_value(             // GCOV_EXCL_BR_LINE
                 simdjson::minify(p)); // $ref or other // GCOV_EXCL_BR_LINE
           }
         }
@@ -500,8 +500,8 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
                           jw.key("content"); // GCOV_EXCL_BR_LINE
                           jw.start_object();
                           for (const auto &prod : // GCOV_EXCL_BR_LINE
-                               local_produces) { // GCOV_EXCL_BR_LINE
-                            jw.key(prod);        // GCOV_EXCL_BR_LINE
+                               local_produces) {  // GCOV_EXCL_BR_LINE
+                            jw.key(prod);         // GCOV_EXCL_BR_LINE
                             jw.start_object();
                             jw.key("schema");              // GCOV_EXCL_BR_LINE
                             jw.raw_value(simdjson::minify( // GCOV_EXCL_BR_LINE
@@ -754,7 +754,7 @@ upgrade_to_latest(const std::string &json_spec) noexcept {
   simdjson::dom::parser parser;
   simdjson::dom::element doc;
   if (parser.parse(json_spec).get(doc) != // GCOV_EXCL_BR_LINE
-          simdjson::SUCCESS || // GCOV_EXCL_BR_LINE
+          simdjson::SUCCESS ||            // GCOV_EXCL_BR_LINE
       doc.type() != simdjson::dom::element_type::OBJECT) {
     return std::unexpected("Invalid JSON document"); // GCOV_EXCL_BR_LINE
   }

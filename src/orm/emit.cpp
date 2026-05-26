@@ -135,10 +135,10 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
           ss << "            std::string p" << paramIdx // GCOV_EXCL_BR_LINE
              << " = std::to_string(item." << prop_name  // GCOV_EXCL_BR_LINE
              << ");\n";                                 // GCOV_EXCL_BR_LINE
-          ss << "            paramValues[" << paramIdx // GCOV_EXCL_BR_LINE
-             << "] = p"        // GCOV_EXCL_BR_LINE
-             << paramIdx       // GCOV_EXCL_BR_LINE
-             << ".c_str();\n"; // GCOV_EXCL_BR_LINE
+          ss << "            paramValues[" << paramIdx  // GCOV_EXCL_BR_LINE
+             << "] = p"                                 // GCOV_EXCL_BR_LINE
+             << paramIdx                                // GCOV_EXCL_BR_LINE
+             << ".c_str();\n";                          // GCOV_EXCL_BR_LINE
         }
         paramIdx++; // GCOV_EXCL_BR_LINE
       }

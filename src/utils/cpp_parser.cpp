@@ -44,7 +44,7 @@ openapi::Schema generate_schema_from_class(const CppClass &cls) {
           std::map<std::string, openapi::Schema>>(); // GCOV_EXCL_BR_LINE
   for (const auto &field : cls.fields) {             // GCOV_EXCL_BR_LINE
     openapi::Schema field_schema;
-    auto [type, format] = // GCOV_EXCL_BR_LINE
+    auto [type, format] =                    // GCOV_EXCL_BR_LINE
         map_cpp_type_to_openapi(field.type); // GCOV_EXCL_BR_LINE
     field_schema.type = type;                // GCOV_EXCL_BR_LINE
     if (!format.empty()) {                   // GCOV_EXCL_BR_LINE

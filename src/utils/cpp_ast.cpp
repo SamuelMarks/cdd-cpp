@@ -95,18 +95,18 @@ std::string emit_cpp(const CppAST &ast) noexcept {
   std::ostringstream out;         // GCOV_EXCL_BR_LINE
   out << ast.file_trivia.leading; // GCOV_EXCL_BR_LINE
 
-  for (const auto &cls : ast.classes) {     // GCOV_EXCL_BR_LINE
-    out << cls.trivia.leading;              // GCOV_EXCL_BR_LINE
-    if (!cls.docstring.empty())             // GCOV_EXCL_BR_LINE
-      out << cls.docstring << "\n";         // GCOV_EXCL_BR_LINE
-    out << "struct " << cls.name << " {\n"; // GCOV_EXCL_BR_LINE
-    for (const auto &fld : cls.fields) {    // GCOV_EXCL_BR_LINE
+  for (const auto &cls : ast.classes) {                    // GCOV_EXCL_BR_LINE
+    out << cls.trivia.leading;                             // GCOV_EXCL_BR_LINE
+    if (!cls.docstring.empty())                            // GCOV_EXCL_BR_LINE
+      out << cls.docstring << "\n";                        // GCOV_EXCL_BR_LINE
+    out << "struct " << cls.name << " {\n";                // GCOV_EXCL_BR_LINE
+    for (const auto &fld : cls.fields) {                   // GCOV_EXCL_BR_LINE
       out << fld.trivia.leading << "  " << fld.type << " " // GCOV_EXCL_BR_LINE
-          << fld.name                // GCOV_EXCL_BR_LINE
-          << ";";                    // GCOV_EXCL_BR_LINE
-      if (!fld.docstring.empty())    // GCOV_EXCL_BR_LINE
-        out << " " << fld.docstring; // GCOV_EXCL_BR_LINE
-      out << "\n";                   // GCOV_EXCL_BR_LINE
+          << fld.name                                      // GCOV_EXCL_BR_LINE
+          << ";";                                          // GCOV_EXCL_BR_LINE
+      if (!fld.docstring.empty())                          // GCOV_EXCL_BR_LINE
+        out << " " << fld.docstring;                       // GCOV_EXCL_BR_LINE
+      out << "\n";                                         // GCOV_EXCL_BR_LINE
     }
     out << "};\n";              // GCOV_EXCL_BR_LINE
     out << cls.trivia.trailing; // GCOV_EXCL_BR_LINE
@@ -118,12 +118,12 @@ std::string emit_cpp(const CppAST &ast) noexcept {
       out << fn.docstring << "\n";                  // GCOV_EXCL_BR_LINE
     out << fn.return_type << " " << fn.name << "("; // GCOV_EXCL_BR_LINE
     for (size_t i = 0; i < fn.params.size(); ++i) { // GCOV_EXCL_BR_LINE
-      out << fn.params[i].trivia.leading // GCOV_EXCL_BR_LINE
-          << fn.params[i].type      // GCOV_EXCL_BR_LINE
-          << " "                    // GCOV_EXCL_BR_LINE
-          << fn.params[i].name;     // GCOV_EXCL_BR_LINE
-      if (i + 1 < fn.params.size()) // GCOV_EXCL_BR_LINE
-        out << ", ";                // GCOV_EXCL_BR_LINE
+      out << fn.params[i].trivia.leading            // GCOV_EXCL_BR_LINE
+          << fn.params[i].type                      // GCOV_EXCL_BR_LINE
+          << " "                                    // GCOV_EXCL_BR_LINE
+          << fn.params[i].name;                     // GCOV_EXCL_BR_LINE
+      if (i + 1 < fn.params.size())                 // GCOV_EXCL_BR_LINE
+        out << ", ";                                // GCOV_EXCL_BR_LINE
     }
     out << ") {\n";            // GCOV_EXCL_BR_LINE
     out << fn.body;            // GCOV_EXCL_BR_LINE

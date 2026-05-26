@@ -70,8 +70,8 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
           param_list = "const std::string&"; // GCOV_EXCL_BR_LINE
         }
 
-        ss << "        using " << func_name // GCOV_EXCL_BR_LINE
-           << "Handler = std::function<std::string(" // GCOV_EXCL_BR_LINE
+        ss << "        using " << func_name             // GCOV_EXCL_BR_LINE
+           << "Handler = std::function<std::string("    // GCOV_EXCL_BR_LINE
            << param_list                                // GCOV_EXCL_BR_LINE
            << ")>;\n";                                  // GCOV_EXCL_BR_LINE
         ss << "        void on_" << method << "_"       // GCOV_EXCL_BR_LINE
