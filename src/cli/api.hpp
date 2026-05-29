@@ -5,6 +5,7 @@
 
 namespace cdd_cpp::cli {
 
+/// @brief Configuration for generating code from OpenAPI
 struct FromOpenApiConfig {
   std::string input;
   std::string input_dir;
@@ -15,11 +16,13 @@ struct FromOpenApiConfig {
   std::string subcommand = "to_sdk"; // to_sdk, to_sdk_cli, to_server
 };
 
+/// @brief Configuration for generating OpenAPI from source code
 struct ToOpenApiConfig {
   std::string input;
   std::string output;
 };
 
+/// @brief Configuration for generating docs JSON
 struct DocsJsonConfig {
   std::string input;
   std::string output;
@@ -27,6 +30,7 @@ struct DocsJsonConfig {
   bool no_wrapping = false;
 };
 
+/// @brief Configuration for serving JSON-RPC
 struct ServeJsonRpcConfig {
   int port = 8080;
   std::string listen_host = "127.0.0.1";

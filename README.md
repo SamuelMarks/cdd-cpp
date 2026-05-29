@@ -4,7 +4,7 @@ cdd-cpp
 [![interactive WASM web demo](https://img.shields.io/badge/interactive-WASM_web_demo-blue.svg)](https://offscale.io/wasm_web_demo)
 [![CI](https://github.com/SamuelMarks/cdd-cpp/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/cdd-cpp/actions)
 [![Test Coverage](https://img.shields.io/badge/coverage-100.00%25-brightgreen.svg)](#)
-[![Doc Coverage](https://img.shields.io/badge/docs-0%25-brightgreen.svg)](#)
+[![Doc Coverage](https://img.shields.io/badge/docs-100.00%25-brightgreen.svg)](#)
 
 ----
 
