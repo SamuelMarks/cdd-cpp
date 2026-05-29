@@ -11,8 +11,7 @@
 
 namespace cdd_cpp::cli {
 
-void sync_command(const std::string &code_dir,
-                  const std::string &spec_file) noexcept {
+void sync(const std::string &code_dir, const std::string &spec_file) noexcept {
   std::cout << "Syncing code in " << code_dir << " with spec " << spec_file
             << "...\n";
   // Parse C++ to get updated routes/mocks

@@ -32,7 +32,7 @@ void test_sync() {
   s.close();
 
   // Test sync
-  sync_command("test_sync_dir", "test_sync_spec.json");
+  sync("test_sync_dir", "test_sync_spec.json");
 
   // It should overwrite spec
   std::ifstream is("test_sync_spec.json");

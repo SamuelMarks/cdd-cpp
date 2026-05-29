@@ -27,29 +27,51 @@ void print_help(std::ostream &out) noexcept {
          "Usage:\n"
          "  cdd-cpp --help\n"
          "  cdd-cpp --version\n"
-         "  cdd-cpp to_openapi -f <path/to/code> [-o <spec.json>]\n"
+         "  cdd-cpp to_openapi -i <path/to/code> [-o <spec.json>]\n"
          "  cdd-cpp to_docs_json [--no-imports] [--no-wrapping] -i <spec.json> "
          "[-o <docs.json>]\n"
          "  cdd-cpp from_openapi to_sdk_cli -i <spec.json> -o "
-         "<target_directory>\n"
+         "<target_directory> [--no-github-actions] [--no-installable-package] "
+         "[--tests]\n"
          "  cdd-cpp from_openapi to_sdk_cli --input-dir <specs_dir> -o "
-         "<target_directory>\n"
-         "  cdd-cpp from_openapi to_sdk -i <spec.json> -o <target_directory>\n"
+         "<target_directory> [--no-github-actions] [--no-installable-package] "
+         "[--tests]\n"
+         "  cdd-cpp from_openapi to_sdk -i <spec.json> -o <target_directory> "
+         "[--no-github-actions] [--no-installable-package] [--tests]\n"
          "  cdd-cpp from_openapi to_sdk --input-dir <specs_dir> -o "
-         "<target_directory>\n"
+         "<target_directory> [--no-github-actions] [--no-installable-package] "
+         "[--tests]\n"
          "  cdd-cpp from_openapi to_server -i <spec.json> -o "
-         "<target_directory>\n"
+         "<target_directory> [--no-github-actions] [--no-installable-package] "
+         "[--tests]\n"
          "  cdd-cpp from_openapi to_server --input-dir <specs_dir> -o "
-         "<target_directory>\n"
-         "  cdd-cpp serve_json_rpc --port <port> --listen <host>\n"
+         "<target_directory> [--no-github-actions] [--no-installable-package] "
+         "[--tests]\n"
+         "  cdd-cpp serve_json_rpc [-p|--port <port>] [-l|--listen <address>]\n"
          "\n"
          "Commands:\n"
-         "  sync         : Bi-directional sync of code directory and OpenAPI "
-         "spec.\n"
-         "  from_openapi : Parses an OpenAPI spec and emits C++ code.\n"
-         "  to_openapi   : Parses C++ code and emits an OpenAPI spec.\n"
-         "  to_docs_json : Generates JSON documentation for API calls.\n"
-         "  serve_json_rpc: Starts JSON-RPC server.\n";
+         "  from_openapi : Generate code from an OpenAPI specification.\n"
+         "  to_openapi   : Generate an OpenAPI specification from source "
+         "code.\n"
+         "  to_docs_json : Generate JSON documentation with code snippets for "
+         "an OpenAPI specification.\n"
+         "  serve_json_rpc: Expose CLI interface as JSON-RPC server.\n"
+         "\nOptions:\n"
+         "  -i, --input                     Path or URL to the OpenAPI "
+         "specification.\n"
+         "      --input-dir                 Directory containing OpenAPI "
+         "specifications.\n"
+         "  -o, --output                    Output file or directory path.\n"
+         "      --tests                     Generate integration tests and "
+         "mocks.\n"
+         "      --no-github-actions         Do not generate GitHub Actions "
+         "scaffolding.\n"
+         "      --no-installable-package    Do not generate installable "
+         "package scaffolding.\n"
+         "      --no-imports                Omit the imports field.\n"
+         "      --no-wrapping               Omit the wrapper fields.\n"
+         "  -h, --help                      Show this help message\n"
+         "  -v, --version                   Show version information\n";
 }
 
 void print_version(std::ostream &out) noexcept {
@@ -86,8 +108,7 @@ bool get_bool_arg_or_env(bool val, const std::string &env_var) noexcept {
 }
 
 namespace cdd_cpp::cli {
-void sync_command(const std::string &code_dir,
-                  const std::string &spec_file) noexcept;
+void sync(const std::string &code_dir, const std::string &spec_file) noexcept;
 }
 
 int main_impl(int argc, char **argv, std::ostream &out,
@@ -108,50 +129,42 @@ int main_impl(int argc, char **argv, std::ostream &out,
     return 0;
   }
 
-  if (command == "sync") {
-    for (int i = 2; i < argc; ++i) {
-      std::string arg = argv[i];
-      if (arg == "--help" || arg == "-h") {
-        out << "Usage:\n  cdd-cpp sync -d <dir> -s <spec.json>\n";
-        return 0;
-      }
-    }
-
-    std::string folder, spec;
-    for (int i = 2; i < argc; ++i) {
-      std::string arg = argv[i];
-      if ((arg == "-d" || arg == "--dir") && i + 1 < argc)
-        folder = argv[++i];
-      if ((arg == "-s" || arg == "--spec") && i + 1 < argc)
-        spec = argv[++i];
-    }
-    folder = get_arg_or_env(folder, "CDD_CPP_DIR");
-    spec = get_arg_or_env(spec, "CDD_CPP_SPEC");
-    if (folder.empty() || spec.empty()) {
-      err << "Usage: cdd_cpp sync -d <dir> -s <spec.json>\n";
-      return 1;
-    }
-    cdd_cpp::cli::sync_command(folder, spec);
-    return 0;
-  }
-
-  else if (command == "from_openapi") {
+  if (command == "from_openapi") {
     for (int i = 2; i < argc; ++i) {
       std::string arg = argv[i];
       if (arg == "--help" || arg == "-h") {
         out << "Usage:\n"
             << "  cdd-cpp from_openapi to_sdk_cli -i <spec.json> -o "
-               "<target_directory>\n"
+               "<target_directory> [--no-github-actions] "
+               "[--no-installable-package] [--tests]\n"
             << "  cdd-cpp from_openapi to_sdk_cli --input-dir <specs_dir> -o "
-               "<target_directory>\n"
+               "<target_directory> [--no-github-actions] "
+               "[--no-installable-package] [--tests]\n"
             << "  cdd-cpp from_openapi to_sdk -i <spec.json> -o "
-               "<target_directory>\n"
+               "<target_directory> [--no-github-actions] "
+               "[--no-installable-package] [--tests]\n"
             << "  cdd-cpp from_openapi to_sdk --input-dir <specs_dir> -o "
-               "<target_directory>\n"
+               "<target_directory> [--no-github-actions] "
+               "[--no-installable-package] [--tests]\n"
             << "  cdd-cpp from_openapi to_server -i <spec.json> -o "
-               "<target_directory>\n"
+               "<target_directory> [--no-github-actions] "
+               "[--no-installable-package] [--tests]\n"
             << "  cdd-cpp from_openapi to_server --input-dir <specs_dir> -o "
-               "<target_directory>\n";
+               "<target_directory> [--no-github-actions] "
+               "[--no-installable-package] [--tests]\n"
+            << "\nOptions:\n"
+            << "  -i, --input                     Path or URL to the OpenAPI "
+               "specification.\n"
+            << "      --input-dir                 Directory containing OpenAPI "
+               "specifications.\n"
+            << "  -o, --output                    Output file or directory "
+               "path.\n"
+            << "      --tests                     Generate integration tests "
+               "and mocks.\n"
+            << "      --no-github-actions         Do not generate GitHub "
+               "Actions scaffolding.\n"
+            << "      --no-installable-package    Do not generate installable "
+               "package scaffolding.\n";
         return 0;
       }
     }
@@ -185,14 +198,14 @@ int main_impl(int argc, char **argv, std::ostream &out,
       }
     }
 
-    input = get_arg_or_env(input, "CDD_CPP_INPUT");
-    input_dir = get_arg_or_env(input_dir, "CDD_CPP_INPUT_DIR");
-    output = get_arg_or_env(output, "CDD_CPP_OUTPUT", ".");
+    input = get_arg_or_env(input, "CDD_INPUT");
+    input_dir = get_arg_or_env(input_dir, "CDD_INPUT_DIR");
+    output = get_arg_or_env(output, "CDD_OUTPUT", ".");
     no_github_actions =
-        get_bool_arg_or_env(no_github_actions, "CDD_CPP_NO_GITHUB_ACTIONS");
-    no_installable_package = get_bool_arg_or_env(
-        no_installable_package, "CDD_CPP_NO_INSTALLABLE_PACKAGE");
-    tests = get_bool_arg_or_env(tests, "CDD_CPP_TESTS");
+        get_bool_arg_or_env(no_github_actions, "CDD_NO_GITHUB_ACTIONS");
+    no_installable_package = get_bool_arg_or_env(no_installable_package,
+                                                 "CDD_NO_INSTALLABLE_PACKAGE");
+    tests = get_bool_arg_or_env(tests, "CDD_TESTS");
 
     if (input.empty() && input_dir.empty()) {
       err << "Missing -i <spec.json> or --input-dir <specs_dir>\n";
@@ -302,8 +315,13 @@ int main_impl(int argc, char **argv, std::ostream &out,
     for (int i = 2; i < argc; ++i) {
       std::string arg = argv[i];
       if (arg == "--help" || arg == "-h") {
-        out << "Usage:\n  cdd-cpp to_openapi -f <path/to/code> [-o "
-               "<spec.json>]\n";
+        out << "Usage:\n  cdd-cpp to_openapi -i <path/to/code> [-o "
+               "<spec.json>]\n"
+               "\nOptions:\n"
+               "  -i, --input                     Path to source code "
+               "directory or file.\n"
+               "  -o, --output                    Output file or directory "
+               "path.\n";
         return 0;
       }
     }
@@ -318,8 +336,8 @@ int main_impl(int argc, char **argv, std::ostream &out,
         output = argv[++i];
       }
     }
-    input = get_arg_or_env(input, "CDD_CPP_INPUT");
-    output = get_arg_or_env(output, "CDD_CPP_OUTPUT");
+    input = get_arg_or_env(input, "CDD_INPUT");
+    output = get_arg_or_env(output, "CDD_OUTPUT");
 
     if (input.empty()) {
       err << "Missing -i <path/to/code>\n";
@@ -339,7 +357,14 @@ int main_impl(int argc, char **argv, std::ostream &out,
       std::string arg = argv[i];
       if (arg == "--help" || arg == "-h") {
         out << "Usage:\n  cdd-cpp to_docs_json [--no-imports] [--no-wrapping] "
-               "-i <spec.json> [-o <docs.json>]\n";
+               "-i <spec.json> [-o <docs.json>]\n"
+               "\nOptions:\n"
+               "  -i, --input                     Path or URL to the OpenAPI "
+               "specification.\n"
+               "  -o, --output                    Output file or directory "
+               "path.\n"
+               "      --no-imports                Omit the imports field.\n"
+               "      --no-wrapping               Omit the wrapper fields.\n";
         return 0;
       }
     }
@@ -361,10 +386,10 @@ int main_impl(int argc, char **argv, std::ostream &out,
         output_file = argv[++i];
     }
 
-    no_imports = get_bool_arg_or_env(no_imports, "CDD_CPP_NO_IMPORTS");
-    no_wrapping = get_bool_arg_or_env(no_wrapping, "CDD_CPP_NO_WRAPPING");
-    input_file = get_arg_or_env(input_file, "CDD_CPP_INPUT");
-    output_file = get_arg_or_env(output_file, "CDD_CPP_OUTPUT");
+    no_imports = get_bool_arg_or_env(no_imports, "CDD_NO_IMPORTS");
+    no_wrapping = get_bool_arg_or_env(no_wrapping, "CDD_NO_WRAPPING");
+    input_file = get_arg_or_env(input_file, "CDD_INPUT");
+    output_file = get_arg_or_env(output_file, "CDD_OUTPUT");
 
     if (input_file.empty()) {
       err << "Missing -i <spec.json>\n";
@@ -466,19 +491,24 @@ int main(int argc, char **argv) noexcept {
     for (int i = 2; i < argc; ++i) {
       std::string arg = argv[i];
       if (arg == "--help" || arg == "-h") {
-        std::cout << "Usage:\n"
-                  << "  cdd-cpp serve_json_rpc --port <port> --listen <host>\n";
+        std::cout
+            << "Usage:\n"
+            << "  cdd-cpp serve_json_rpc [-p|--port <port>] [-l|--listen "
+               "<address>]\n"
+            << "\nOptions:\n"
+            << "  -p, --port                      Port to listen on.\n"
+            << "  -l, --listen                    Address to listen on.\n";
         return 0;
       }
     }
 
-    std::string port = "8080";
-    std::string listen_host = "127.0.0.1";
+    std::string port = get_arg_or_env("", "CDD_PORT", "8080");
+    std::string listen_host = get_arg_or_env("", "CDD_LISTEN", "127.0.0.1");
     for (int i = 2; i < argc; ++i) {
       std::string arg = argv[i];
-      if (arg == "--port" && i + 1 < argc) {
+      if ((arg == "--port" || arg == "-p") && i + 1 < argc) {
         port = argv[++i];
-      } else if (arg == "--listen" && i + 1 < argc) {
+      } else if ((arg == "--listen" || arg == "-l") && i + 1 < argc) {
         listen_host = argv[++i];
       }
     }
