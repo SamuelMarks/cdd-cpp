@@ -134,11 +134,6 @@ void test_to_docs_json() {
   assert(from_help &&
          from_help->find("Usage:") != std::string::npos); // GCOV_EXCL_BR_LINE
 
-  std::cout << "Testing sync help\n";             // GCOV_EXCL_BR_LINE
-  auto sync_help = exec("./cdd-cpp sync --help"); // GCOV_EXCL_BR_LINE
-  assert(sync_help &&
-         sync_help->find("Usage:") != std::string::npos); // GCOV_EXCL_BR_LINE
-
   std::cout << "Testing from_openapi to_sdk err\n"; // GCOV_EXCL_BR_LINE
   auto from_sdk_err =
       exec("./cdd-cpp from_openapi to_sdk"); // GCOV_EXCL_BR_LINE
@@ -209,17 +204,6 @@ void test_to_docs_json() {
       "./cdd-cpp from_openapi to_server --input-dir test_tmp_dir -o out_dir");
   assert(from_server_dir); // GCOV_EXCL_BR_LINE
 
-  std::cout << "Testing sync err\n";      // GCOV_EXCL_BR_LINE
-  auto sync_err = exec("./cdd-cpp sync"); // GCOV_EXCL_BR_LINE
-  assert(sync_err &&
-         sync_err->find("Usage:") != std::string::npos); // GCOV_EXCL_BR_LINE
-
-  std::cout << "Testing sync ok\n"; // GCOV_EXCL_BR_LINE
-  auto sync_res = exec(
-      "./cdd-cpp sync -d test_tmp_dir -s test_spec.json"); // GCOV_EXCL_BR_LINE
-  assert(sync_res);                                        // GCOV_EXCL_BR_LINE
-  std::filesystem::remove_all("test_tmp_dir");             // GCOV_EXCL_BR_LINE
-
   std::cout << "Testing serve_json_rpc help\n";             // GCOV_EXCL_BR_LINE
   auto serve_err = exec("./cdd-cpp serve_json_rpc --help"); // GCOV_EXCL_BR_LINE
   assert(serve_err &&
@@ -288,22 +272,17 @@ void test_to_docs_json() {
 
   std::cout << "Testing env vars logic\n"; // GCOV_EXCL_BR_LINE
   auto env_var_res =
-      exec("CDD_CPP_NO_IMPORTS=true CDD_CPP_NO_WRAPPING=1 " // GCOV_EXCL_BR_LINE
-           "CDD_CPP_INPUT=test_spec.json "
-           "CDD_CPP_OUTPUT=env_out.json ./cdd-cpp to_docs_json");
+      exec("CDD_NO_IMPORTS=true CDD_NO_WRAPPING=1 " // GCOV_EXCL_BR_LINE
+           "CDD_INPUT=test_spec.json "
+           "CDD_OUTPUT=env_out.json ./cdd-cpp to_docs_json");
   assert(env_var_res);                             // GCOV_EXCL_BR_LINE
   assert(std::filesystem::exists("env_out.json")); // GCOV_EXCL_BR_LINE
 
-  std::filesystem::create_directories("test_tmp_dir"); // GCOV_EXCL_BR_LINE
-  auto env_var_res2 = exec(                            // GCOV_EXCL_BR_LINE
-      "CDD_CPP_DIR=test_tmp_dir CDD_CPP_SPEC=test_spec.json ./cdd-cpp sync");
-  assert(env_var_res2); // GCOV_EXCL_BR_LINE
-
-  auto env_var_res3 = exec("CDD_CPP_INPUT=test_spec.json "
-                           "CDD_CPP_OUTPUT=env_out_sdk " // GCOV_EXCL_BR_LINE
-                           "CDD_CPP_NO_GITHUB_ACTIONS=1 "
-                           "CDD_CPP_NO_INSTALLABLE_PACKAGE=1 "
-                           "CDD_CPP_TESTS=1 ./cdd-cpp from_openapi to_sdk");
+  auto env_var_res3 = exec("CDD_INPUT=test_spec.json "
+                           "CDD_OUTPUT=env_out_sdk " // GCOV_EXCL_BR_LINE
+                           "CDD_NO_GITHUB_ACTIONS=1 "
+                           "CDD_NO_INSTALLABLE_PACKAGE=1 "
+                           "CDD_TESTS=1 ./cdd-cpp from_openapi to_sdk");
   assert(env_var_res3); // GCOV_EXCL_BR_LINE
 
   std::cout << "Testing invalid port\n"; // GCOV_EXCL_BR_LINE
