@@ -173,3 +173,18 @@ debug_upgrader
 !patch_simdjson_simple.py
 build_cov/
 build_cov_test/
+
+# Additional catch-all wildcard ignores
+*.[oa]
+*.so
+*.dylib
+*.dll
+*.exe
+*.log
+*.tmp
+*.temp
+*~
+.*.swp
+.DS_Store
+build*/
+bin/
