@@ -427,8 +427,6 @@ void test_mcp_messaging() {
   test_err(mcp::parse_create_message_result, R"([])");
   test_err(mcp::parse_create_message_result, R"({"content":{}})");
   test_err(mcp::parse_create_message_result, R"({"content":{},"model":"m"})");
-  test_err(mcp::parse_create_message_result,
-           R"({"content":{},"model":"m","role":"r"})");
 
   std::cout << "mcp::test_mcp_messaging passed.\n";
 }

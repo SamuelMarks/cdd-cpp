@@ -159,6 +159,18 @@ public:
   }
 
   /// @brief Auto-generated doc.
+  void key_value(const std::string &k, int v) noexcept { // GCOV_EXCL_BR_LINE
+    key(k);                                              // GCOV_EXCL_BR_LINE
+    value(v);                                            // GCOV_EXCL_BR_LINE
+  }
+
+  /// @brief Auto-generated doc.
+  void key_value(const std::string &k, double v) noexcept { // GCOV_EXCL_BR_LINE
+    key(k);                                                 // GCOV_EXCL_BR_LINE
+    value(v);                                               // GCOV_EXCL_BR_LINE
+  }
+
+  /// @brief Auto-generated doc.
   void key_value(const std::string &k,
                  const char *v) noexcept { // GCOV_EXCL_BR_LINE
     key(k);                                // GCOV_EXCL_BR_LINE

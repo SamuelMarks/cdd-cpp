@@ -411,6 +411,8 @@ parse_model_preferences(simdjson::ondemand::value &val) noexcept {
       auto ph = parse_model_hint(h_val);
       if (ph.has_value())
         hints.push_back(ph.value());
+      else
+        return std::unexpected(ph.error());
     }
     result.hints = hints;
   }
@@ -1066,6 +1068,8 @@ parse_prompt(simdjson::ondemand::value &val) noexcept {
       auto pa = parse_prompt_argument(a_val);
       if (pa.has_value())
         args.push_back(pa.value());
+      else
+        return std::unexpected(pa.error());
     }
     result.arguments = args;
   }
@@ -1100,6 +1104,8 @@ parse_list_prompts_result(simdjson::ondemand::value &val) noexcept {
     auto pt = parse_prompt(p_val);
     if (pt.has_value())
       result.prompts.push_back(pt.value());
+    else
+      return std::unexpected(pt.error());
   }
 
   return result;
@@ -1160,20 +1166,26 @@ parse_get_prompt_result(simdjson::ondemand::value &val) noexcept {
 
   for (auto m : msg_arr) {
     simdjson::ondemand::object m_obj;
-    if (!m.get_object().get(m_obj)) {
-      PromptMessage pm;
-      std::string_view mr_sv;
-      if (!m_obj["role"].get_string().get(mr_sv))
-        pm.role = std::string(mr_sv);
+    if (m.get_object().get(m_obj))
+      return std::unexpected("Expected object in messages array");
 
-      simdjson::ondemand::value c_val;
-      if (!m_obj["content"].get(c_val)) {
-        std::string_view c_sv;
-        if (!c_val.raw_json().get(c_sv))
-          pm.content_json = std::string(c_sv);
-      }
-      result.messages.push_back(pm);
-    }
+    PromptMessage pm;
+    std::string_view mr_sv;
+    if (m_obj["role"].get_string().get(mr_sv))
+      return std::unexpected("Missing role in PromptMessage");
+    pm.role = std::string(mr_sv);
+
+    simdjson::ondemand::value c_val;
+    if (m_obj["content"].get(c_val))
+      return std::unexpected("Missing content in PromptMessage");
+
+    std::string_view c_sv;
+    if (!c_val.raw_json().get(c_sv))
+      pm.content_json = std::string(c_sv);
+    else
+      return std::unexpected("Failed to get raw JSON for content");
+
+    result.messages.push_back(pm);
   }
 
   return result;
@@ -1295,6 +1307,8 @@ parse_list_resources_result(simdjson::ondemand::value &val) noexcept {
     auto res = parse_resource(r_val);
     if (res.has_value())
       result.resources.push_back(res.value());
+    else
+      return std::unexpected(res.error());
   }
   return result;
 }
@@ -1367,6 +1381,8 @@ parse_list_resource_templates_result(simdjson::ondemand::value &val) noexcept {
     auto res = parse_resource_template(r_val);
     if (res.has_value())
       result.resourceTemplates.push_back(res.value());
+    else
+      return std::unexpected(res.error());
   }
   return result;
 }
@@ -1575,6 +1591,8 @@ parse_list_roots_result(simdjson::ondemand::value &val) noexcept {
     auto pt = parse_root(r_val);
     if (pt.has_value())
       result.roots.push_back(pt.value());
+    else
+      return std::unexpected(pt.error());
   }
   return result;
 }
@@ -1805,6 +1823,8 @@ parse_list_tools_result(simdjson::ondemand::value &val) noexcept {
     auto pt = parse_tool(t_val);
     if (pt.has_value())
       result.tools.push_back(pt.value());
+    else
+      return std::unexpected(pt.error());
   }
   return result;
 }
