@@ -356,11 +356,11 @@ parse(const std::string &input) noexcept {
           if (op.responses->find(code) == op.responses->end()) {
             op.responses->insert({code, openapi::Response{}});
           }
-          if (!op.responses->at(code).content.has_value()) {
-            op.responses->at(code).content =
+          if (!(*op.responses)[code].content.has_value()) {
+            (*op.responses)[code].content =
                 std::map<std::string, openapi::MediaType>{};
           }
-          op.responses->at(code).content->insert({mtype, openapi::MediaType{}});
+          (*op.responses)[code].content->insert({mtype, openapi::MediaType{}});
         }
       }
 
@@ -404,15 +404,15 @@ parse(const std::string &input) noexcept {
       }
 
       if (method == "GET")
-        spec.paths->at(path).get = op;
+        (*spec.paths)[path].get = op;
       else if (method == "POST")
-        spec.paths->at(path).post = op;
+        (*spec.paths)[path].post = op;
       else if (method == "PUT")
-        spec.paths->at(path).put = op;
+        (*spec.paths)[path].put = op;
       else if (method == "DELETE")
-        spec.paths->at(path).delete_op = op;
+        (*spec.paths)[path].delete_op = op;
       else if (method == "PATCH")
-        spec.paths->at(path).patch = op;
+        (*spec.paths)[path].patch = op;
     }
   }
 

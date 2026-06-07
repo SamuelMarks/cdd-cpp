@@ -214,11 +214,11 @@ parse(const std::string &input) noexcept {
         if (op.responses->find(code) == op.responses->end()) {
           op.responses->insert({code, openapi::Response{}});
         }
-        if (!op.responses->at(code).content.has_value()) {
-          op.responses->at(code).content =
+        if (!(*op.responses)[code].content.has_value()) {
+          (*op.responses)[code].content =
               std::map<std::string, openapi::MediaType>{};
         }
-        op.responses->at(code).content->insert({mtype, openapi::MediaType{}});
+        (*op.responses)[code].content->insert({mtype, openapi::MediaType{}});
       }
     }
 

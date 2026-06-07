@@ -429,25 +429,25 @@ parse(const std::string &input) noexcept {
           op.responses->insert(
               {code, openapi::Response{}}); // GCOV_EXCL_BR_LINE
         }
-        if (!op.responses->at(code).content.has_value()) { // GCOV_EXCL_BR_LINE
-          op.responses->at(code).content =                 // GCOV_EXCL_BR_LINE
+        if (!(*op.responses)[code].content.has_value()) { // GCOV_EXCL_BR_LINE
+          (*op.responses)[code].content =                 // GCOV_EXCL_BR_LINE
               std::map<std::string, openapi::MediaType>{};
         }
-        op.responses->at(code).content->insert(
+        (*op.responses)[code].content->insert(
             {mtype, openapi::MediaType{}}); // GCOV_EXCL_BR_LINE
       }
     }
 
     if (method == "GET")
-      spec.paths->at(path).get = op; // GCOV_EXCL_BR_LINE
+      (*spec.paths)[path].get = op; // GCOV_EXCL_BR_LINE
     else if (method == "POST")
-      spec.paths->at(path).post = op; // GCOV_EXCL_BR_LINE
+      (*spec.paths)[path].post = op; // GCOV_EXCL_BR_LINE
     else if (method == "PUT")
-      spec.paths->at(path).put = op; // GCOV_EXCL_BR_LINE
+      (*spec.paths)[path].put = op; // GCOV_EXCL_BR_LINE
     else if (method == "DELETE")
-      spec.paths->at(path).delete_op = op; // GCOV_EXCL_BR_LINE
-    else if (method == "PATCH")            // GCOV_EXCL_BR_LINE
-      spec.paths->at(path).patch = op;     // GCOV_EXCL_BR_LINE
+      (*spec.paths)[path].delete_op = op; // GCOV_EXCL_BR_LINE
+    else if (method == "PATCH")
+      (*spec.paths)[path].patch = op; // GCOV_EXCL_BR_LINE
   }
   utils::CppAST ast = utils::parse_cpp(input); // GCOV_EXCL_BR_LINE
   utils::parse_schemas(ast, spec);

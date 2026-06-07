@@ -483,16 +483,20 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
         "FetchContent_Declare(simdjson GIT_REPOSITORY "
         "https://github.com/simdjson/simdjson.git GIT_TAG v3.9.5)\n"
         "FetchContent_MakeAvailable(simdjson)\n"
-        "FetchContent_Declare(curl GIT_REPOSITORY "
+        "find_package(CURL QUIET)\n"
+        "if(NOT CURL_FOUND)\n"
+        "  FetchContent_Declare(curl GIT_REPOSITORY "
         "https://github.com/curl/curl.git GIT_TAG curl-8_7_1)\n"
-        "set(BUILD_CURL_EXE OFF CACHE BOOL \"Disable curl executable\" FORCE)\n"
-        "set(BUILD_TESTING OFF CACHE BOOL \"Disable curl testing\" FORCE)\n"
-        "set(CURL_USE_OPENSSL OFF CACHE BOOL \"Disable OpenSSL\" FORCE)\n"
-        "set(CURL_DISABLE_LDAP ON CACHE BOOL \"\" FORCE)\n"
-        "set(CURL_DISABLE_LDAPS ON CACHE BOOL \"\" FORCE)\n"
-        "set(CURL_USE_LIBPSL OFF CACHE BOOL \"\" FORCE)\n"
-        "set(CURL_USE_LIBSSH2 OFF CACHE BOOL \"\" FORCE)\n"
-        "FetchContent_MakeAvailable(curl)\n"
+        "  set(BUILD_CURL_EXE OFF CACHE BOOL \"Disable curl executable\" "
+        "FORCE)\n"
+        "  set(BUILD_TESTING OFF CACHE BOOL \"Disable curl testing\" FORCE)\n"
+        "  set(CURL_USE_OPENSSL OFF CACHE BOOL \"Disable OpenSSL\" FORCE)\n"
+        "  set(CURL_DISABLE_LDAP ON CACHE BOOL \"\" FORCE)\n"
+        "  set(CURL_DISABLE_LDAPS ON CACHE BOOL \"\" FORCE)\n"
+        "  set(CURL_USE_LIBPSL OFF CACHE BOOL \"\" FORCE)\n"
+        "  set(CURL_USE_LIBSSH2 OFF CACHE BOOL \"\" FORCE)\n"
+        "  FetchContent_MakeAvailable(curl)\n"
+        "endif()\n"
         "add_subdirectory(src)\n";
     if (tests) {
       cmake_content += "enable_testing()\n";
@@ -502,11 +506,16 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
     result["src/CMakeLists.txt"] =
         "set(HEADERS models.hpp client.hpp)\n"
         "set(SOURCES models.cpp client.cpp)\n"
-        "add_library(generated_sdk ${SOURCES} ${HEADERS})\n"
+        "add_library(generated_sdk STATIC ${SOURCES} ${HEADERS})\n"
         "target_include_directories(generated_sdk PUBLIC "
         "${CMAKE_CURRENT_SOURCE_DIR})\n"
-        "target_link_libraries(generated_sdk PUBLIC simdjson::simdjson "
-        "libcurl)\n"
+        "if(TARGET curl)\n"
+        "  target_link_libraries(generated_sdk PUBLIC simdjson::simdjson "
+        "curl)\n"
+        "else()\n"
+        "  target_link_libraries(generated_sdk PUBLIC simdjson::simdjson "
+        "CURL::libcurl)\n"
+        "endif()\n"
         "install(TARGETS generated_sdk)\n";
   }
   if (tests) {
@@ -528,7 +537,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
 
     std::string server_url = "http://localhost:8080";
     if (spec.servers && !spec.servers->empty()) {
-      server_url = spec.servers->at(0).url;
+      server_url = spec.servers->front().url;
     }
 
     t_cpp << "#include <gtest/gtest.h>\n"
