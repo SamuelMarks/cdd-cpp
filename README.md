@@ -76,6 +76,7 @@ The `cdd-cpp` compiler leverages a unified architecture to support various facet
 `cdd-cpp` includes specific parsing features beyond the base specification:
 - **Format Upgrades:** Automatically parses older Swagger (2.0) and OpenAPI (3.0/3.1) and upgrades them to the Swagger 2.0 and OpenAPI 3.2.0 internal representation.
 - **Google Discovery Integration:** Can parse Google Discovery API JSON files and map them to OpenAPI specifications natively.
+- **Model Context Protocol (MCP):** Run `cdd-cpp` as an MCP server (`cdd-cpp mcp`) to dynamically interact with codebases and generate SDKs using stdio or JSON-RPC.
 
 ---
 

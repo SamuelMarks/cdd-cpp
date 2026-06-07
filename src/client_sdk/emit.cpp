@@ -47,6 +47,14 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
   c_hpp << "        Client(const std::string& url = \"" << default_url
         << "\") noexcept;\n";
   c_hpp << "        ~Client() noexcept;\n\n";
+  c_hpp << "        struct McpAdapter {\n";
+  c_hpp << "            Client* client;\n";
+  c_hpp << "            std::string get_tools() const noexcept;\n";
+  c_hpp << "            std::expected<std::string, std::string> "
+           "execute_tool(const std::string& name, const std::string& "
+           "args_json) const noexcept;\n";
+  c_hpp << "        };\n";
+  c_hpp << "        McpAdapter mcp{this};\n\n";
 
   if (spec.paths.has_value() && !spec.paths->empty()) {
     for (const auto &[path, item] : spec.paths.value()) {
@@ -265,7 +273,205 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
     }
   }
 
-  c_cpp << "}\n";
+  c_cpp << R"(
+    static std::string escape_str(const std::string& s) {
+        std::string out;
+        for (char c : s) {
+            if (c == '"') out += "\\\"";
+            else if (c == '\\') out += "\\\\";
+            else if (c == '\n') out += "\\n";
+            else if (c == '\r') out += "\\r";
+            else out += c;
+        }
+        return out;
+    }
+
+    std::string Client::McpAdapter::get_tools() const noexcept {
+        std::string res = "[";
+)";
+  bool first_tool = true;
+  if (spec.paths.has_value() && !spec.paths->empty()) {
+    for (const auto &[path, item] : spec.paths.value()) {
+      auto emit_tool = [&](const std::optional<openapi::Operation> &op) {
+        if (!op.has_value())
+          return;
+        std::string func_name = op->operationId.value_or("request");
+        std::string desc =
+            op->description.value_or(op->summary.value_or(func_name));
+        if (!first_tool)
+          c_cpp << "        res += \",\";\n";
+        first_tool = false;
+        c_cpp << "        res += \"{\\\"name\\\":\\\"" << func_name
+              << "\\\",\\\"description\\\":\\\"\" + escape_str(\"" << desc
+              << "\") + "
+                 "\"\\\",\\\"inputSchema\\\":{\\\"type\\\":\\\"object\\\","
+                 "\\\"properties\\\":{\";\n";
+
+        std::vector<openapi::Parameter> all_params;
+        if (item.parameters)
+          for (const auto &p : *item.parameters)
+            all_params.push_back(p);
+        if (op->parameters)
+          for (const auto &p : *op->parameters)
+            all_params.push_back(p);
+
+        bool first_param = true;
+        for (const auto &p : all_params) {
+          std::string ptype = "string";
+          if (p.schema && p.schema->type) {
+            if (*p.schema->type == "integer")
+              ptype = "integer";
+            else if (*p.schema->type == "boolean")
+              ptype = "boolean";
+            else if (*p.schema->type == "number")
+              ptype = "number";
+          }
+          if (!first_param)
+            c_cpp << "        res += \",\";\n";
+          first_param = false;
+          c_cpp << "        res += \"\\\"" << p.name
+                << "\\\":{\\\"type\\\":\\\"" << ptype
+                << "\\\",\\\"description\\\":\\\"\" + escape_str(\""
+                << p.description.value_or("") << "\") + \"\\\"}\";\n";
+        }
+        if (op->requestBody) {
+          if (!first_param)
+            c_cpp << "        res += \",\";\n";
+          first_param = false;
+          c_cpp << "        res += "
+                   "\"\\\"body\\\":{\\\"type\\\":\\\"string\\\","
+                   "\\\"description\\\":\\\"JSON body\\\"}\";\n";
+        }
+        c_cpp << "        res += \"},\\\"required\\\":[\";\n";
+        bool first_req = true;
+        for (const auto &p : all_params) {
+          if (p.required) {
+            if (!first_req)
+              c_cpp << "        res += \",\";\n";
+            first_req = false;
+            c_cpp << "        res += \"\\\"" << p.name << "\\\"\";\n";
+          }
+        }
+        if (op->requestBody) {
+          if (!first_req)
+            c_cpp << "        res += \",\";\n";
+          first_req = false;
+          c_cpp << "        res += \"\\\"body\\\"\";\n";
+        }
+        c_cpp << "        res += \"]}}\";\n";
+      };
+      emit_tool(item.get);
+      emit_tool(item.post);
+      emit_tool(item.put);
+      emit_tool(item.delete_op);
+      emit_tool(item.patch);
+    }
+  }
+
+  c_cpp << R"(
+        res += "]";
+        return res;
+    }
+
+    std::expected<std::string, std::string> Client::McpAdapter::execute_tool(const std::string& name, const std::string& args_json) const noexcept {
+        simdjson::ondemand::parser parser;
+        simdjson::padded_string padded(args_json);
+        simdjson::ondemand::document doc;
+        auto error = parser.iterate(padded).get(doc);
+        if (error) return std::unexpected("Invalid JSON arguments");
+)";
+
+  if (spec.paths.has_value() && !spec.paths->empty()) {
+    for (const auto &[path, item] : spec.paths.value()) {
+      auto emit_exec = [&](const std::optional<openapi::Operation> &op) {
+        if (!op.has_value())
+          return;
+        std::string func_name = op->operationId.value_or("request");
+        c_cpp << "        if (name == \"" << func_name << "\") {\n";
+
+        std::vector<openapi::Parameter> all_params;
+        if (item.parameters)
+          for (const auto &p : *item.parameters)
+            all_params.push_back(p);
+        if (op->parameters)
+          for (const auto &p : *op->parameters)
+            all_params.push_back(p);
+
+        std::string call_args = "";
+        for (size_t i = 0; i < all_params.size(); ++i) {
+          const auto &p = all_params[i];
+          std::string type = "std::string";
+          std::string default_val = "\"\"";
+          if (p.schema && p.schema->type) {
+            if (*p.schema->type == "integer") {
+              type = "int";
+              default_val = "0";
+            } else if (*p.schema->type == "boolean") {
+              type = "bool";
+              default_val = "false";
+            } else if (*p.schema->type == "number") {
+              type = "double";
+              default_val = "0.0";
+            }
+          }
+          c_cpp << "            " << type << " arg_" << i << " = "
+                << default_val << ";\n";
+          c_cpp << "            {\n";
+          c_cpp << "                simdjson::ondemand::value val;\n";
+          c_cpp << "                if (!doc[\"" << p.name
+                << "\"].get(val)) {\n";
+          if (type == "int") {
+            c_cpp << "                    int64_t v; if (!val.get(v)) arg_" << i
+                  << " = v;\n";
+          } else if (type == "bool") {
+            c_cpp << "                    bool v; if (!val.get(v)) arg_" << i
+                  << " = v;\n";
+          } else if (type == "double") {
+            c_cpp << "                    double v; if (!val.get(v)) arg_" << i
+                  << " = v;\n";
+          } else {
+            c_cpp << "                    std::string_view v; if (!val.get(v)) "
+                     "arg_"
+                  << i << " = v;\n";
+          }
+          c_cpp << "                }\n";
+          c_cpp << "            }\n";
+          if (i > 0)
+            call_args += ", ";
+          call_args += "arg_" + std::to_string(i);
+        }
+
+        if (op->requestBody) {
+          c_cpp << "            std::string arg_body = \"\";\n";
+          c_cpp << "            {\n";
+          c_cpp << "                simdjson::ondemand::value val;\n";
+          c_cpp << "                if (!doc[\"body\"].get(val)) {\n";
+          c_cpp << "                    std::string_view v; if (!val.get(v)) "
+                   "arg_body = v;\n";
+          c_cpp << "                }\n";
+          c_cpp << "            }\n";
+          if (!call_args.empty())
+            call_args += ", ";
+          call_args += "arg_body";
+        }
+
+        c_cpp << "            return client->" << func_name << "(" << call_args
+              << ");\n";
+        c_cpp << "        }\n";
+      };
+      emit_exec(item.get);
+      emit_exec(item.post);
+      emit_exec(item.put);
+      emit_exec(item.delete_op);
+      emit_exec(item.patch);
+    }
+  }
+
+  c_cpp << R"(
+        return std::unexpected("Unknown tool: " + name);
+    }
+}
+)";
   result["src/client.cpp"] = c_cpp.str();
 
   if (!no_installable_package) {
@@ -497,6 +703,26 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
         emit_test("PATCH", item.patch);
       }
     }
+
+    t_cpp << "TEST(ClientTest, McpAdapterGetTools) {\n";
+    t_cpp << "    cdd_client::Client client(get_server_url());\n";
+    t_cpp << "    std::string tools_json = client.mcp.get_tools();\n";
+    t_cpp << "    simdjson::dom::parser parser;\n";
+    t_cpp << "    simdjson::dom::element doc;\n";
+    t_cpp << "    auto error = parser.parse(tools_json).get(doc);\n";
+    t_cpp << "    ASSERT_EQ(error, simdjson::SUCCESS) << \"Invalid JSON from "
+             "get_tools\";\n";
+    t_cpp << "    ASSERT_TRUE(doc.is_array()) << \"get_tools should return an "
+             "array\";\n";
+    t_cpp << "}\n\n";
+
+    t_cpp << "TEST(ClientTest, McpAdapterExecuteToolNotFound) {\n";
+    t_cpp << "    cdd_client::Client client(get_server_url());\n";
+    t_cpp << "    auto res = client.mcp.execute_tool(\"NonExistentTool\", "
+             "\"{}\");\n";
+    t_cpp << "    ASSERT_FALSE(res.has_value());\n";
+    t_cpp << "}\n\n";
+
     result["tests/client_test.cpp"] = t_cpp.str();
   }
 

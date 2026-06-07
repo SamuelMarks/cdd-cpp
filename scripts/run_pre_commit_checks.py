@@ -10,19 +10,24 @@ import zipfile
 import atexit
 
 def run_cmd(cmd, cwd=None, env=None, capture_output=False, check=True):
-    print(f"Running: {cmd if isinstance(cmd, str) else ' '.join(cmd)}")
+    print(f"Running: {cmd if isinstance(cmd, str) else ' '.join(cmd)}", flush=True)
     
     if env is None:
         env = os.environ.copy()
     for key in ['GIT_DIR', 'GIT_INDEX_FILE', 'GIT_WORK_TREE']:
         env.pop(key, None)
         
-    result = subprocess.run(cmd, cwd=cwd, env=env, shell=isinstance(cmd, str), capture_output=capture_output, text=True)
+    if not capture_output:
+        result = subprocess.run(cmd, cwd=cwd, env=env, shell=isinstance(cmd, str))
+    else:
+        result = subprocess.run(cmd, cwd=cwd, env=env, shell=isinstance(cmd, str), capture_output=True, text=True)
+        
     if check and result.returncode != 0:
-        print(f"Command failed with exit code {result.returncode}")
+        print(f"Command failed with exit code {result.returncode}", flush=True)
         if capture_output:
-            print(f"Stdout:\n{result.stdout}")
-            print(f"Stderr:\n{result.stderr}")
+            print(result.stdout, flush=True)
+            print(result.stderr, flush=True)
+        import sys
         sys.exit(result.returncode)
     return result
 
@@ -140,67 +145,79 @@ def run_docker_petstore(base_path, port):
     run_cmd(cmd)
     return {"type": "docker", "name": container_name}
 
-def start_local_petstore(base_path, port=8080):
-    if is_docker_running():
-        print(f"Starting petstore with Docker on port {port}...")
-        return run_docker_petstore(base_path, port)
-        
-    print(f"Docker not found or not running. Falling back to native JVM for port {port}...")
-    v2_dir = os.path.abspath(os.path.join("..", "swagger-petstore-v2"))
-    jetty_jar = os.path.join(v2_dir, "target", "lib", "jetty-runner.jar")
-    
-    if not os.path.exists(v2_dir):
-        print(f"Cloning swagger-petstore-v2 to {v2_dir}...")
-        run_cmd(["git", "clone", "https://github.com/swagger-api/swagger-petstore.git", v2_dir])
-        
-    if not os.path.exists(jetty_jar):
-        print("Building local swagger-petstore-v2...")
-        run_cmd(["mvn", "package", "-DskipTests"], cwd=v2_dir)
+def is_java_available():
+    try:
+        import subprocess
+        subprocess.run(["java", "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
 
-    war_path = None
-    for f in os.listdir(os.path.join(v2_dir, "target")):
-        if f.startswith("swagger-petstore-") and f.endswith(".war"):
-            war_path = os.path.join(v2_dir, "target", f)
-            break
+def start_local_petstore(base_path, port=8080):
+    if is_java_available():
+        print(f"JVM found locally. Starting native JVM petstore for port {port}...")
+        v2_dir = os.path.abspath(os.path.join("..", "swagger-petstore-v2"))
+        jetty_jar = os.path.join(v2_dir, "target", "lib", "jetty-runner.jar")
+        
+        if not os.path.exists(v2_dir):
+            print(f"Cloning swagger-petstore-v2 to {v2_dir}...")
+            run_cmd(["git", "clone", "https://github.com/swagger-api/swagger-petstore.git", v2_dir])
             
-    if not war_path:
-        raise Exception("Could not find swagger-petstore war file.")
-        
-    webapp_dir = os.path.abspath(os.path.join("build", f"petstore_webapp_{port}"))
-    if os.path.exists(webapp_dir):
-        shutil.rmtree(webapp_dir)
-    os.makedirs(webapp_dir)
-    
-    with zipfile.ZipFile(war_path, 'r') as zip_ref:
-        zip_ref.extractall(webapp_dir)
-        
-    web_xml = os.path.join(webapp_dir, "WEB-INF", "web.xml")
-    with open(web_xml, "r") as f:
-        xml_content = f.read()
-        
-    url = f"http://127.0.0.1:{port}"
-    full_path = f"{url}{base_path}"
-    
-    xml_content = xml_content.replace("SWAGGER_HOST", url)
-    xml_content = xml_content.replace("BASE_PATH", base_path)
-    xml_content = xml_content.replace("FULL_SWAGGER_PATH", full_path)
-    
-    with open(web_xml, "w") as f:
-        f.write(xml_content)
-        
-    index_html = os.path.join(webapp_dir, "index.html")
-    if os.path.exists(index_html):
-        with open(index_html, "r") as f:
-            idx_content = f.read()
-        idx_content = idx_content.replace("SWAGGER_HOST", url)
-        idx_content = idx_content.replace("FULL_SWAGGER_PATH", full_path)
-        with open(index_html, "w") as f:
-            f.write(idx_content)
+        if not os.path.exists(jetty_jar):
+            print("Building local swagger-petstore-v2...")
+            run_cmd(["mvn", "package", "-DskipTests"], cwd=v2_dir)
+
+        war_path = None
+        for f in os.listdir(os.path.join(v2_dir, "target")):
+            if f.startswith("swagger-petstore-") and f.endswith(".war"):
+                war_path = os.path.join(v2_dir, "target", f)
+                break
+                
+        if not war_path:
+            raise Exception("Could not find swagger-petstore war file.")
             
-    print(f"Starting local petstore server on port {port} with base path {base_path}...")
-    log_file = open(os.path.abspath(os.path.join("build", f"petstore_{port}.log")), "w")
-    proc = subprocess.Popen(["java", "-jar", jetty_jar, "--port", str(port), webapp_dir], stdout=log_file, stderr=subprocess.STDOUT)
-    return {"type": "jvm", "proc": proc}
+        webapp_dir = os.path.abspath(os.path.join("build", f"petstore_webapp_{port}"))
+        if os.path.exists(webapp_dir):
+            shutil.rmtree(webapp_dir)
+        os.makedirs(webapp_dir)
+        
+        with zipfile.ZipFile(war_path, 'r') as zip_ref:
+            zip_ref.extractall(webapp_dir)
+            
+        web_xml = os.path.join(webapp_dir, "WEB-INF", "web.xml")
+        with open(web_xml, "r") as f:
+            xml_content = f.read()
+            
+        url = f"http://127.0.0.1:{port}"
+        full_path = f"{url}{base_path}"
+        
+        xml_content = xml_content.replace("SWAGGER_HOST", url)
+        xml_content = xml_content.replace("BASE_PATH", base_path)
+        xml_content = xml_content.replace("FULL_SWAGGER_PATH", full_path)
+        
+        with open(web_xml, "w") as f:
+            f.write(xml_content)
+            
+        index_html = os.path.join(webapp_dir, "index.html")
+        if os.path.exists(index_html):
+            with open(index_html, "r") as f:
+                idx_content = f.read()
+            idx_content = idx_content.replace("SWAGGER_HOST", url)
+            idx_content = idx_content.replace("FULL_SWAGGER_PATH", full_path)
+            with open(index_html, "w") as f:
+                f.write(idx_content)
+                
+        print(f"Starting local petstore server on port {port} with base path {base_path}...")
+        log_file = open(os.path.abspath(os.path.join("build", f"petstore_{port}.log")), "w")
+        proc = subprocess.Popen(["java", "-jar", jetty_jar, "--port", str(port), webapp_dir], stdout=log_file, stderr=subprocess.STDOUT)
+        return {"type": "jvm", "proc": proc}
+    elif is_docker_running():
+        print(f"JVM not found. Starting petstore with Docker on port {port}...")
+        return run_docker_petstore(base_path, port)
+    else:
+        print("Error: Neither JVM nor Docker is available to start the petstore server.")
+        import sys
+        sys.exit(1)
 
 
 def cleanup_petstore(proc_info):

@@ -22,6 +22,98 @@
 
 using namespace cdd_cpp;
 
+#include <simdjson.h>
+
+std::string handle_mcp_cli_message(const std::string &request_json) {
+  simdjson::ondemand::parser parser;
+  simdjson::padded_string padded(request_json);
+  simdjson::ondemand::document doc;
+  auto error = parser.iterate(padded).get(doc);
+  if (error)
+    return "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32700,"
+           "\"message\":\"Parse error\"}}";
+
+  std::string id_str = "null";
+  simdjson::ondemand::value id_val;
+  if (!doc["id"].get(id_val)) {
+    simdjson::ondemand::json_type t;
+    if (!id_val.type().get(t)) {
+      if (t == simdjson::ondemand::json_type::number) {
+        int64_t v;
+        if (!id_val.get(v))
+          id_str = std::to_string(v);
+      } else if (t == simdjson::ondemand::json_type::string) {
+        std::string_view v;
+        if (!id_val.get(v))
+          id_str = "\"" + std::string(v) + "\"";
+      }
+    }
+  }
+
+  std::string_view jsonrpc_v;
+  if (doc["jsonrpc"].get(jsonrpc_v) || jsonrpc_v != "2.0")
+    return "{\"jsonrpc\":\"2.0\",\"id\":" + id_str +
+           ",\"error\":{\"code\":-32600,\"message\":\"Invalid Request\"}}";
+
+  std::string method = "";
+  std::string_view method_v;
+  if (!doc["method"].get(method_v))
+    method = method_v;
+
+  if (method == "initialize") {
+    return "{\"jsonrpc\":\"2.0\",\"id\":" + id_str +
+           ",\"result\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{"
+           "\"tools\":{}},\"serverInfo\":{\"name\":\"cdd-cli-mcp\",\"version\":"
+           "\"0.0.2\"}}}";
+  } else if (method == "tools/list") {
+    return "{\"jsonrpc\":\"2.0\",\"id\":" + id_str +
+           ",\"result\":{\"tools\":[{\"name\":\"cdd_generate\",\"description\":"
+           "\"Generate SDKs or "
+           "Servers\",\"inputSchema\":{\"type\":\"object\",\"properties\":{"
+           "\"command\":{\"type\":\"string\"}, "
+           "\"input\":{\"type\":\"string\"}, "
+           "\"output\":{\"type\":\"string\"}},\"required\":[\"command\","
+           "\"input\",\"output\"]}}, "
+           "{\"name\":\"cdd_inspect\",\"description\":\"Inspect "
+           "Schemas\",\"inputSchema\":{\"type\":\"object\",\"properties\":{"
+           "\"input\":{\"type\":\"string\"}},\"required\":[\"input\"]}}, "
+           "{\"name\":\"cdd_sync\",\"description\":\"Bidirectional "
+           "sync\",\"inputSchema\":{\"type\":\"object\",\"properties\":{"
+           "\"input\":{\"type\":\"string\"}, "
+           "\"output\":{\"type\":\"string\"}},\"required\":[\"input\","
+           "\"output\"]}}]}}";
+  } else if (method == "tools/call") {
+    std::string tool_name = "";
+    simdjson::ondemand::value name_val;
+    if (!doc["params"]["name"].get(name_val)) {
+      std::string_view sv;
+      if (!name_val.get(sv))
+        tool_name = std::string(sv);
+    }
+
+    if (tool_name == "cdd_generate" || tool_name == "cdd_inspect" ||
+        tool_name == "cdd_sync") {
+      return "{\"jsonrpc\":\"2.0\",\"id\":" + id_str +
+             ",\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"OK\"}]}}";
+    }
+    return "{\"jsonrpc\":\"2.0\",\"id\":" + id_str +
+           ",\"error\":{\"code\":-32601,\"message\":\"Tool not found\"}}";
+  }
+
+  return "{\"jsonrpc\":\"2.0\",\"id\":" + id_str +
+         ",\"error\":{\"code\":-32601,\"message\":\"Method not found\"}}";
+}
+
+int mcp_stdio_main() {
+  std::string line;
+  while (std::getline(std::cin, line)) {
+    if (line.empty())
+      continue;
+    std::cout << handle_mcp_cli_message(line) << "\n";
+  }
+  return 0;
+}
+
 void print_help(std::ostream &out) noexcept {
   out << "CDD CLI (Code-Driven Development)\n"
          "Usage:\n"
@@ -75,7 +167,7 @@ void print_help(std::ostream &out) noexcept {
 }
 
 void print_version(std::ostream &out) noexcept {
-  out << "cdd-cpp version 0.0.1\n";
+  out << "cdd-cpp version 0.0.2\n";
 }
 
 std::expected<std::string, std::string>
@@ -120,6 +212,9 @@ int main_impl(int argc, char **argv, std::ostream &out,
 
   std::string command = argv[1];
 
+  if (command == "mcp") {
+    return mcp_stdio_main();
+  }
   if (command == "--help" || command == "-h") {
     print_help(out);
     return 0;

@@ -258,6 +258,10 @@ void test_emit() {
 
   std::string code = emit(spec);
   assert(code.find("on_GET_testRoute") != std::string::npos);
+  assert(code.find("handle_mcp_sse") != std::string::npos);
+  assert(code.find("handle_mcp_message") != std::string::npos);
+  assert(code.find("HTTP/1.1 200 OK") != std::string::npos);
+  assert(code.find("Method not found") != std::string::npos);
   assert(code.find("@tags api") != std::string::npos);
   assert(code.find("@deprecated") != std::string::npos);
   assert(code.find("@security Bearer") != std::string::npos);

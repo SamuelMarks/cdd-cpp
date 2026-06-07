@@ -62,7 +62,7 @@ openapi::OpenAPI parse_cpp_project(const std::string &folder_path) noexcept {
   openapi::OpenAPI spec;                                   // GCOV_EXCL_BR_LINE
   spec.openapi = "3.2.0";                                  // GCOV_EXCL_BR_LINE
   spec.info.title = "Generated API from C++";              // GCOV_EXCL_BR_LINE
-  spec.info.version = "0.0.1";                             // GCOV_EXCL_BR_LINE
+  spec.info.version = "0.0.2";                             // GCOV_EXCL_BR_LINE
   spec.components = openapi::Components{};                 // GCOV_EXCL_BR_LINE
   spec.components->schemas =                               // GCOV_EXCL_BR_LINE
       std::map<std::string, openapi::Schema>{};            // GCOV_EXCL_BR_LINE

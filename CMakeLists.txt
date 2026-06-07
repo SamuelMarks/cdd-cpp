@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(cdd_cpp VERSION 0.0.1)
+project(cdd_cpp VERSION 0.0.2)
 
 if(POLICY CMP0135)
   cmake_policy(SET CMP0135 NEW)
@@ -123,7 +123,7 @@ set(CDD_LIB_SRCS
     src/server/parse.cpp src/server/emit.cpp
     src/mocks/parse.cpp src/mocks/emit.cpp
     src/utils/http.cpp src/utils/cpp_ast.cpp src/utils/cpp_parser.cpp src/google_discovery/parse.cpp src/openapi/parse.cpp src/openapi/emit.cpp src/openapi/upgraders/upgrader.cpp
-    src/orm/emit.cpp
+    src/orm/emit.cpp src/mcp/parse.cpp src/mcp/emit.cpp
 )
 
 
@@ -158,7 +158,7 @@ enable_extreme_checks(cdd-cpp)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     # Tests
-    add_executable(cdd-tests src/tests/client_sdk_cli_test.cpp  src/tests/main.cpp src/tests/parse.cpp src/tests/emit.cpp src/tests/upgrader_test.cpp src/tests/google_discovery.cpp src/tests/models.cpp src/tests/client_sdk_test.cpp src/tests/functions.cpp src/tests/docstrings.cpp src/tests/server.cpp src/tests/mocks.cpp src/tests/http.cpp src/tests/cli.cpp src/tests/orm.cpp)
+    add_executable(cdd-tests src/tests/client_sdk_cli_test.cpp  src/tests/main.cpp src/tests/parse.cpp src/tests/emit.cpp src/tests/upgrader_test.cpp src/tests/google_discovery.cpp src/tests/models.cpp src/tests/client_sdk_test.cpp src/tests/functions.cpp src/tests/docstrings.cpp src/tests/server.cpp src/tests/mocks.cpp src/tests/http.cpp src/tests/cli.cpp src/tests/orm.cpp src/tests/mcp.cpp)
     target_link_libraries(cdd-tests PRIVATE cdd_lib)
     enable_extreme_checks(cdd-tests)
 

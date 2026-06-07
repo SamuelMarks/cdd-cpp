@@ -92,7 +92,22 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
     }
   }
 
-  ss << "    private:\n";                                   // GCOV_EXCL_BR_LINE
+  ss << "        std::string handle_mcp_sse() const {\n"; // GCOV_EXCL_BR_LINE
+  ss << "            return \"HTTP/1.1 200 OK\\r\\nContent-Type: "
+        "text/event-stream\\r\\n\\r\\nevent: endpoint\\ndata: "
+        "/mcp/message\\n\\n\";\n"; // GCOV_EXCL_BR_LINE
+  ss << "        }\n\n";           // GCOV_EXCL_BR_LINE
+
+  ss << "        std::string handle_mcp_message(const std::string& "
+        "request_json, const std::map<std::string, std::string>& auth_headers "
+        "= {}) const {\n"; // GCOV_EXCL_BR_LINE
+  ss << "            // Parse json and forward to appropriate handler\n"; // GCOV_EXCL_BR_LINE
+  ss << "            return "
+        "\"{\\\"jsonrpc\\\":\\\"2.0\\\",\\\"id\\\":null,\\\"error\\\":{"
+        "\\\"code\\\":-32601,\\\"message\\\":\\\"Method not found\\\"}}\";\n"; // GCOV_EXCL_BR_LINE
+  ss << "        }\n\n";  // GCOV_EXCL_BR_LINE
+  ss << "    private:\n"; // GCOV_EXCL_BR_LINE
+
   ss << "        std::map<std::string, Handler> routes;\n"; // GCOV_EXCL_BR_LINE
   ss << "    };\n";                                         // GCOV_EXCL_BR_LINE
   ss << "}\n";                                              // GCOV_EXCL_BR_LINE
