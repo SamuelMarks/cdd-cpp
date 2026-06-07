@@ -391,7 +391,7 @@ void test_parse() {
   assert(spec.paths->contains("/api/v1/test/<id>"));
   assert(spec.paths->at("/api/v1/test/<id>").post.has_value());
 
-  auto post_op = spec.paths->at("/api/v1/test/<id>").post.value();
+  auto post_op = spec.paths->at("/api/v1/test/<id>").post.operator*();
   assert(post_op.operationId == "getTest");
   assert(post_op.summary == "Get Test Summary");
   assert(post_op.description == "Get Test Description");

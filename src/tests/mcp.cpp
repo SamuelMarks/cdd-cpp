@@ -20,7 +20,7 @@ void test_mcp_annotated() {
   assert(result->annotations->priority == 1.5);
 
   utils::JsonWriter jw;
-  mcp::emit_annotated(result.value(), jw);
+  mcp::emit_annotated(result.operator*(), jw);
   assert(jw.str() == R"({"annotations":{"audience":"users","priority":1.5}})");
 
   std::cout << "mcp::test_mcp_annotated passed.\n";
@@ -41,7 +41,7 @@ void test_mcp_blob_resource_contents() {
   assert(result->uri == "file:///test.png");
 
   utils::JsonWriter jw;
-  mcp::emit_blob_resource_contents(result.value(), jw);
+  mcp::emit_blob_resource_contents(result.operator*(), jw);
   assert(
       jw.str() ==
       R"({"blob":"base64data","mimeType":"image/png","uri":"file:///test.png"})");
@@ -88,11 +88,11 @@ void test_mcp_call_tool_request() {
   assert(result->params.name == "my_tool");
   assert(result->params.arguments.has_value());
   // simdjson raw_json might include whitespace
-  assert(result->params.arguments.value().find(R"({"arg1": "val1"})") !=
+  assert(result->params.arguments.operator*().find(R"({"arg1": "val1"})") !=
          std::string::npos);
 
   utils::JsonWriter jw;
-  mcp::emit_call_tool_request(result.value(), jw);
+  mcp::emit_call_tool_request(result.operator*(), jw);
   assert(
       jw.str() ==
       R"({"method":"tools/call","params":{"name":"my_tool","arguments":{"arg1": "val1"}}})");
@@ -146,7 +146,7 @@ void test_mcp_content_and_results() {
     auto res = mcp::parse_text_content(val);
     assert(res.has_value() && res->text == "hello");
     utils::JsonWriter jw;
-    mcp::emit_text_content(res.value(), jw);
+    mcp::emit_text_content(res.operator*(), jw);
     assert(
         jw.str() ==
         R"({"type":"text","text":"hello","annotations":{"audience":"user"}})");
@@ -162,7 +162,7 @@ void test_mcp_content_and_results() {
     auto res = mcp::parse_image_content(val);
     assert(res.has_value() && res->data == "b64");
     utils::JsonWriter jw;
-    mcp::emit_image_content(res.value(), jw);
+    mcp::emit_image_content(res.operator*(), jw);
     assert(jw.str() ==
            R"({"type":"image","data":"b64","mimeType":"image/png"})");
   }
@@ -177,7 +177,7 @@ void test_mcp_content_and_results() {
     auto res = mcp::parse_text_resource_contents(val);
     assert(res.has_value() && res->text == "file content");
     utils::JsonWriter jw;
-    mcp::emit_text_resource_contents(res.value(), jw);
+    mcp::emit_text_resource_contents(res.operator*(), jw);
     assert(
         jw.str() ==
         R"({"uri":"file:///a.txt","mimeType":"text/plain","text":"file content"})");
@@ -193,7 +193,7 @@ void test_mcp_content_and_results() {
     auto res = mcp::parse_embedded_resource(val);
     assert(res.has_value() && res->type == "resource");
     utils::JsonWriter jw;
-    mcp::emit_embedded_resource(res.value(), jw);
+    mcp::emit_embedded_resource(res.operator*(), jw);
     assert(jw.str().find("file:///a.txt") != std::string::npos);
   }
 
@@ -205,9 +205,9 @@ void test_mcp_content_and_results() {
     simdjson::ondemand::document doc = parser.iterate(padded);
     simdjson::ondemand::value val = doc.get_value();
     auto res = mcp::parse_call_tool_result(val);
-    assert(res.has_value() && res->isError.value() == true);
+    assert(res.has_value() && res->isError.operator*() == true);
     utils::JsonWriter jw;
-    mcp::emit_call_tool_result(res.value(), jw);
+    mcp::emit_call_tool_result(res.operator*(), jw);
     assert(jw.str().find("progressToken") != std::string::npos);
   }
 
@@ -259,7 +259,7 @@ void test_mcp_content_and_results() {
     auto res = mcp::parse_cancelled_notification(val);
     assert(res.has_value() && res->params.requestId == "123");
     utils::JsonWriter jw;
-    mcp::emit_cancelled_notification(res.value(), jw);
+    mcp::emit_cancelled_notification(res.operator*(), jw);
     assert(jw.str().find("123") != std::string::npos);
   }
 
@@ -272,7 +272,7 @@ void test_mcp_content_and_results() {
     auto res = mcp::parse_cancelled_notification(val);
     assert(res.has_value() && res->params.requestId == "abc");
     utils::JsonWriter jw;
-    mcp::emit_cancelled_notification(res.value(), jw);
+    mcp::emit_cancelled_notification(res.operator*(), jw);
     assert(jw.str().find("\"abc\"") != std::string::npos);
   }
 
@@ -291,13 +291,14 @@ void test_mcp_content_and_results() {
     auto res = mcp::parse_client_capabilities(val);
     assert(res.has_value());
     assert(res->experimental.has_value() &&
-           res->experimental.value().find("feature") != std::string::npos);
-    assert(res->roots.has_value() && res->roots->listChanged.value() == true);
+           res->experimental.operator*().find("feature") != std::string::npos);
+    assert(res->roots.has_value() &&
+           res->roots->listChanged.operator*() == true);
     assert(res->sampling.has_value() &&
-           res->sampling.value().find("{}") != std::string::npos);
+           res->sampling.operator*().find("{}") != std::string::npos);
 
     utils::JsonWriter jw;
-    mcp::emit_client_capabilities(res.value(), jw);
+    mcp::emit_client_capabilities(res.operator*(), jw);
     assert(jw.str().find("listChanged") != std::string::npos);
   }
   test_err(mcp::parse_client_capabilities, R"([])");
@@ -331,7 +332,7 @@ void test_mcp_completion() {
     assert(res->params.ref_json.find("ref") != std::string::npos);
 
     utils::JsonWriter jw;
-    mcp::emit_complete_request(res.value(), jw);
+    mcp::emit_complete_request(res.operator*(), jw);
     assert(jw.str().find("arg1") != std::string::npos);
   }
 
@@ -356,11 +357,11 @@ void test_mcp_completion() {
     auto res = mcp::parse_complete_result(val);
     assert(res.has_value());
     assert(res->completion.values.size() == 2);
-    assert(res->completion.total.value() == 2);
-    assert(res->completion.hasMore.value() == false);
+    assert(res->completion.total.operator*() == 2);
+    assert(res->completion.hasMore.operator*() == false);
 
     utils::JsonWriter jw;
-    mcp::emit_complete_result(res.value(), jw);
+    mcp::emit_complete_result(res.operator*(), jw);
     assert(jw.str().find("hasMore") != std::string::npos);
   }
   test_err(mcp::parse_complete_result, R"([])");
@@ -397,7 +398,7 @@ void test_mcp_messaging() {
     assert(res->params.stopSequences->size() == 1);
 
     utils::JsonWriter jw;
-    mcp::emit_create_message_request(res.value(), jw);
+    mcp::emit_create_message_request(res.operator*(), jw);
     assert(jw.str().find("sampling/createMessage") != std::string::npos);
     assert(jw.str().find("claude") != std::string::npos);
   }
@@ -421,7 +422,7 @@ void test_mcp_messaging() {
     assert(res->role == "assistant");
 
     utils::JsonWriter jw;
-    mcp::emit_create_message_result(res.value(), jw);
+    mcp::emit_create_message_result(res.operator*(), jw);
     assert(jw.str().find("claude") != std::string::npos);
   }
   test_err(mcp::parse_create_message_result, R"([])");
@@ -458,7 +459,7 @@ void test_mcp_tools() {
            res->inputSchema.required->size() == 1);
 
     utils::JsonWriter jw;
-    mcp::emit_tool(res.value(), jw);
+    mcp::emit_tool(res.operator*(), jw);
     assert(jw.str().find("test_tool") != std::string::npos);
     assert(jw.str().find("properties") != std::string::npos);
   }
@@ -480,7 +481,7 @@ void test_mcp_tools() {
     assert(res->params.has_value() && res->params->_meta.has_value());
 
     utils::JsonWriter jw;
-    mcp::emit_tool_list_changed_notification(res.value(), jw);
+    mcp::emit_tool_list_changed_notification(res.operator*(), jw);
     assert(jw.str().find("list_changed") != std::string::npos);
   }
   {
@@ -493,7 +494,7 @@ void test_mcp_tools() {
     assert(!res->params.has_value());
 
     utils::JsonWriter jw;
-    mcp::emit_tool_list_changed_notification(res.value(), jw);
+    mcp::emit_tool_list_changed_notification(res.operator*(), jw);
     assert(jw.str() == R"({"method":"notifications/tools/list_changed"})");
   }
   test_err(mcp::parse_tool_list_changed_notification, R"([])");
@@ -523,10 +524,10 @@ void test_mcp_pagination() {
     auto res = mcp::parse_paginated_request(val);
     assert(res.has_value() && res->method == "test/paginated");
     assert(res->params.cursor.has_value() &&
-           res->params.cursor.value() == "abc");
+           res->params.cursor.operator*() == "abc");
 
     utils::JsonWriter jw;
-    mcp::emit_paginated_request(res.value(), jw);
+    mcp::emit_paginated_request(res.operator*(), jw);
     assert(jw.str().find("abc") != std::string::npos);
   }
   {
@@ -539,7 +540,7 @@ void test_mcp_pagination() {
     assert(!res->params.cursor.has_value());
 
     utils::JsonWriter jw;
-    mcp::emit_paginated_request(res.value(), jw);
+    mcp::emit_paginated_request(res.operator*(), jw);
     assert(jw.str() == R"({"method":"test/paginated"})");
   }
   test_err(mcp::parse_paginated_request, R"([])");
@@ -553,12 +554,12 @@ void test_mcp_pagination() {
     simdjson::ondemand::value val = doc.get_value();
     auto res = mcp::parse_paginated_result(val);
     assert(res.has_value() && res->nextCursor.has_value() &&
-           res->nextCursor.value() == "c1");
+           res->nextCursor.operator*() == "c1");
     assert(res->_meta.has_value() &&
-           res->_meta.value().find("val") != std::string::npos);
+           res->_meta.operator*().find("val") != std::string::npos);
 
     utils::JsonWriter jw;
-    mcp::emit_paginated_result(res.value(), jw);
+    mcp::emit_paginated_result(res.operator*(), jw);
     assert(jw.str().find("c1") != std::string::npos);
   }
   {
@@ -571,7 +572,7 @@ void test_mcp_pagination() {
            !res->_meta.has_value());
 
     utils::JsonWriter jw;
-    mcp::emit_paginated_result(res.value(), jw);
+    mcp::emit_paginated_result(res.operator*(), jw);
     assert(jw.str() == R"({})");
   }
   test_err(mcp::parse_paginated_result, R"([])");
@@ -604,7 +605,7 @@ void test_mcp_init() {
     assert(res->params.capabilities.has_value());
 
     utils::JsonWriter jw;
-    mcp::emit_initialize_request(res.value(), jw);
+    mcp::emit_initialize_request(res.operator*(), jw);
     assert(jw.str().find("protocolVersion") != std::string::npos);
   }
   test_err(mcp::parse_initialize_request, R"([])");
@@ -631,7 +632,7 @@ void test_mcp_init() {
     assert(res->instructions == "hi");
 
     utils::JsonWriter jw;
-    mcp::emit_initialize_result(res.value(), jw);
+    mcp::emit_initialize_result(res.operator*(), jw);
     assert(jw.str().find("logging") != std::string::npos);
   }
   test_err(mcp::parse_initialize_result, R"([])");
@@ -654,7 +655,7 @@ void test_mcp_init() {
     assert(res.has_value());
 
     utils::JsonWriter jw;
-    mcp::emit_initialized_notification(res.value(), jw);
+    mcp::emit_initialized_notification(res.operator*(), jw);
     assert(jw.str().find("notifications/initialized") != std::string::npos);
   }
   {
@@ -695,7 +696,7 @@ void test_mcp_jsonrpc() {
     assert(res->error.code == -32600);
 
     utils::JsonWriter jw;
-    mcp::emit_jsonrpc_error(res.value(), jw);
+    mcp::emit_jsonrpc_error(res.operator*(), jw);
     assert(jw.str().find("-32600") != std::string::npos);
   }
   test_err(mcp::parse_jsonrpc_error, R"([])");
@@ -719,7 +720,7 @@ void test_mcp_jsonrpc() {
     assert(res->params.has_value() && res->params->_raw.has_value());
 
     utils::JsonWriter jw;
-    mcp::emit_jsonrpc_notification(res.value(), jw);
+    mcp::emit_jsonrpc_notification(res.operator*(), jw);
     assert(jw.str().find("b") != std::string::npos);
   }
   {
@@ -731,7 +732,7 @@ void test_mcp_jsonrpc() {
     auto res = mcp::parse_jsonrpc_notification(val);
     res->params->_raw = std::nullopt; // Force emit branch
     utils::JsonWriter jw;
-    mcp::emit_jsonrpc_notification(res.value(), jw);
+    mcp::emit_jsonrpc_notification(res.operator*(), jw);
     assert(jw.str().find("_meta") != std::string::npos);
   }
   test_err(mcp::parse_jsonrpc_notification, R"([])");
@@ -750,7 +751,7 @@ void test_mcp_jsonrpc() {
     assert(res->id == "\"abc\"");
 
     utils::JsonWriter jw;
-    mcp::emit_jsonrpc_request(res.value(), jw);
+    mcp::emit_jsonrpc_request(res.operator*(), jw);
     assert(jw.str().find("\"abc\"") != std::string::npos);
   }
   {
@@ -762,7 +763,7 @@ void test_mcp_jsonrpc() {
     auto res = mcp::parse_jsonrpc_request(val);
     res->params->_raw = std::nullopt; // Force emit branch
     utils::JsonWriter jw;
-    mcp::emit_jsonrpc_request(res.value(), jw);
+    mcp::emit_jsonrpc_request(res.operator*(), jw);
     assert(jw.str().find("_meta") != std::string::npos);
   }
   test_err(mcp::parse_jsonrpc_request, R"([])");
@@ -781,7 +782,7 @@ void test_mcp_jsonrpc() {
     assert(res->id == "null");
 
     utils::JsonWriter jw;
-    mcp::emit_jsonrpc_response(res.value(), jw);
+    mcp::emit_jsonrpc_response(res.operator*(), jw);
     assert(jw.str().find("null") != std::string::npos);
   }
   test_err(mcp::parse_jsonrpc_response, R"([])");
@@ -814,7 +815,7 @@ void test_mcp_prompts() {
     assert(res->params.has_value() && res->params->cursor == "a");
 
     utils::JsonWriter jw;
-    mcp::emit_list_prompts_request(res.value(), jw);
+    mcp::emit_list_prompts_request(res.operator*(), jw);
     assert(jw.str().find("prompts/list") != std::string::npos);
   }
   {
@@ -826,7 +827,7 @@ void test_mcp_prompts() {
     assert(res.has_value());
     assert(!res->params.has_value());
     utils::JsonWriter jw;
-    mcp::emit_list_prompts_request(res.value(), jw);
+    mcp::emit_list_prompts_request(res.operator*(), jw);
   }
   test_err(mcp::parse_list_prompts_request, R"([])");
   test_err(mcp::parse_list_prompts_request, R"({})");
@@ -845,7 +846,7 @@ void test_mcp_prompts() {
     assert(res->prompts[0].arguments->size() == 1);
 
     utils::JsonWriter jw;
-    mcp::emit_list_prompts_result(res.value(), jw);
+    mcp::emit_list_prompts_result(res.operator*(), jw);
     assert(jw.str().find("arg1") != std::string::npos);
   }
   test_err(mcp::parse_list_prompts_result, R"([])");
@@ -863,7 +864,7 @@ void test_mcp_prompts() {
     assert(res->params.name == "p1");
 
     utils::JsonWriter jw;
-    mcp::emit_get_prompt_request(res.value(), jw);
+    mcp::emit_get_prompt_request(res.operator*(), jw);
     assert(jw.str().find("val") != std::string::npos);
   }
   test_err(mcp::parse_get_prompt_request, R"([])");
@@ -884,7 +885,7 @@ void test_mcp_prompts() {
     assert(res->messages[0].role == "user");
 
     utils::JsonWriter jw;
-    mcp::emit_get_prompt_result(res.value(), jw);
+    mcp::emit_get_prompt_result(res.operator*(), jw);
     assert(jw.str().find("user") != std::string::npos);
   }
   test_err(mcp::parse_get_prompt_result, R"([])");
@@ -909,7 +910,7 @@ void test_mcp_prompts() {
     assert(res->params.has_value() && res->params->_meta.has_value());
 
     utils::JsonWriter jw;
-    mcp::emit_prompt_list_changed_notification(res.value(), jw);
+    mcp::emit_prompt_list_changed_notification(res.operator*(), jw);
     assert(jw.str().find("list_changed") != std::string::npos);
   }
   {
@@ -922,7 +923,7 @@ void test_mcp_prompts() {
     assert(!res->params.has_value());
 
     utils::JsonWriter jw;
-    mcp::emit_prompt_list_changed_notification(res.value(), jw);
+    mcp::emit_prompt_list_changed_notification(res.operator*(), jw);
     assert(jw.str() == R"({"method":"notifications/prompts/list_changed"})");
   }
   test_err(mcp::parse_prompt_list_changed_notification, R"([])");
@@ -939,7 +940,7 @@ void test_mcp_prompts() {
     assert(res->type == "ref/prompt" && res->name == "p1");
 
     utils::JsonWriter jw;
-    mcp::emit_prompt_reference(res.value(), jw);
+    mcp::emit_prompt_reference(res.operator*(), jw);
     assert(jw.str().find("ref/prompt") != std::string::npos);
   }
   test_err(mcp::parse_prompt_reference, R"([])");
@@ -970,7 +971,7 @@ void test_mcp_resources() {
     auto res = mcp::parse_list_resources_request(val);
     assert(res.has_value() && res->params->cursor == "abc");
     utils::JsonWriter jw;
-    mcp::emit_list_resources_request(res.value(), jw);
+    mcp::emit_list_resources_request(res.operator*(), jw);
     assert(jw.str().find("abc") != std::string::npos);
   }
   {
@@ -981,7 +982,7 @@ void test_mcp_resources() {
     auto res = mcp::parse_list_resources_request(val);
     assert(res.has_value());
     utils::JsonWriter jw;
-    mcp::emit_list_resources_request(res.value(), jw);
+    mcp::emit_list_resources_request(res.operator*(), jw);
   }
   test_err(mcp::parse_list_resources_request, R"([])");
   test_err(mcp::parse_list_resources_request, R"({})");
@@ -997,7 +998,7 @@ void test_mcp_resources() {
     assert(res.has_value());
     assert(res->resources.size() == 1);
     utils::JsonWriter jw;
-    mcp::emit_list_resources_result(res.value(), jw);
+    mcp::emit_list_resources_result(res.operator*(), jw);
     assert(jw.str().find("file:///a.txt") != std::string::npos);
   }
   test_err(mcp::parse_list_resources_result, R"([])");
@@ -1017,7 +1018,7 @@ void test_mcp_resources() {
     auto res = mcp::parse_list_resource_templates_request(val);
     assert(res.has_value());
     utils::JsonWriter jw;
-    mcp::emit_list_resource_templates_request(res.value(), jw);
+    mcp::emit_list_resource_templates_request(res.operator*(), jw);
     assert(jw.str().find("cursor") != std::string::npos);
   }
   {
@@ -1028,7 +1029,7 @@ void test_mcp_resources() {
     auto res = mcp::parse_list_resource_templates_request(val);
     assert(res.has_value());
     utils::JsonWriter jw;
-    mcp::emit_list_resource_templates_request(res.value(), jw);
+    mcp::emit_list_resource_templates_request(res.operator*(), jw);
   }
   test_err(mcp::parse_list_resource_templates_request, R"([])");
   test_err(mcp::parse_list_resource_templates_request, R"({})");
@@ -1044,7 +1045,7 @@ void test_mcp_resources() {
     assert(res.has_value());
     assert(res->resourceTemplates.size() == 1);
     utils::JsonWriter jw;
-    mcp::emit_list_resource_templates_result(res.value(), jw);
+    mcp::emit_list_resource_templates_result(res.operator*(), jw);
     assert(jw.str().find("file:///{file}") != std::string::npos);
   }
   test_err(mcp::parse_list_resource_templates_result, R"([])");
@@ -1065,7 +1066,7 @@ void test_mcp_resources() {
     auto res = mcp::parse_read_resource_request(val);
     assert(res.has_value());
     utils::JsonWriter jw;
-    mcp::emit_read_resource_request(res.value(), jw);
+    mcp::emit_read_resource_request(res.operator*(), jw);
     assert(jw.str().find("file:///a.txt") != std::string::npos);
   }
   test_err(mcp::parse_read_resource_request, R"([])");
@@ -1084,7 +1085,7 @@ void test_mcp_resources() {
     assert(res.has_value());
     assert(res->contents_json.size() == 1);
     utils::JsonWriter jw;
-    mcp::emit_read_resource_result(res.value(), jw);
+    mcp::emit_read_resource_result(res.operator*(), jw);
     assert(jw.str().find("hello") != std::string::npos);
   }
   test_err(mcp::parse_read_resource_result, R"([])");
@@ -1100,7 +1101,7 @@ void test_mcp_resources() {
     auto res = mcp::parse_resource_updated_notification(val);
     assert(res.has_value());
     utils::JsonWriter jw;
-    mcp::emit_resource_updated_notification(res.value(), jw);
+    mcp::emit_resource_updated_notification(res.operator*(), jw);
     assert(jw.str().find("file:///a.txt") != std::string::npos);
   }
   test_err(mcp::parse_resource_updated_notification, R"([])");
@@ -1119,7 +1120,7 @@ void test_mcp_resources() {
     auto res = mcp::parse_resource_list_changed_notification(val);
     assert(res.has_value());
     utils::JsonWriter jw;
-    mcp::emit_resource_list_changed_notification(res.value(), jw);
+    mcp::emit_resource_list_changed_notification(res.operator*(), jw);
     assert(jw.str().find("_meta") != std::string::npos);
   }
   {
@@ -1130,7 +1131,7 @@ void test_mcp_resources() {
     auto res = mcp::parse_resource_list_changed_notification(val);
     assert(res.has_value());
     utils::JsonWriter jw;
-    mcp::emit_resource_list_changed_notification(res.value(), jw);
+    mcp::emit_resource_list_changed_notification(res.operator*(), jw);
   }
   test_err(mcp::parse_resource_list_changed_notification, R"([])");
   test_err(mcp::parse_resource_list_changed_notification, R"({})");
@@ -1144,7 +1145,7 @@ void test_mcp_resources() {
     auto res = mcp::parse_resource_reference(val);
     assert(res.has_value());
     utils::JsonWriter jw;
-    mcp::emit_resource_reference(res.value(), jw);
+    mcp::emit_resource_reference(res.operator*(), jw);
     assert(jw.str().find("file:///a.txt") != std::string::npos);
   }
   test_err(mcp::parse_resource_reference, R"([])");
@@ -1174,7 +1175,7 @@ void test_mcp_remaining() {
     auto res = mcp::parse_result(val);
     assert(res.has_value());
     utils::JsonWriter jw;
-    mcp::emit_result(res.value(), jw);
+    mcp::emit_result(res.operator*(), jw);
     assert(jw.str().find("_meta") != std::string::npos);
   }
   {
@@ -1185,7 +1186,7 @@ void test_mcp_remaining() {
     auto res = mcp::parse_result(val);
     assert(res.has_value());
     utils::JsonWriter jw;
-    mcp::emit_result(res.value(), jw);
+    mcp::emit_result(res.operator*(), jw);
     assert(jw.str() == R"({})");
   }
   test_err(mcp::parse_result, R"([])");
@@ -1199,7 +1200,7 @@ void test_mcp_remaining() {
     auto res = mcp::parse_root(val);
     assert(res.has_value() && res->name == "root");
     utils::JsonWriter jw;
-    mcp::emit_root(res.value(), jw);
+    mcp::emit_root(res.operator*(), jw);
     assert(jw.str().find("root") != std::string::npos);
   }
   test_err(mcp::parse_root, R"([])");
@@ -1215,7 +1216,7 @@ void test_mcp_remaining() {
     auto res = mcp::parse_roots_list_changed_notification(val);
     assert(res.has_value());
     utils::JsonWriter jw;
-    mcp::emit_roots_list_changed_notification(res.value(), jw);
+    mcp::emit_roots_list_changed_notification(res.operator*(), jw);
     assert(jw.str().find("list_changed") != std::string::npos);
   }
   {
@@ -1226,7 +1227,7 @@ void test_mcp_remaining() {
     auto res = mcp::parse_roots_list_changed_notification(val);
     assert(res.has_value());
     utils::JsonWriter jw;
-    mcp::emit_roots_list_changed_notification(res.value(), jw);
+    mcp::emit_roots_list_changed_notification(res.operator*(), jw);
   }
   test_err(mcp::parse_roots_list_changed_notification, R"([])");
   test_err(mcp::parse_roots_list_changed_notification, R"({})");
@@ -1240,7 +1241,7 @@ void test_mcp_remaining() {
     auto res = mcp::parse_list_roots_request(val);
     assert(res.has_value());
     utils::JsonWriter jw;
-    mcp::emit_list_roots_request(res.value(), jw);
+    mcp::emit_list_roots_request(res.operator*(), jw);
     assert(jw.str().find("_meta") != std::string::npos);
   }
   {
@@ -1251,7 +1252,7 @@ void test_mcp_remaining() {
     auto res = mcp::parse_list_roots_request(val);
     assert(res.has_value());
     utils::JsonWriter jw;
-    mcp::emit_list_roots_request(res.value(), jw);
+    mcp::emit_list_roots_request(res.operator*(), jw);
   }
   test_err(mcp::parse_list_roots_request, R"([])");
   test_err(mcp::parse_list_roots_request, R"({})");
@@ -1266,7 +1267,7 @@ void test_mcp_remaining() {
     assert(res.has_value());
     assert(res->roots.size() == 1);
     utils::JsonWriter jw;
-    mcp::emit_list_roots_result(res.value(), jw);
+    mcp::emit_list_roots_result(res.operator*(), jw);
     assert(jw.str().find("file:///") != std::string::npos);
   }
   test_err(mcp::parse_list_roots_result, R"([])");
@@ -1297,7 +1298,7 @@ void test_mcp_logging_progress() {
     auto res = mcp::parse_set_level_request(val);
     assert(res.has_value() && res->params.level == "debug");
     utils::JsonWriter jw;
-    mcp::emit_set_level_request(res.value(), jw);
+    mcp::emit_set_level_request(res.operator*(), jw);
     assert(jw.str().find("debug") != std::string::npos);
   }
   test_err(mcp::parse_set_level_request, R"([])");
@@ -1315,7 +1316,7 @@ void test_mcp_logging_progress() {
     assert(res.has_value() && res->params.level == "info" &&
            res->params.logger == "main");
     utils::JsonWriter jw;
-    mcp::emit_logging_message_notification(res.value(), jw);
+    mcp::emit_logging_message_notification(res.operator*(), jw);
     assert(jw.str().find("info") != std::string::npos);
   }
   test_err(mcp::parse_logging_message_notification, R"([])");
@@ -1335,9 +1336,9 @@ void test_mcp_logging_progress() {
     auto res = mcp::parse_progress_notification(val);
     assert(res.has_value() && res->params.progressToken == "\"t1\"");
     assert(res->params.progress == 10);
-    assert(res->params.total.value() == 100);
+    assert(res->params.total.operator*() == 100);
     utils::JsonWriter jw;
-    mcp::emit_progress_notification(res.value(), jw);
+    mcp::emit_progress_notification(res.operator*(), jw);
     assert(jw.str().find("\"t1\"") != std::string::npos);
   }
   {
@@ -1349,7 +1350,7 @@ void test_mcp_logging_progress() {
     auto res = mcp::parse_progress_notification(val);
     assert(res.has_value() && res->params.progressToken == "2");
     utils::JsonWriter jw;
-    mcp::emit_progress_notification(res.value(), jw);
+    mcp::emit_progress_notification(res.operator*(), jw);
     assert(jw.str().find("2") != std::string::npos);
   }
   test_err(mcp::parse_progress_notification, R"([])");

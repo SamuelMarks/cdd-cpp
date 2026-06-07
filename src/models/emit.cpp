@@ -22,7 +22,7 @@ static std::string format_multi(const std::string &indent,
 
 std::string map_type(const openapi::Schema &schema) noexcept {
   if (schema.ref.has_value()) {
-    std::string ref = schema.ref.value().ref;
+    std::string ref = schema.ref.operator*().ref;
     size_t last_slash = ref.find_last_of('/');
     if (last_slash != std::string::npos) {
       return ref.substr(last_slash + 1);
@@ -32,7 +32,7 @@ std::string map_type(const openapi::Schema &schema) noexcept {
   if (!schema.type.has_value())
     return "std::string";
 
-  std::string t = schema.type.value();
+  std::string t = schema.type.operator*();
   if (t == "integer")
     return "int";
   if (t == "number")
@@ -108,7 +108,7 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
         extract_deps =
             [&](const openapi::Schema &schema, std::vector<std::string> &deps) {
               if (schema.ref.has_value()) {
-                std::string ref = schema.ref.value().ref;
+                std::string ref = schema.ref.operator*().ref;
                 size_t last_slash = ref.find_last_of('/');
                 if (last_slash != std::string::npos) {
                   deps.push_back(ref.substr(last_slash + 1));

@@ -407,10 +407,10 @@ parse_model_preferences(simdjson::ondemand::value &val) noexcept {
   if (!obj["hints"].get_array().get(hints_arr)) {
     std::vector<ModelHint> hints;
     for (auto h : hints_arr) {
-      auto h_val = h.value();
+      auto h_val = h.value_unsafe();
       auto ph = parse_model_hint(h_val);
       if (ph.has_value())
-        hints.push_back(ph.value());
+        hints.push_back(ph.operator*());
       else
         return std::unexpected(ph.error());
     }
@@ -482,7 +482,7 @@ parse_create_message_request(simdjson::ondemand::value &val) noexcept {
   if (!p_obj["modelPreferences"].get(mp_val)) {
     auto mp = parse_model_preferences(mp_val);
     if (mp.has_value())
-      result.params.modelPreferences = mp.value();
+      result.params.modelPreferences = mp.operator*();
   }
 
   simdjson::ondemand::array ss_arr;
@@ -703,7 +703,7 @@ parse_initialize_request(simdjson::ondemand::value &val) noexcept {
   if (!p_obj["capabilities"].get(cap_val)) {
     auto c_res = parse_client_capabilities(cap_val);
     if (c_res.has_value())
-      result.params.capabilities = c_res.value();
+      result.params.capabilities = c_res.operator*();
   }
 
   simdjson::ondemand::value ci_val;
@@ -712,7 +712,7 @@ parse_initialize_request(simdjson::ondemand::value &val) noexcept {
   auto ci_res = parse_implementation(ci_val);
   if (!ci_res.has_value())
     return std::unexpected("Invalid clientInfo");
-  result.params.clientInfo = ci_res.value();
+  result.params.clientInfo = ci_res.operator*();
 
   return result;
 }
@@ -798,7 +798,7 @@ parse_initialize_result(simdjson::ondemand::value &val) noexcept {
   auto cap_res = parse_server_capabilities(cap_val);
   if (!cap_res.has_value())
     return std::unexpected("Invalid capabilities");
-  result.capabilities = cap_res.value();
+  result.capabilities = cap_res.operator*();
 
   simdjson::ondemand::value si_val;
   if (obj["serverInfo"].get(si_val))
@@ -806,7 +806,7 @@ parse_initialize_result(simdjson::ondemand::value &val) noexcept {
   auto si_res = parse_implementation(si_val);
   if (!si_res.has_value())
     return std::unexpected("Invalid serverInfo");
-  result.serverInfo = si_res.value();
+  result.serverInfo = si_res.operator*();
 
   return result;
 }
@@ -1064,10 +1064,10 @@ parse_prompt(simdjson::ondemand::value &val) noexcept {
   if (!obj["arguments"].get_array().get(arg_arr)) {
     std::vector<PromptArgument> args;
     for (auto a : arg_arr) {
-      auto a_val = a.value();
+      auto a_val = a.value_unsafe();
       auto pa = parse_prompt_argument(a_val);
       if (pa.has_value())
-        args.push_back(pa.value());
+        args.push_back(pa.operator*());
       else
         return std::unexpected(pa.error());
     }
@@ -1100,10 +1100,10 @@ parse_list_prompts_result(simdjson::ondemand::value &val) noexcept {
     return std::unexpected("Missing prompts");
 
   for (auto p : p_arr) {
-    auto p_val = p.value();
+    auto p_val = p.value_unsafe();
     auto pt = parse_prompt(p_val);
     if (pt.has_value())
-      result.prompts.push_back(pt.value());
+      result.prompts.push_back(pt.operator*());
     else
       return std::unexpected(pt.error());
   }
@@ -1303,10 +1303,10 @@ parse_list_resources_result(simdjson::ondemand::value &val) noexcept {
   if (obj["resources"].get_array().get(r_arr))
     return std::unexpected("Missing resources");
   for (auto r : r_arr) {
-    auto r_val = r.value();
+    auto r_val = r.value_unsafe();
     auto res = parse_resource(r_val);
     if (res.has_value())
-      result.resources.push_back(res.value());
+      result.resources.push_back(res.operator*());
     else
       return std::unexpected(res.error());
   }
@@ -1377,10 +1377,10 @@ parse_list_resource_templates_result(simdjson::ondemand::value &val) noexcept {
   if (obj["resourceTemplates"].get_array().get(r_arr))
     return std::unexpected("Missing resourceTemplates");
   for (auto r : r_arr) {
-    auto r_val = r.value();
+    auto r_val = r.value_unsafe();
     auto res = parse_resource_template(r_val);
     if (res.has_value())
-      result.resourceTemplates.push_back(res.value());
+      result.resourceTemplates.push_back(res.operator*());
     else
       return std::unexpected(res.error());
   }
@@ -1587,10 +1587,10 @@ parse_list_roots_result(simdjson::ondemand::value &val) noexcept {
   if (obj["roots"].get_array().get(r_arr))
     return std::unexpected("Missing roots");
   for (auto r : r_arr) {
-    auto r_val = r.value();
+    auto r_val = r.value_unsafe();
     auto pt = parse_root(r_val);
     if (pt.has_value())
-      result.roots.push_back(pt.value());
+      result.roots.push_back(pt.operator*());
     else
       return std::unexpected(pt.error());
   }
@@ -1819,10 +1819,10 @@ parse_list_tools_result(simdjson::ondemand::value &val) noexcept {
   if (obj["tools"].get_array().get(t_arr))
     return std::unexpected("Missing tools");
   for (auto t : t_arr) {
-    auto t_val = t.value();
+    auto t_val = t.value_unsafe();
     auto pt = parse_tool(t_val);
     if (pt.has_value())
-      result.tools.push_back(pt.value());
+      result.tools.push_back(pt.operator*());
     else
       return std::unexpected(pt.error());
   }

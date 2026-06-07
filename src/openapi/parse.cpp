@@ -1,6 +1,5 @@
 #include "parse.hpp"
 #include <iostream>
-#include <stdexcept>
 
 namespace cdd_cpp::openapi {
 

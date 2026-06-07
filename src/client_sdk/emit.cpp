@@ -42,7 +42,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
 
   std::string default_url = "";
   if (spec.servers.has_value() && !spec.servers->empty()) {
-    default_url = spec.servers.value().front().url;
+    default_url = spec.servers.operator*().front().url;
   }
   c_hpp << "        Client(const std::string& url = \"" << default_url
         << "\") noexcept;\n";
@@ -57,7 +57,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
   c_hpp << "        McpAdapter mcp{this};\n\n";
 
   if (spec.paths.has_value() && !spec.paths->empty()) {
-    for (const auto &[path, item] : spec.paths.value()) {
+    for (const auto &[path, item] : spec.paths.operator*()) {
       auto emit_method_decl = [&](const std::optional<openapi::Operation> &op) {
         if (!op.has_value())
           return;
@@ -70,7 +70,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
           for (const auto &p : *op->parameters)
             all_params.push_back(p);
 
-        openapi::Operation new_op = op.value();
+        openapi::Operation new_op = op.operator*();
         new_op.parameters = all_params;
         c_hpp << docstrings::emit_path_docstrings(item);
         c_hpp << docstrings::emit_operation_docstrings(new_op);
@@ -137,7 +137,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
   c_cpp << "    }\n\n";
 
   if (spec.paths.has_value() && !spec.paths->empty()) {
-    for (const auto &[path, item] : spec.paths.value()) {
+    for (const auto &[path, item] : spec.paths.operator*()) {
       auto emit_method_impl = [&](const std::string &method,
                                   const std::optional<openapi::Operation> &op) {
         if (!op.has_value())
@@ -291,7 +291,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
 )";
   bool first_tool = true;
   if (spec.paths.has_value() && !spec.paths->empty()) {
-    for (const auto &[path, item] : spec.paths.value()) {
+    for (const auto &[path, item] : spec.paths.operator*()) {
       auto emit_tool = [&](const std::optional<openapi::Operation> &op) {
         if (!op.has_value())
           return;
@@ -382,7 +382,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
 )";
 
   if (spec.paths.has_value() && !spec.paths->empty()) {
-    for (const auto &[path, item] : spec.paths.value()) {
+    for (const auto &[path, item] : spec.paths.operator*()) {
       auto emit_exec = [&](const std::optional<openapi::Operation> &op) {
         if (!op.has_value())
           return;
@@ -552,7 +552,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
           << "    }\n"
           << "    simdjson::dom::parser parser;\n"
           << "    simdjson::dom::element doc;\n"
-          << "    auto error = parser.parse(res.value()).get(doc);\n"
+          << "    auto error = parser.parse(res.operator*()).get(doc);\n"
           << "    ASSERT_EQ(error, simdjson::SUCCESS) << \"Invalid JSON "
              "returned\";\n"
           << "    if (doc.is_object() && doc[\"sabotage\"].error() == "
@@ -570,10 +570,10 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
              "returning early.\n"
           << "        return;\n"
           << "    }\n"
-          << "    if (!res.value().empty()) {\n"
+          << "    if (!res.operator*().empty()) {\n"
           << "        simdjson::dom::parser parser;\n"
           << "        simdjson::dom::element doc;\n"
-          << "        auto error = parser.parse(res.value()).get(doc);\n"
+          << "        auto error = parser.parse(res.operator*()).get(doc);\n"
           << "        ASSERT_EQ(error, simdjson::SUCCESS) << \"Invalid JSON "
              "returned\";\n"
           << "        if (doc.is_object() && doc[\"sabotage\"].error() == "
@@ -585,7 +585,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
           << "}\n\n";
 
     if (spec.paths.has_value() && !spec.paths->empty()) {
-      for (const auto &[path, item] : spec.paths.value()) {
+      for (const auto &[path, item] : spec.paths.operator*()) {
         auto emit_test = [&](const std::string & /*method*/,
                              const std::optional<openapi::Operation> &op) {
           if (!op.has_value())
@@ -672,7 +672,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
                      "resource, returning early.\n";
             t_cpp << "        return;\n";
             t_cpp << "    }\n";
-            t_cpp << "    if (!res.value().empty()) {\n";
+            t_cpp << "    if (!res.operator*().empty()) {\n";
           } else {
             t_cpp << "    if (res.has_value()) {\n";
             t_cpp << "        SUCCEED(); // Expected error but got success, "
@@ -683,7 +683,8 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
           }
           t_cpp << "        simdjson::dom::parser parser;\n";
           t_cpp << "        simdjson::dom::element doc;\n";
-          t_cpp << "        auto error = parser.parse(res.value()).get(doc);\n";
+          t_cpp << "        auto error = "
+                   "parser.parse(res.operator*()).get(doc);\n";
           t_cpp << "        ASSERT_EQ(error, simdjson::SUCCESS) << \"Invalid "
                    "JSON returned\";\n";
           t_cpp << "        if (doc.is_object() && doc[\"sabotage\"].error() "

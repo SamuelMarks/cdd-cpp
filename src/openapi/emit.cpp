@@ -60,13 +60,15 @@ void emit_Info(utils::JsonWriter &jw, const Info &obj) noexcept {
   jw.key_optional("termsOfService", obj.termsOfService); // GCOV_EXCL_BR_LINE
   if (obj.contact.has_value()) {                         // GCOV_EXCL_BR_LINE
     jw.key("contact"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    emit_Contact(jw,
-                 obj.contact.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    emit_Contact(
+        jw,
+        obj.contact.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   if (obj.license.has_value()) { // GCOV_EXCL_BR_LINE
     jw.key("license");           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    emit_License(jw,
-                 obj.license.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    emit_License(
+        jw,
+        obj.license.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   jw.key_value("version", obj.version); // GCOV_EXCL_BR_LINE
   jw.end_object();                      // GCOV_EXCL_BR_LINE
@@ -80,9 +82,9 @@ void emit_ServerVariable(utils::JsonWriter &jw, // GCOV_EXCL_LINE
     jw.key("enum");                  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_array();                // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &item :
-         obj.enum_values.value()) // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.value(item);             // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    jw.end_array();               // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.enum_values.operator*()) // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.value(item);                 // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.end_array();                   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   jw.key_value("default",
                obj.default_value); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
@@ -103,9 +105,9 @@ void emit_Server(utils::JsonWriter &jw,
     jw.key("variables");             // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_object();               // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &[k, v] :
-         obj.variables.value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.key(k);                  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_ServerVariable(jw, v); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.variables.operator*()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.key(k);                      // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_ServerVariable(jw, v);     // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     } // GCOV_EXCL_LINE
     jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
@@ -131,8 +133,8 @@ void emit_Tag(utils::JsonWriter &jw, const Tag &obj) noexcept {
   if (obj.externalDocs.has_value()) {              // GCOV_EXCL_BR_LINE
     jw.key("externalDocs"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     emit_ExternalDocumentation(
-        jw,                        // GCOV_EXCL_LINE
-        obj.externalDocs.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        jw,                            // GCOV_EXCL_LINE
+        obj.externalDocs.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   jw.end_object(); // GCOV_EXCL_BR_LINE
 }
@@ -144,8 +146,8 @@ void emit_Discriminator(utils::JsonWriter &jw,
     jw.key("mapping"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &[k, v] :
-         obj.mapping.value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.key_value(k, v);       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.mapping.operator*()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.key_value(k, v);           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     } // GCOV_EXCL_LINE
     jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
@@ -161,12 +163,14 @@ void emit_XML(utils::JsonWriter &jw,
                   obj.namespace_url);    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   jw.key_optional("prefix", obj.prefix); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   if (obj.attribute.has_value())         // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    jw.key_value("attribute",
-                 obj.attribute.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  if (obj.wrapped.has_value())           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    jw.key_value("wrapped",
-                 obj.wrapped.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  jw.end_object();                     // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.key_value(
+        "attribute",
+        obj.attribute.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+  if (obj.wrapped.has_value())      // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.key_value(
+        "wrapped",
+        obj.wrapped.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+  jw.end_object();                // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
 } // GCOV_EXCL_LINE
 
 void emit_Schema(utils::JsonWriter &jw, const Schema &obj) noexcept {
@@ -175,22 +179,23 @@ void emit_Schema(utils::JsonWriter &jw, const Schema &obj) noexcept {
   jw.key_optional("description", obj.description); // GCOV_EXCL_BR_LINE
   jw.key_optional("format", obj.format);           // GCOV_EXCL_BR_LINE
   if (obj.ref.has_value()) {                       // GCOV_EXCL_BR_LINE
-    jw.key_value("$ref",
-                 obj.ref.value().ref); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.key_value(
+        "$ref",
+        obj.ref.operator*().ref); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key_optional(
         "summary",
-        obj.ref.value().summary); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        obj.ref.operator*().summary); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key_optional(
-        "description",                // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        obj.ref.value().description); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        "description",                    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        obj.ref.operator*().description); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
-  if (obj.discriminator.has_value()) {                 // GCOV_EXCL_BR_LINE
-    jw.key("discriminator");                           // GCOV_EXCL_BR_LINE
-    emit_Discriminator(jw, obj.discriminator.value()); // GCOV_EXCL_BR_LINE
+  if (obj.discriminator.has_value()) {                     // GCOV_EXCL_BR_LINE
+    jw.key("discriminator");                               // GCOV_EXCL_BR_LINE
+    emit_Discriminator(jw, obj.discriminator.operator*()); // GCOV_EXCL_BR_LINE
   }
-  if (obj.xml.has_value()) {       // GCOV_EXCL_BR_LINE
-    jw.key("xml");                 // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    emit_XML(jw, obj.xml.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+  if (obj.xml.has_value()) {           // GCOV_EXCL_BR_LINE
+    jw.key("xml");                     // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    emit_XML(jw, obj.xml.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   if (obj.properties != nullptr && // GCOV_EXCL_BR_LINE
       !obj.properties->empty()) {  // GCOV_EXCL_BR_LINE
@@ -217,14 +222,15 @@ void emit_Example(utils::JsonWriter &jw, const Example &obj) noexcept {
   jw.key_optional("value", obj.value);                 // GCOV_EXCL_BR_LINE
   jw.key_optional("externalValue", obj.externalValue); // GCOV_EXCL_BR_LINE
   if (obj.ref.has_value()) {                           // GCOV_EXCL_BR_LINE
-    jw.key_value("$ref",
-                 obj.ref.value().ref); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.key_value(
+        "$ref",
+        obj.ref.operator*().ref); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key_optional(
         "summary",
-        obj.ref.value().summary); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        obj.ref.operator*().summary); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key_optional(
-        "description",                // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        obj.ref.value().description); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        "description",                    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        obj.ref.operator*().description); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   jw.end_object(); // GCOV_EXCL_BR_LINE
 }
@@ -234,10 +240,10 @@ void emit_Encoding(utils::JsonWriter &jw, const Encoding &obj) noexcept {
   jw.key_optional("contentType", obj.contentType);       // GCOV_EXCL_BR_LINE
   jw.key_optional("style", obj.style);                   // GCOV_EXCL_BR_LINE
   if (obj.explode.has_value())                           // GCOV_EXCL_BR_LINE
-    jw.key_value("explode", obj.explode.value());        // GCOV_EXCL_BR_LINE
+    jw.key_value("explode", obj.explode.operator*());    // GCOV_EXCL_BR_LINE
   if (obj.allowReserved.has_value())                     // GCOV_EXCL_BR_LINE
     jw.key_value("allowReserved",                        // GCOV_EXCL_BR_LINE
-                 obj.allowReserved.value());             // GCOV_EXCL_BR_LINE
+                 obj.allowReserved.operator*());         // GCOV_EXCL_BR_LINE
   if (obj.headers != nullptr && !obj.headers->empty()) { // GCOV_EXCL_BR_LINE
     jw.key("headers");                                   // GCOV_EXCL_BR_LINE
     jw.start_object();                                   // GCOV_EXCL_BR_LINE
@@ -277,16 +283,16 @@ void emit_Encoding(utils::JsonWriter &jw, const Encoding &obj) noexcept {
 }
 
 void emit_MediaType(utils::JsonWriter &jw, const MediaType &obj) noexcept {
-  jw.start_object();                     // GCOV_EXCL_BR_LINE
-  if (obj.schema.has_value()) {          // GCOV_EXCL_BR_LINE
-    jw.key("schema");                    // GCOV_EXCL_BR_LINE
-    emit_Schema(jw, obj.schema.value()); // GCOV_EXCL_BR_LINE
+  jw.start_object();                         // GCOV_EXCL_BR_LINE
+  if (obj.schema.has_value()) {              // GCOV_EXCL_BR_LINE
+    jw.key("schema");                        // GCOV_EXCL_BR_LINE
+    emit_Schema(jw, obj.schema.operator*()); // GCOV_EXCL_BR_LINE
   }
   jw.key_optional("example", obj.example);                  // GCOV_EXCL_BR_LINE
   if (obj.examples.has_value() && !obj.examples->empty()) { // GCOV_EXCL_BR_LINE
     jw.key("examples");                                     // GCOV_EXCL_BR_LINE
     jw.start_object();                                      // GCOV_EXCL_BR_LINE
-    for (const auto &[k, v] : obj.examples.value()) {       // GCOV_EXCL_BR_LINE
+    for (const auto &[k, v] : obj.examples.operator*()) {   // GCOV_EXCL_BR_LINE
       jw.key(k);                                            // GCOV_EXCL_BR_LINE
       emit_Example(jw, v);                                  // GCOV_EXCL_BR_LINE
     }
@@ -322,29 +328,29 @@ void emit_MediaType(utils::JsonWriter &jw, const MediaType &obj) noexcept {
 }
 
 void emit_Header(utils::JsonWriter &jw, const Header &obj) noexcept {
-  jw.start_object();                               // GCOV_EXCL_BR_LINE
-  jw.key_optional("description", obj.description); // GCOV_EXCL_BR_LINE
-  if (obj.required)                                // GCOV_EXCL_BR_LINE
-    jw.key_value("required", true);                // GCOV_EXCL_BR_LINE
-  if (obj.deprecated)                              // GCOV_EXCL_BR_LINE
-    jw.key_value("deprecated", true);              // GCOV_EXCL_BR_LINE
-  if (obj.allowEmptyValue)                         // GCOV_EXCL_BR_LINE
-    jw.key_value("allowEmptyValue", true);         // GCOV_EXCL_BR_LINE
-  jw.key_optional("style", obj.style);             // GCOV_EXCL_BR_LINE
-  if (obj.explode.has_value())                     // GCOV_EXCL_BR_LINE
-    jw.key_value("explode", obj.explode.value());  // GCOV_EXCL_BR_LINE
-  if (obj.allowReserved.has_value())               // GCOV_EXCL_BR_LINE
-    jw.key_value("allowReserved",                  // GCOV_EXCL_BR_LINE
-                 obj.allowReserved.value());       // GCOV_EXCL_BR_LINE
-  if (obj.schema.has_value()) {                    // GCOV_EXCL_BR_LINE
-    jw.key("schema");                              // GCOV_EXCL_BR_LINE
-    emit_Schema(jw, obj.schema.value());           // GCOV_EXCL_BR_LINE
+  jw.start_object();                                  // GCOV_EXCL_BR_LINE
+  jw.key_optional("description", obj.description);    // GCOV_EXCL_BR_LINE
+  if (obj.required)                                   // GCOV_EXCL_BR_LINE
+    jw.key_value("required", true);                   // GCOV_EXCL_BR_LINE
+  if (obj.deprecated)                                 // GCOV_EXCL_BR_LINE
+    jw.key_value("deprecated", true);                 // GCOV_EXCL_BR_LINE
+  if (obj.allowEmptyValue)                            // GCOV_EXCL_BR_LINE
+    jw.key_value("allowEmptyValue", true);            // GCOV_EXCL_BR_LINE
+  jw.key_optional("style", obj.style);                // GCOV_EXCL_BR_LINE
+  if (obj.explode.has_value())                        // GCOV_EXCL_BR_LINE
+    jw.key_value("explode", obj.explode.operator*()); // GCOV_EXCL_BR_LINE
+  if (obj.allowReserved.has_value())                  // GCOV_EXCL_BR_LINE
+    jw.key_value("allowReserved",                     // GCOV_EXCL_BR_LINE
+                 obj.allowReserved.operator*());      // GCOV_EXCL_BR_LINE
+  if (obj.schema.has_value()) {                       // GCOV_EXCL_BR_LINE
+    jw.key("schema");                                 // GCOV_EXCL_BR_LINE
+    emit_Schema(jw, obj.schema.operator*());          // GCOV_EXCL_BR_LINE
   }
   jw.key_optional("example", obj.example);                  // GCOV_EXCL_BR_LINE
   if (obj.examples.has_value() && !obj.examples->empty()) { // GCOV_EXCL_BR_LINE
     jw.key("examples");                                     // GCOV_EXCL_BR_LINE
     jw.start_object();                                      // GCOV_EXCL_BR_LINE
-    for (const auto &[k, v] : obj.examples.value()) {       // GCOV_EXCL_BR_LINE
+    for (const auto &[k, v] : obj.examples.operator*()) {   // GCOV_EXCL_BR_LINE
       jw.key(k);                                            // GCOV_EXCL_BR_LINE
       emit_Example(jw, v);                                  // GCOV_EXCL_BR_LINE
     }
@@ -353,21 +359,22 @@ void emit_Header(utils::JsonWriter &jw, const Header &obj) noexcept {
   if (obj.content.has_value() && !obj.content->empty()) { // GCOV_EXCL_BR_LINE
     jw.key("content");                                    // GCOV_EXCL_BR_LINE
     jw.start_object();                                    // GCOV_EXCL_BR_LINE
-    for (const auto &[k, v] : obj.content.value()) {      // GCOV_EXCL_BR_LINE
+    for (const auto &[k, v] : obj.content.operator*()) {  // GCOV_EXCL_BR_LINE
       jw.key(k);                                          // GCOV_EXCL_BR_LINE
       emit_MediaType(jw, v);                              // GCOV_EXCL_BR_LINE
     }
     jw.end_object(); // GCOV_EXCL_BR_LINE
   }
   if (obj.ref.has_value()) { // GCOV_EXCL_BR_LINE
-    jw.key_value("$ref",
-                 obj.ref.value().ref); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.key_value(
+        "$ref",
+        obj.ref.operator*().ref); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key_optional(
         "summary",
-        obj.ref.value().summary); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        obj.ref.operator*().summary); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key_optional(
-        "description",                // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        obj.ref.value().description); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        "description",                    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        obj.ref.operator*().description); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   jw.end_object(); // GCOV_EXCL_BR_LINE
 }
@@ -390,14 +397,15 @@ void emit_RequestBody(utils::JsonWriter &jw,
   if (obj.required)                 // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key_value("required", true); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   if (obj.ref.has_value()) {        // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    jw.key_value("$ref",
-                 obj.ref.value().ref); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.key_value(
+        "$ref",
+        obj.ref.operator*().ref); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key_optional(
         "summary",
-        obj.ref.value().summary); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        obj.ref.operator*().summary); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key_optional(
-        "description",                // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        obj.ref.value().description); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        "description",                    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        obj.ref.operator*().description); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
 } // GCOV_EXCL_LINE
@@ -414,27 +422,29 @@ void emit_Link(utils::JsonWriter &jw,
     jw.key("parameters");           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_object();              // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &[k, v] :
-         obj.parameters.value()) // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.key_value(k, v);        // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    jw.end_object();             // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.parameters.operator*()) // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.key_value(k, v);            // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.end_object();                 // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   jw.key_optional("requestBody",
                   obj.requestBody); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   jw.key_optional("description",
-                  obj.description);      // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  if (obj.server.has_value()) {          // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    jw.key("server");                    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    emit_Server(jw, obj.server.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+                  obj.description); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+  if (obj.server.has_value()) {     // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.key("server");               // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    emit_Server(jw,
+                obj.server.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   if (obj.ref.has_value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    jw.key_value("$ref",
-                 obj.ref.value().ref); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.key_value(
+        "$ref",
+        obj.ref.operator*().ref); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key_optional(
         "summary",
-        obj.ref.value().summary); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        obj.ref.operator*().summary); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key_optional(
-        "description",                // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        obj.ref.value().description); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        "description",                    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        obj.ref.operator*().description); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
 } // GCOV_EXCL_LINE
@@ -449,9 +459,9 @@ void emit_Response(utils::JsonWriter &jw,
     jw.key("headers");         // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_object();         // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &[k, v] :
-         obj.headers.value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.key(k);                // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_Header(jw, v);       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.headers.operator*()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.key(k);                    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_Header(jw, v);           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     } // GCOV_EXCL_LINE
     jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
@@ -460,9 +470,9 @@ void emit_Response(utils::JsonWriter &jw,
     jw.key("content");         // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_object();         // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &[k, v] :
-         obj.content.value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.key(k);                // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_MediaType(jw, v);    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.content.operator*()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.key(k);                    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_MediaType(jw, v);        // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     } // GCOV_EXCL_LINE
     jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
@@ -471,21 +481,22 @@ void emit_Response(utils::JsonWriter &jw,
     jw.key("links");         // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_object();       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &[k, v] :
-         obj.links.value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.key(k);              // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_Link(jw, v);       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.links.operator*()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.key(k);                  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_Link(jw, v);           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     } // GCOV_EXCL_LINE
     jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   if (obj.ref.has_value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    jw.key_value("$ref",
-                 obj.ref.value().ref); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.key_value(
+        "$ref",
+        obj.ref.operator*().ref); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key_optional(
         "summary",
-        obj.ref.value().summary); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        obj.ref.operator*().summary); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key_optional(
-        "description",                // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        obj.ref.value().description); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        "description",                    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        obj.ref.operator*().description); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
 } // GCOV_EXCL_LINE
@@ -506,15 +517,17 @@ void emit_Parameter(utils::JsonWriter &jw,
                  true);                // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   jw.key_optional("style", obj.style); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   if (obj.explode.has_value())         // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    jw.key_value("explode",
-                 obj.explode.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  if (obj.allowReserved.has_value())   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key_value(
-        "allowReserved",                 // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        obj.allowReserved.value());      // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  if (obj.schema.has_value()) {          // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    jw.key("schema");                    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    emit_Schema(jw, obj.schema.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        "explode",
+        obj.explode.operator*());    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+  if (obj.allowReserved.has_value()) // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.key_value(
+        "allowReserved",                // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        obj.allowReserved.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+  if (obj.schema.has_value()) {         // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.key("schema");                   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    emit_Schema(jw,
+                obj.schema.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   jw.key_optional("example",
                   obj.example); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
@@ -523,9 +536,9 @@ void emit_Parameter(utils::JsonWriter &jw,
     jw.key("examples");         // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_object();          // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &[k, v] :
-         obj.examples.value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.key(k);                 // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_Example(jw, v);       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.examples.operator*()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.key(k);                     // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_Example(jw, v);           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     } // GCOV_EXCL_LINE
     jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
@@ -534,21 +547,22 @@ void emit_Parameter(utils::JsonWriter &jw,
     jw.key("content");         // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_object();         // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &[k, v] :
-         obj.content.value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.key(k);                // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_MediaType(jw, v);    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.content.operator*()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.key(k);                    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_MediaType(jw, v);        // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     } // GCOV_EXCL_LINE
     jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   if (obj.ref.has_value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    jw.key_value("$ref",
-                 obj.ref.value().ref); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.key_value(
+        "$ref",
+        obj.ref.operator*().ref); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key_optional(
         "summary",
-        obj.ref.value().summary); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        obj.ref.operator*().summary); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key_optional(
-        "description",                // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        obj.ref.value().description); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        "description",                    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        obj.ref.operator*().description); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
 } // GCOV_EXCL_LINE
@@ -570,9 +584,9 @@ void emit_OAuthFlow(utils::JsonWriter &jw,
     jw.key("scopes");         // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_object();        // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &[k, v] :
-         obj.scopes.value()) // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.key_value(k, v);    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    jw.end_object();         // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.scopes.operator*()) // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.key_value(k, v);        // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.end_object();             // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
 } // GCOV_EXCL_LINE
@@ -582,34 +596,36 @@ void emit_OAuthFlows(utils::JsonWriter &jw,
   jw.start_object();              // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   if (obj.implicit.has_value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key("implicit");           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    emit_OAuthFlow(jw,
-                   obj.implicit.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    emit_OAuthFlow(
+        jw,
+        obj.implicit.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   if (obj.password.has_value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key("password");           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    emit_OAuthFlow(jw,
-                   obj.password.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    emit_OAuthFlow(
+        jw,
+        obj.password.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   if (obj.clientCredentials
           .has_value()) {        // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key("clientCredentials"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    emit_OAuthFlow(
-        jw,
-        obj.clientCredentials.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    emit_OAuthFlow(jw,
+                   obj.clientCredentials
+                       .operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   if (obj.authorizationCode
           .has_value()) {        // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key("authorizationCode"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    emit_OAuthFlow(
-        jw,
-        obj.authorizationCode.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    emit_OAuthFlow(jw,
+                   obj.authorizationCode
+                       .operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   if (obj.deviceAuthorization
           .has_value()) {          // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key("deviceAuthorization"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    emit_OAuthFlow(
-        jw,
-        obj.deviceAuthorization.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    emit_OAuthFlow(jw,
+                   obj.deviceAuthorization
+                       .operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
 } // GCOV_EXCL_LINE
@@ -627,8 +643,9 @@ void emit_SecurityScheme(utils::JsonWriter &jw, // GCOV_EXCL_LINE
                   obj.bearerFormat); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   if (obj.flows.has_value()) {       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key("flows");                 // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    emit_OAuthFlows(jw,
-                    obj.flows.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    emit_OAuthFlows(
+        jw,
+        obj.flows.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   jw.key_optional("openIdConnectUrl",     // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
                   obj.openIdConnectUrl);  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
@@ -637,14 +654,15 @@ void emit_SecurityScheme(utils::JsonWriter &jw, // GCOV_EXCL_LINE
   jw.key_optional("deprecated",
                   obj.deprecated); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   if (obj.ref.has_value()) {       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    jw.key_value("$ref",
-                 obj.ref.value().ref); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.key_value(
+        "$ref",
+        obj.ref.operator*().ref); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key_optional(
         "summary",
-        obj.ref.value().summary); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        obj.ref.operator*().summary); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key_optional(
-        "description",                // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        obj.ref.value().description); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        "description",                    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        obj.ref.operator*().description); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
 } // GCOV_EXCL_LINE
@@ -655,17 +673,17 @@ void emit_Operation(utils::JsonWriter &jw, const Operation &obj) noexcept {
     jw.key("tags");   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_array(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &item :
-         obj.tags.value()) // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.value(item);      // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    jw.end_array();        // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.tags.operator*()) // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.value(item);          // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.end_array();            // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   jw.key_optional("summary", obj.summary);         // GCOV_EXCL_BR_LINE
   jw.key_optional("description", obj.description); // GCOV_EXCL_BR_LINE
   if (obj.externalDocs.has_value()) {              // GCOV_EXCL_BR_LINE
     jw.key("externalDocs"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     emit_ExternalDocumentation(
-        jw,                        // GCOV_EXCL_LINE
-        obj.externalDocs.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        jw,                            // GCOV_EXCL_LINE
+        obj.externalDocs.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   jw.key_optional("operationId", obj.operationId); // GCOV_EXCL_BR_LINE
   if (obj.parameters.has_value() &&                // GCOV_EXCL_BR_LINE
@@ -673,23 +691,23 @@ void emit_Operation(utils::JsonWriter &jw, const Operation &obj) noexcept {
     jw.key("parameters");         // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_array();             // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &item :
-         obj.parameters.value()) // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_Parameter(jw, item);  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    jw.end_array();              // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.parameters.operator*()) // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_Parameter(jw, item);      // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.end_array();                  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   if (obj.requestBody.has_value()) { // GCOV_EXCL_BR_LINE
     jw.key("requestBody");           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     emit_RequestBody(
-        jw, obj.requestBody.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        jw, obj.requestBody.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   if (obj.responses.has_value() && // GCOV_EXCL_BR_LINE
       !obj.responses->empty()) {   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key("responses");           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_object();             // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &[k, v] :
-         obj.responses.value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.key(k);                  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_Response(jw, v);       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.responses.operator*()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.key(k);                      // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_Response(jw, v);           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     } // GCOV_EXCL_LINE
     jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
@@ -715,8 +733,8 @@ void emit_Operation(utils::JsonWriter &jw, const Operation &obj) noexcept {
     jw.key("security"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_array();   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &req :
-         obj.security.value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.start_object();         // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.security.operator*()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.start_object();             // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
       for (const auto &[k, scopes] :
            req) {                    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
         jw.key(k);                   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
@@ -733,9 +751,9 @@ void emit_Operation(utils::JsonWriter &jw, const Operation &obj) noexcept {
     jw.key("servers"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_array();  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &item :
-         obj.servers.value()) // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_Server(jw, item);  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    jw.end_array();           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.servers.operator*()) // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_Server(jw, item);      // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.end_array();               // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   jw.end_object(); // GCOV_EXCL_BR_LINE
 }
@@ -746,61 +764,67 @@ void emit_PathItem(utils::JsonWriter &jw, const PathItem &obj) noexcept {
   jw.key_optional("summary", obj.summary);         // GCOV_EXCL_BR_LINE
   jw.key_optional("description", obj.description); // GCOV_EXCL_BR_LINE
   if (obj.get.has_value()) {                       // GCOV_EXCL_BR_LINE
-    jw.key("get");                       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    emit_Operation(jw, obj.get.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.key("get"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    emit_Operation(jw,
+                   obj.get.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
-  if (obj.put.has_value()) {             // GCOV_EXCL_BR_LINE
-    jw.key("put");                       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    emit_Operation(jw, obj.put.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+  if (obj.put.has_value()) { // GCOV_EXCL_BR_LINE
+    jw.key("put");           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    emit_Operation(jw,
+                   obj.put.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
-  if (obj.post.has_value()) {             // GCOV_EXCL_BR_LINE
-    jw.key("post");                       // GCOV_EXCL_BR_LINE
-    emit_Operation(jw, obj.post.value()); // GCOV_EXCL_BR_LINE
+  if (obj.post.has_value()) {                 // GCOV_EXCL_BR_LINE
+    jw.key("post");                           // GCOV_EXCL_BR_LINE
+    emit_Operation(jw, obj.post.operator*()); // GCOV_EXCL_BR_LINE
   }
   if (obj.delete_op.has_value()) { // GCOV_EXCL_BR_LINE
     jw.key("delete");              // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     emit_Operation(
-        jw, obj.delete_op.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        jw, obj.delete_op.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   if (obj.options.has_value()) { // GCOV_EXCL_BR_LINE
     jw.key("options");           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    emit_Operation(jw,
-                   obj.options.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    emit_Operation(
+        jw,
+        obj.options.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
-  if (obj.head.has_value()) {             // GCOV_EXCL_BR_LINE
-    jw.key("head");                       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    emit_Operation(jw, obj.head.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+  if (obj.head.has_value()) { // GCOV_EXCL_BR_LINE
+    jw.key("head");           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    emit_Operation(jw,
+                   obj.head.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   if (obj.patch.has_value()) { // GCOV_EXCL_BR_LINE
     jw.key("patch");           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    emit_Operation(jw,
-                   obj.patch.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    emit_Operation(
+        jw,
+        obj.patch.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   if (obj.trace.has_value()) { // GCOV_EXCL_BR_LINE
     jw.key("trace");           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    emit_Operation(jw,
-                   obj.trace.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    emit_Operation(
+        jw,
+        obj.trace.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
-  if (obj.query.has_value()) {             // GCOV_EXCL_BR_LINE
-    jw.key("query");                       // GCOV_EXCL_BR_LINE
-    emit_Operation(jw, obj.query.value()); // GCOV_EXCL_BR_LINE
+  if (obj.query.has_value()) {                 // GCOV_EXCL_BR_LINE
+    jw.key("query");                           // GCOV_EXCL_BR_LINE
+    emit_Operation(jw, obj.query.operator*()); // GCOV_EXCL_BR_LINE
   }
   if (obj.servers.has_value() && !obj.servers->empty()) { // GCOV_EXCL_BR_LINE
     jw.key("servers"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_array();  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &item :
-         obj.servers.value()) // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_Server(jw, item);  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    jw.end_array();           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.servers.operator*()) // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_Server(jw, item);      // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.end_array();               // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   if (obj.parameters.has_value() && // GCOV_EXCL_BR_LINE
       !obj.parameters->empty()) {   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.key("parameters");           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_array();               // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &item :
-         obj.parameters.value()) // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_Parameter(jw, item);  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    jw.end_array();              // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.parameters.operator*()) // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_Parameter(jw, item);      // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.end_array();                  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   if (obj.additionalOperations) {                          // GCOV_EXCL_BR_LINE
     jw.key("additionalOperations");                        // GCOV_EXCL_BR_LINE
@@ -819,7 +843,7 @@ void emit_Components(utils::JsonWriter &jw, const Components &obj) noexcept {
   if (obj.schemas.has_value() && !obj.schemas->empty()) { // GCOV_EXCL_BR_LINE
     jw.key("schemas");                                    // GCOV_EXCL_BR_LINE
     jw.start_object();                                    // GCOV_EXCL_BR_LINE
-    for (const auto &[k, v] : obj.schemas.value()) {      // GCOV_EXCL_BR_LINE
+    for (const auto &[k, v] : obj.schemas.operator*()) {  // GCOV_EXCL_BR_LINE
       jw.key(k);                                          // GCOV_EXCL_BR_LINE
       emit_Schema(jw, v);                                 // GCOV_EXCL_BR_LINE
     }
@@ -830,9 +854,9 @@ void emit_Components(utils::JsonWriter &jw, const Components &obj) noexcept {
     jw.key("responses");           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_object();             // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &[k, v] :
-         obj.responses.value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.key(k);                  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_Response(jw, v);       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.responses.operator*()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.key(k);                      // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_Response(jw, v);           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     } // GCOV_EXCL_LINE
     jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
@@ -841,9 +865,9 @@ void emit_Components(utils::JsonWriter &jw, const Components &obj) noexcept {
     jw.key("parameters");           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_object();              // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &[k, v] :
-         obj.parameters.value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.key(k);                   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_Parameter(jw, v);       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.parameters.operator*()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.key(k);                       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_Parameter(jw, v);           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     } // GCOV_EXCL_LINE
     jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
@@ -851,9 +875,9 @@ void emit_Components(utils::JsonWriter &jw, const Components &obj) noexcept {
     jw.key("examples"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_object();  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &[k, v] :
-         obj.examples.value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.key(k);                 // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_Example(jw, v);       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.examples.operator*()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.key(k);                     // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_Example(jw, v);           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     } // GCOV_EXCL_LINE
     jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
@@ -862,9 +886,9 @@ void emit_Components(utils::JsonWriter &jw, const Components &obj) noexcept {
     jw.key("requestBodies");           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_object();                 // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &[k, v] :
-         obj.requestBodies.value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.key(k);                      // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_RequestBody(jw, v);        // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.requestBodies.operator*()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.key(k);                          // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_RequestBody(jw, v);            // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     } // GCOV_EXCL_LINE
     jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
@@ -872,9 +896,9 @@ void emit_Components(utils::JsonWriter &jw, const Components &obj) noexcept {
     jw.key("headers"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &[k, v] :
-         obj.headers.value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.key(k);                // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_Header(jw, v);       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.headers.operator*()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.key(k);                    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_Header(jw, v);           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     } // GCOV_EXCL_LINE
     jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
@@ -883,9 +907,10 @@ void emit_Components(utils::JsonWriter &jw, const Components &obj) noexcept {
     jw.key("securitySchemes");           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_object();                   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &[k, v] :            // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-         obj.securitySchemes.value()) {  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.key(k);                         // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_SecurityScheme(jw, v);        // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.securitySchemes
+             .operator*()) {      // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.key(k);                  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_SecurityScheme(jw, v); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     } // GCOV_EXCL_LINE
     jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
@@ -893,9 +918,9 @@ void emit_Components(utils::JsonWriter &jw, const Components &obj) noexcept {
     jw.key("links");   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &[k, v] :
-         obj.links.value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.key(k);              // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_Link(jw, v);       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.links.operator*()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.key(k);                  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_Link(jw, v);           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     } // GCOV_EXCL_LINE
     jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
@@ -920,9 +945,9 @@ void emit_Components(utils::JsonWriter &jw, const Components &obj) noexcept {
     jw.key("pathItems");           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_object();             // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &[k, v] :
-         obj.pathItems.value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.key(k);                  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_PathItem(jw, v);       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.pathItems.operator*()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.key(k);                      // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_PathItem(jw, v);           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     } // GCOV_EXCL_LINE
     jw.end_object(); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
@@ -951,23 +976,23 @@ void emit_OpenAPI(utils::JsonWriter &jw, const OpenAPI &obj) noexcept {
     jw.key("servers"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_array();  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &item :
-         obj.servers.value()) // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      emit_Server(jw, item);  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    jw.end_array();           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.servers.operator*()) // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      emit_Server(jw, item);      // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+    jw.end_array();               // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
-  if (obj.paths.has_value() && !obj.paths->empty()) { // GCOV_EXCL_BR_LINE
-    jw.key("paths");                                  // GCOV_EXCL_BR_LINE
-    jw.start_object();                                // GCOV_EXCL_BR_LINE
-    for (const auto &[k, v] : obj.paths.value()) {    // GCOV_EXCL_BR_LINE
-      jw.key(k);                                      // GCOV_EXCL_BR_LINE
-      emit_PathItem(jw, v);                           // GCOV_EXCL_BR_LINE
+  if (obj.paths.has_value() && !obj.paths->empty()) {  // GCOV_EXCL_BR_LINE
+    jw.key("paths");                                   // GCOV_EXCL_BR_LINE
+    jw.start_object();                                 // GCOV_EXCL_BR_LINE
+    for (const auto &[k, v] : obj.paths.operator*()) { // GCOV_EXCL_BR_LINE
+      jw.key(k);                                       // GCOV_EXCL_BR_LINE
+      emit_PathItem(jw, v);                            // GCOV_EXCL_BR_LINE
     }
     jw.end_object(); // GCOV_EXCL_BR_LINE
   }
   if (obj.webhooks.has_value() && !obj.webhooks->empty()) { // GCOV_EXCL_BR_LINE
     jw.key("webhooks");                                     // GCOV_EXCL_BR_LINE
     jw.start_object();                                      // GCOV_EXCL_BR_LINE
-    for (const auto &[k, v] : obj.webhooks.value()) {       // GCOV_EXCL_BR_LINE
+    for (const auto &[k, v] : obj.webhooks.operator*()) {   // GCOV_EXCL_BR_LINE
       jw.key(k);                                            // GCOV_EXCL_BR_LINE
       emit_PathItem(jw, v);                                 // GCOV_EXCL_BR_LINE
     }
@@ -976,22 +1001,22 @@ void emit_OpenAPI(utils::JsonWriter &jw, const OpenAPI &obj) noexcept {
   if (obj.webhooks.has_value() && !obj.webhooks->empty()) { // GCOV_EXCL_BR_LINE
     jw.key("webhooks");                                     // GCOV_EXCL_BR_LINE
     jw.start_object();                                      // GCOV_EXCL_BR_LINE
-    for (const auto &[k, v] : obj.webhooks.value()) {       // GCOV_EXCL_BR_LINE
+    for (const auto &[k, v] : obj.webhooks.operator*()) {   // GCOV_EXCL_BR_LINE
       jw.key(k);                                            // GCOV_EXCL_BR_LINE
       emit_PathItem(jw, v);                                 // GCOV_EXCL_BR_LINE
     }
     jw.end_object(); // GCOV_EXCL_BR_LINE
   }
-  if (obj.components.has_value()) {              // GCOV_EXCL_BR_LINE
-    jw.key("components");                        // GCOV_EXCL_BR_LINE
-    emit_Components(jw, obj.components.value()); // GCOV_EXCL_BR_LINE
+  if (obj.components.has_value()) {                  // GCOV_EXCL_BR_LINE
+    jw.key("components");                            // GCOV_EXCL_BR_LINE
+    emit_Components(jw, obj.components.operator*()); // GCOV_EXCL_BR_LINE
   }
   if (obj.security.has_value() && !obj.security->empty()) { // GCOV_EXCL_BR_LINE
     jw.key("security"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     jw.start_array();   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     for (const auto &req :
-         obj.security.value()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      jw.start_object();         // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+         obj.security.operator*()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+      jw.start_object();             // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
       for (const auto &[k, scopes] :
            req) {                    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
         jw.key(k);                   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
@@ -1007,15 +1032,15 @@ void emit_OpenAPI(utils::JsonWriter &jw, const OpenAPI &obj) noexcept {
   if (obj.tags.has_value() && !obj.tags->empty()) { // GCOV_EXCL_BR_LINE
     jw.key("tags");                                 // GCOV_EXCL_BR_LINE
     jw.start_array();                               // GCOV_EXCL_BR_LINE
-    for (const auto &item : obj.tags.value())       // GCOV_EXCL_BR_LINE
+    for (const auto &item : obj.tags.operator*())   // GCOV_EXCL_BR_LINE
       emit_Tag(jw, item);                           // GCOV_EXCL_BR_LINE
     jw.end_array();                                 // GCOV_EXCL_BR_LINE
   }
   if (obj.externalDocs.has_value()) { // GCOV_EXCL_BR_LINE
     jw.key("externalDocs");           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
     emit_ExternalDocumentation(
-        jw,                        // GCOV_EXCL_LINE
-        obj.externalDocs.value()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+        jw,                            // GCOV_EXCL_LINE
+        obj.externalDocs.operator*()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
   } // GCOV_EXCL_LINE
   jw.end_object(); // GCOV_EXCL_BR_LINE
 }

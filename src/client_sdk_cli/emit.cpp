@@ -83,7 +83,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
   ss << "    public:\n";
   std::string default_url = "";
   if (spec.servers.has_value() && !spec.servers->empty()) {
-    default_url = spec.servers.value().front().url;
+    default_url = spec.servers.operator*().front().url;
   }
 
   ss << "        Client(const std::string& url = \""
@@ -137,7 +137,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
   mcp_node->is_mcp = true;
 
   if (spec.paths.has_value()) {
-    for (const auto &[path, item] : spec.paths.value()) {
+    for (const auto &[path, item] : spec.paths.operator*()) {
       std::vector<std::string> segments;
       std::stringstream pss(path);
       std::string token;
@@ -192,14 +192,14 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
     if (n->op.has_value()) {
       if (n->op->summary.has_value()) {
         ss << "            std::cout << \"Summary: "
-           << escape_string(n->op->summary.value()) << "\\n\";\n";
+           << escape_string(n->op->summary.operator*()) << "\\n\";\n";
       }
       if (n->op->description.has_value()) {
         ss << "            std::cout << \"Description: "
-           << escape_string(n->op->description.value()) << "\\n\";\n";
+           << escape_string(n->op->description.operator*()) << "\\n\";\n";
       }
       if (n->op->parameters.has_value()) {
-        for (const auto &p : n->op->parameters.value()) {
+        for (const auto &p : n->op->parameters.operator*()) {
           ss << "            std::cout << \"  --" << escape_string(p.name)
              << "\\n\";\n";
         }
@@ -234,21 +234,21 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
           n->op->operationId.value_or("op_" + std::to_string(node_ids[n]));
       sanitize_string(op_id);
 
-      ss << docstrings::emit_operation_docstrings(n->op.value());
-      ss << "/// @route " << n->method.value() << " "
-         << escape_string(n->path.value()) << "\n";
+      ss << docstrings::emit_operation_docstrings(n->op.operator*());
+      ss << "/// @route " << n->method.operator*() << " "
+         << escape_string(n->path.operator*()) << "\n";
 
       if (n->op->parameters.has_value()) {
-        for (const auto &p : n->op->parameters.value()) {
+        for (const auto &p : n->op->parameters.operator*()) {
           if (p.description.has_value()) {
             ss << " * @param " << p.name << " "
-               << escape_string(p.description.value()) << "\n";
+               << escape_string(p.description.operator*()) << "\n";
           } else {
             ss << " * @param " << p.name << " " << p.in << " parameter\n";
           }
           if (p.example.has_value()) {
             ss << " * @param_example " << p.name << " "
-               << escape_string(p.example.value()) << "\n";
+               << escape_string(p.example.operator*()) << "\n";
           }
           if (p.deprecated) {
             ss << " * @param_deprecated " << p.name << "\n";
@@ -260,7 +260,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
 
       bool has_body = n->op->requestBody.has_value();
       if (n->op->parameters.has_value()) {
-        for (const auto &p : n->op->parameters.value()) {
+        for (const auto &p : n->op->parameters.operator*()) {
           std::string pname = p.name;
           sanitize_string(pname);
           ss << ", std::string " << pname;
@@ -271,12 +271,12 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
       }
       ss << ") noexcept {\n";
 
-      ss << "    std::string path = \"" << escape_string(n->path.value())
+      ss << "    std::string path = \"" << escape_string(n->path.operator*())
          << "\";\n";
       ss << "    std::string qs = \"\";\n";
 
       if (n->op->parameters.has_value()) {
-        for (const auto &p : n->op->parameters.value()) {
+        for (const auto &p : n->op->parameters.operator*()) {
           std::string pname = p.name;
           sanitize_string(pname);
           if (p.in == "path") {
@@ -305,8 +305,9 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
       // `to_openapi` works smoothly.
 
       ss << "    path += qs;\n";
-      ss << "    return client.request(\"" << escape_string(n->method.value())
-         << "\", path, " << (has_body ? "body" : "\"\"") << ");\n";
+      ss << "    return client.request(\""
+         << escape_string(n->method.operator*()) << "\", path, "
+         << (has_body ? "body" : "\"\"") << ");\n";
       ss << "}\n\n";
     }
     for (auto &[name, child] : n->children) {
@@ -537,7 +538,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
 
           bool first_param = true;
           if (cn->op->parameters.has_value()) {
-            for (const auto &p : cn->op->parameters.value()) {
+            for (const auto &p : cn->op->parameters.operator*()) {
               if (!first_param)
                 ss << "                        std::cout << \",\";\n";
               first_param = false;
@@ -563,7 +564,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
 
           bool first_req = true;
           if (cn->op->parameters.has_value()) {
-            for (const auto &p : cn->op->parameters.value()) {
+            for (const auto &p : cn->op->parameters.operator*()) {
               if (p.required) {
                 if (!first_req)
                   ss << "                        std::cout << \",\";\n";
@@ -612,7 +613,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
              << escape_string(op_id) << "\") {\n";
 
           if (cn->op->parameters.has_value()) {
-            for (const auto &p : cn->op->parameters.value()) {
+            for (const auto &p : cn->op->parameters.operator*()) {
               std::string pname = p.name;
               sanitize_string(pname);
               ss << "                        std::string arg_" << pname
@@ -646,7 +647,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
           ss << "                        auto res = handle_" << op_id
              << "(client";
           if (cn->op->parameters.has_value()) {
-            for (const auto &p : cn->op->parameters.value()) {
+            for (const auto &p : cn->op->parameters.operator*()) {
               std::string pname = p.name;
               sanitize_string(pname);
               ss << ", arg_" << pname;
@@ -705,7 +706,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
 
       bool has_body = n->op->requestBody.has_value();
       if (n->op->parameters.has_value()) {
-        for (const auto &p : n->op->parameters.value()) {
+        for (const auto &p : n->op->parameters.operator*()) {
           std::string pname = p.name;
           sanitize_string(pname);
           if (p.in == "path") {

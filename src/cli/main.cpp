@@ -512,7 +512,7 @@ int main_impl(int argc, char **argv, std::ostream &out,
     jw.start_array();
 
     if (spec.paths.has_value() && !spec.paths->empty()) {
-      for (const auto &[path, pi] : spec.paths.value()) {
+      for (const auto &[path, pi] : spec.paths.operator*()) {
         auto add_op = [&](const std::string &method,
                           const std::optional<openapi::Operation> &op) {
           if (!op.has_value())
@@ -521,7 +521,7 @@ int main_impl(int argc, char **argv, std::ostream &out,
           jw.key_value("method", method);
           jw.key_value("path", path);
           if (op->operationId.has_value()) {
-            jw.key_value("operationId", op->operationId.value());
+            jw.key_value("operationId", op->operationId.operator*());
           }
           jw.key("code");
           jw.start_object();
