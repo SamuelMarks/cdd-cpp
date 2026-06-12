@@ -295,11 +295,11 @@ def main():
         petstore_json = os.path.abspath(os.path.join("..", "petstore.json"))
         run_cmd([cdd_cpp_bin, "from_openapi", "to_sdk", "-i", petstore_json, "-o", v2_out_dir, "--tests"])
         
-        petstore_proc = start_local_petstore("/v2", 8081)
+        petstore_proc = start_local_petstore("/v2", 8084)
         try:
-            if wait_for_url("http://127.0.0.1:8081/v2/swagger.json"):
+            if wait_for_url("http://127.0.0.1:8084/v2/swagger.json"):
                 v2_env = os.environ.copy()
-                v2_env["PETSTORE_URL"] = "http://127.0.0.1:8081/v2"
+                v2_env["PETSTORE_URL"] = "http://127.0.0.1:8084/v2"
                 run_cmd(["cmake", ".", "-DFETCHCONTENT_UPDATES_DISCONNECTED=ON"], cwd=v2_out_dir)
                 run_cmd(["cmake", "--build", "."], cwd=v2_out_dir)
                 client_test_bin = None
@@ -312,7 +312,7 @@ def main():
                     client_test_bin = os.path.join(v2_out_dir, "tests", "client_test")
                 run_cmd([client_test_bin], cwd=v2_out_dir, env=v2_env)
             else:
-                print("Skipping Swagger 2.0 tests since Java server did not start in time.")
+                raise Exception("Swagger 2.0 tests failed because Java server did not start in time.")
         finally:
             cleanup_petstore(petstore_proc)
             
@@ -325,11 +325,11 @@ def main():
         petstore_oas3_json = os.path.abspath(os.path.join("..", "petstore_oas3.json"))
         run_cmd([cdd_cpp_bin, "from_openapi", "to_sdk", "-i", petstore_oas3_json, "-o", v3_out_dir, "--tests"])
         
-        petstore_proc = start_local_petstore("/api/v3", 8082)
+        petstore_proc = start_local_petstore("/api/v3", 8085)
         try:
-            if wait_for_url("http://127.0.0.1:8082/api/v3/swagger.json"):
+            if wait_for_url("http://127.0.0.1:8085/api/v3/swagger.json"):
                 v3_env = os.environ.copy()
-                v3_env["PETSTORE_URL"] = "http://127.0.0.1:8082/api/v3"
+                v3_env["PETSTORE_URL"] = "http://127.0.0.1:8085/api/v3"
                 run_cmd(["cmake", "."], cwd=v3_out_dir)
                 run_cmd(["cmake", "--build", "."], cwd=v3_out_dir)
                 client_test_bin = None
@@ -342,7 +342,7 @@ def main():
                     client_test_bin = os.path.join(v3_out_dir, "tests", "client_test")
                 run_cmd([client_test_bin], cwd=v3_out_dir, env=v3_env)
             else:
-                print("Skipping OpenAPI 3.2.0 tests since Java server did not start in time.")
+                raise Exception("OpenAPI 3.2.0 tests failed because Java server did not start in time.")
         finally:
             cleanup_petstore(petstore_proc)
             
