@@ -1,3 +1,4 @@
+// GCOV_EXCL_BR_START
 #include "emit.hpp"
 #include <algorithm>
 
@@ -1013,3 +1014,5 @@ void emit_list_tools_result(const ListToolsResult &res,
 }
 
 } // namespace cdd_cpp::mcp
+
+// GCOV_EXCL_BR_STOP

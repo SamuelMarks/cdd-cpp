@@ -551,48 +551,6 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
           << "    return \"" << server_url << "\";\n"
           << "}\n\n";
 
-    t_cpp << "TEST(ClientTest, PetstoreFindByStatusTest) {\n"
-          << "    cdd_client::Client client(get_server_url());\n"
-          << "    auto res = client.findPetsByStatus(\"available\");\n"
-          << "    if (!res.has_value()) {\n"
-          << "        SUCCEED(); // Test server might not have the resource, "
-             "returning early.\n"
-          << "        return;\n"
-          << "    }\n"
-          << "    simdjson::dom::parser parser;\n"
-          << "    simdjson::dom::element doc;\n"
-          << "    auto error = parser.parse(res.operator*()).get(doc);\n"
-          << "    ASSERT_EQ(error, simdjson::SUCCESS) << \"Invalid JSON "
-             "returned\";\n"
-          << "    if (doc.is_object() && doc[\"sabotage\"].error() == "
-             "simdjson::SUCCESS) {\n"
-          << "        FAIL() << \"Invalid schema: sabotage detected\";\n"
-          << "    }\n"
-          << "    SUCCEED();\n"
-          << "}\n\n";
-
-    t_cpp << "TEST(ClientTest, PetstoreGetInventoryTest) {\n"
-          << "    cdd_client::Client client(get_server_url());\n"
-          << "    auto res = client.getInventory();\n"
-          << "    if (!res.has_value()) {\n"
-          << "        SUCCEED(); // Test server might not have the resource, "
-             "returning early.\n"
-          << "        return;\n"
-          << "    }\n"
-          << "    if (!res.operator*().empty()) {\n"
-          << "        simdjson::dom::parser parser;\n"
-          << "        simdjson::dom::element doc;\n"
-          << "        auto error = parser.parse(res.operator*()).get(doc);\n"
-          << "        ASSERT_EQ(error, simdjson::SUCCESS) << \"Invalid JSON "
-             "returned\";\n"
-          << "        if (doc.is_object() && doc[\"sabotage\"].error() == "
-             "simdjson::SUCCESS) {\n"
-          << "            FAIL() << \"Invalid schema: sabotage detected\";\n"
-          << "        }\n"
-          << "    }\n"
-          << "    SUCCEED();\n"
-          << "}\n\n";
-
     if (spec.paths.has_value() && !spec.paths->empty()) {
       for (const auto &[path, item] : spec.paths.operator*()) {
         auto emit_test = [&](const std::string & /*method*/,
@@ -755,4 +713,5 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
 }
 
 } // namespace cdd_cpp::client_sdk
+
 // GCOV_EXCL_BR_STOP

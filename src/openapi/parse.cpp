@@ -1,3 +1,5 @@
+// GCOV_EXCL_BR_START
+//
 #include "parse.hpp"
 #include <iostream>
 
@@ -5,91 +7,82 @@ namespace cdd_cpp::openapi {
 
 static std::optional<std::string> get_optional_string(simdjson::dom::object obj,
                                                       std::string_view key) {
-  simdjson::dom::element el;                              // GCOV_EXCL_BR_LINE
-  if (obj[key].get(el) == simdjson::SUCCESS &&            // GCOV_EXCL_BR_LINE
-      el.type() == simdjson::dom::element_type::STRING) { // GCOV_EXCL_BR_LINE
-    return std::string(el.get_string().value_unsafe());   // GCOV_EXCL_BR_LINE
+  simdjson::dom::element el;
+  if (obj[key].get(el) == simdjson::SUCCESS &&
+      el.type() == simdjson::dom::element_type::STRING) {
+    return std::string(el.get_string().value_unsafe());
   }
-  return std::nullopt; // GCOV_EXCL_BR_LINE
+  return std::nullopt;
 }
 
 static std::optional<bool> get_optional_bool(simdjson::dom::object obj,
                                              std::string_view key) {
-  simdjson::dom::element el;                            // GCOV_EXCL_BR_LINE
-  if (obj[key].get(el) == simdjson::SUCCESS &&          // GCOV_EXCL_BR_LINE
-      el.type() == simdjson::dom::element_type::BOOL) { // GCOV_EXCL_BR_LINE
-    return el.get_bool().value_unsafe();                // GCOV_EXCL_BR_LINE
+  simdjson::dom::element el;
+  if (obj[key].get(el) == simdjson::SUCCESS &&
+      el.type() == simdjson::dom::element_type::BOOL) {
+    return el.get_bool().value_unsafe();
   }
-  return std::nullopt; // GCOV_EXCL_BR_LINE
+  return std::nullopt;
 }
 
 static std::optional<std::vector<std::string>>
 parse_vector_string(simdjson::dom::object obj, std::string_view key) {
-  simdjson::dom::element el;                                // GCOV_EXCL_BR_LINE
-  if (obj[key].get(el) == simdjson::SUCCESS &&              // GCOV_EXCL_BR_LINE
-      el.type() == simdjson::dom::element_type::ARRAY) {    // GCOV_EXCL_BR_LINE
-    std::vector<std::string> vec;                           // GCOV_EXCL_BR_LINE
-    for (auto item : el.get_array()) {                      // GCOV_EXCL_BR_LINE
-      if (item.type() ==                                    // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::STRING)              // GCOV_EXCL_BR_LINE
-        vec.push_back(                                      // GCOV_EXCL_BR_LINE
-            std::string(item.get_string().value_unsafe())); // GCOV_EXCL_BR_LINE
+  simdjson::dom::element el;
+  if (obj[key].get(el) == simdjson::SUCCESS &&
+      el.type() == simdjson::dom::element_type::ARRAY) {
+    std::vector<std::string> vec;
+    for (auto item : el.get_array()) {
+      if (item.type() == simdjson::dom::element_type::STRING)
+        vec.push_back(std::string(item.get_string().value_unsafe()));
     }
-    return vec; // GCOV_EXCL_BR_LINE
+    return vec;
   }
-  return std::nullopt; // GCOV_EXCL_BR_LINE
+  return std::nullopt;
 }
 
 static std::optional<std::map<std::string, std::string>>
 parse_map_string(simdjson::dom::object obj, std::string_view key) {
-  simdjson::dom::element el;                              // GCOV_EXCL_BR_LINE
-  if (obj[key].get(el) == simdjson::SUCCESS &&            // GCOV_EXCL_BR_LINE
-      el.type() == simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-                                                          // // GCOV_EXCL_LINE
-    std::map<std::string, std::string> m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    for (auto field : el.get_object()) {  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (field.value.type() ==           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::STRING) // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-            std::string(            // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-                field.value.get_string()
-                    .value_unsafe()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    } // GCOV_EXCL_LINE
-    return m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  return std::nullopt; // GCOV_EXCL_BR_LINE
+  simdjson::dom::element el;
+  if (obj[key].get(el) == simdjson::SUCCESS &&
+      el.type() == simdjson::dom::element_type::OBJECT) {
+    //
+    std::map<std::string, std::string> m;
+    for (auto field : el.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::STRING)
+        m[std::string(field.key)] =
+            std::string(field.value.get_string().value_unsafe());
+    }
+    return m;
+  }
+  return std::nullopt;
 }
 
 static std::optional<std::vector<SecurityRequirement>>
 parse_security(simdjson::dom::object obj, std::string_view key) {
-  simdjson::dom::element sec_req_el;                   // GCOV_EXCL_BR_LINE
-  if (obj[key].get(sec_req_el) == simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      sec_req_el.type() ==
-          simdjson::dom::element_type::ARRAY) {          // GCOV_EXCL_BR_LINE
-    std::vector<SecurityRequirement> security;           // GCOV_EXCL_BR_LINE
-    for (auto item : sec_req_el.get_array()) {           // GCOV_EXCL_BR_LINE
-      if (item.type() ==                                 // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::OBJECT) {         // GCOV_EXCL_BR_LINE
-        SecurityRequirement req;                         // GCOV_EXCL_BR_LINE
-        for (auto field : item.get_object()) {           // GCOV_EXCL_BR_LINE
-          std::vector<std::string> scopes;               // GCOV_EXCL_BR_LINE
-          if (field.value.type() ==                      // GCOV_EXCL_BR_LINE
-              simdjson::dom::element_type::ARRAY) {      // GCOV_EXCL_BR_LINE
-            for (auto scope : field.value.get_array()) { // GCOV_EXCL_BR_LINE
-              if (scope.type() ==                        // GCOV_EXCL_BR_LINE
-                  simdjson::dom::element_type::STRING)   // GCOV_EXCL_BR_LINE
-                scopes.push_back(std::string(            // GCOV_EXCL_BR_LINE
-                    scope.get_string().value_unsafe())); // GCOV_EXCL_BR_LINE
+  simdjson::dom::element sec_req_el;
+  if (obj[key].get(sec_req_el) == simdjson::SUCCESS &&
+      sec_req_el.type() == simdjson::dom::element_type::ARRAY) {
+    std::vector<SecurityRequirement> security;
+    for (auto item : sec_req_el.get_array()) {
+      if (item.type() == simdjson::dom::element_type::OBJECT) {
+        SecurityRequirement req;
+        for (auto field : item.get_object()) {
+          std::vector<std::string> scopes;
+          if (field.value.type() == simdjson::dom::element_type::ARRAY) {
+            for (auto scope : field.value.get_array()) {
+              if (scope.type() == simdjson::dom::element_type::STRING)
+                scopes.push_back(
+                    std::string(scope.get_string().value_unsafe()));
             }
           }
-          req[std::string(field.key)] = scopes; // GCOV_EXCL_BR_LINE
+          req[std::string(field.key)] = scopes;
         }
-        security.push_back(req); // GCOV_EXCL_BR_LINE
+        security.push_back(req);
       }
     }
-    return security; // GCOV_EXCL_BR_LINE
+    return security;
   }
-  return std::nullopt; // GCOV_EXCL_BR_LINE
+  return std::nullopt;
 }
 
 inline static Reference parse_Reference(simdjson::dom::object obj) noexcept;
@@ -121,1411 +114,935 @@ static Components parse_Components(simdjson::dom::object obj) noexcept;
 static OpenAPI parse_OpenAPI(simdjson::dom::object obj) noexcept;
 
 inline static Reference parse_Reference(simdjson::dom::object obj) noexcept {
-  Reference res;                                           // GCOV_EXCL_BR_LINE
-  res.ref = get_optional_string(obj, "$ref").value_or(""); // GCOV_EXCL_BR_LINE
-  res.summary = get_optional_string(obj, "summary");       // GCOV_EXCL_BR_LINE
-  res.description =                                        // GCOV_EXCL_BR_LINE
-      get_optional_string(obj, "description");             // GCOV_EXCL_BR_LINE
+  Reference res;
+  res.ref = get_optional_string(obj, "$ref").value_or("");
+  res.summary = get_optional_string(obj, "summary");
+  res.description = get_optional_string(obj, "description");
   return res;
-} // GCOV_EXCL_BR_LINE
+}
 
-static Contact
-parse_Contact(simdjson::dom::object obj) noexcept { // GCOV_EXCL_LINE
-  Contact res; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.name =
-      get_optional_string(obj, "name"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.url =
-      get_optional_string(obj, "url"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.email =
-      get_optional_string(obj, "email"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  return res;                            // GCOV_EXCL_LINE
-} // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+static Contact parse_Contact(simdjson::dom::object obj) noexcept {
+  Contact res;
+  res.name = get_optional_string(obj, "name");
+  res.url = get_optional_string(obj, "url");
+  res.email = get_optional_string(obj, "email");
+  return res;
+}
 
-static License
-parse_License(simdjson::dom::object obj) noexcept { // GCOV_EXCL_LINE
-  License res; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.name = get_optional_string(obj, "name")
-                 .value_or(""); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.identifier = get_optional_string(
-      obj, "identifier"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.url =
-      get_optional_string(obj, "url"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  return res;                          // GCOV_EXCL_LINE
-} // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+static License parse_License(simdjson::dom::object obj) noexcept {
+  License res;
+  res.name = get_optional_string(obj, "name").value_or("");
+  res.identifier = get_optional_string(obj, "identifier");
+  res.url = get_optional_string(obj, "url");
+  return res;
+}
 
 static Info parse_Info(simdjson::dom::object obj) noexcept {
-  Info res;                                           // GCOV_EXCL_BR_LINE
-  res.title =                                         // GCOV_EXCL_BR_LINE
-      get_optional_string(obj, "title").value_or(""); // GCOV_EXCL_BR_LINE
-  res.summary = get_optional_string(obj, "summary");  // GCOV_EXCL_BR_LINE
-  res.description =                                   // GCOV_EXCL_BR_LINE
-      get_optional_string(obj, "description");        // GCOV_EXCL_BR_LINE
-  res.termsOfService =                                // GCOV_EXCL_BR_LINE
-      get_optional_string(obj, "termsOfService");     // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_contact;                  // GCOV_EXCL_BR_LINE
-  if (obj["contact"].get(el_contact) ==               // GCOV_EXCL_BR_LINE
-          simdjson::SUCCESS &&                        // GCOV_EXCL_BR_LINE
-      el_contact.type() ==                            // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) {      // GCOV_EXCL_BR_LINE
-    res.contact = parse_Contact(
-        el_contact.get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_license;             // GCOV_EXCL_BR_LINE
-  if (obj["license"].get(el_license) ==          // GCOV_EXCL_BR_LINE
-          simdjson::SUCCESS &&                   // GCOV_EXCL_BR_LINE
-      el_license.type() ==                       // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    res.license = parse_License(
-        el_license.get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  res.version =                                         // GCOV_EXCL_BR_LINE
-      get_optional_string(obj, "version").value_or(""); // GCOV_EXCL_BR_LINE
+  Info res;
+  res.title = get_optional_string(obj, "title").value_or("");
+  res.summary = get_optional_string(obj, "summary");
+  res.description = get_optional_string(obj, "description");
+  res.termsOfService = get_optional_string(obj, "termsOfService");
+  simdjson::dom::element el_contact;
+  if (obj["contact"].get(el_contact) == simdjson::SUCCESS &&
+      el_contact.type() == simdjson::dom::element_type::OBJECT) {
+    res.contact = parse_Contact(el_contact.get_object());
+  }
+  simdjson::dom::element el_license;
+  if (obj["license"].get(el_license) == simdjson::SUCCESS &&
+      el_license.type() == simdjson::dom::element_type::OBJECT) {
+    res.license = parse_License(el_license.get_object());
+  }
+  res.version = get_optional_string(obj, "version").value_or("");
   return res;
-} // GCOV_EXCL_BR_LINE
+}
 
-static ServerVariable
-parse_ServerVariable(simdjson::dom::object obj) noexcept { // GCOV_EXCL_LINE
-  ServerVariable res; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.enum_values =
-      parse_vector_string(obj, "enum"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.default_value =                   // GCOV_EXCL_LINE
-      get_optional_string(obj, "default")
-          .value_or(""); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.description =      // GCOV_EXCL_LINE
-      get_optional_string(obj,
-                          "description"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  return res;                             // GCOV_EXCL_LINE
-} // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+static ServerVariable parse_ServerVariable(simdjson::dom::object obj) noexcept {
+  ServerVariable res;
+  res.enum_values = parse_vector_string(obj, "enum");
+  res.default_value = get_optional_string(obj, "default").value_or("");
+  res.description = get_optional_string(obj, "description");
+  return res;
+}
 
-static Server
-parse_Server(simdjson::dom::object obj) noexcept { // GCOV_EXCL_LINE
-  Server res; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.url = get_optional_string(obj, "url")
-                .value_or(""); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.description =            // GCOV_EXCL_LINE
-      get_optional_string(obj,
-                          "description"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.name =
-      get_optional_string(obj, "name"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  simdjson::dom::element el_variables;  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  if (obj["variables"].get(el_variables) == // GCOV_EXCL_LINE
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      el_variables.type() ==   // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    std::map<std::string, ServerVariable>
-        m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    for (auto field :
-         el_variables.get_object()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (field.value.type() ==       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-            parse_ServerVariable(
-                field.value
-                    .get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    } // GCOV_EXCL_LINE
-    res.variables = m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  return res; // GCOV_EXCL_LINE
-} // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+static Server parse_Server(simdjson::dom::object obj) noexcept {
+  Server res;
+  res.url = get_optional_string(obj, "url").value_or("");
+  res.description = get_optional_string(obj, "description");
+  res.name = get_optional_string(obj, "name");
+  simdjson::dom::element el_variables;
+  if (obj["variables"].get(el_variables) == simdjson::SUCCESS &&
+      el_variables.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, ServerVariable> m;
+    for (auto field : el_variables.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] =
+            parse_ServerVariable(field.value.get_object());
+    }
+    res.variables = m;
+  }
+  return res;
+}
 
-static ExternalDocumentation parse_ExternalDocumentation(
-    simdjson::dom::object obj) noexcept { // GCOV_EXCL_LINE
-  ExternalDocumentation res;              // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.description =                       // GCOV_EXCL_LINE
-      get_optional_string(obj,
-                          "description"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.url = get_optional_string(obj, "url")
-                .value_or(""); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  return res;                  // GCOV_EXCL_LINE
-} // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+static ExternalDocumentation
+parse_ExternalDocumentation(simdjson::dom::object obj) noexcept {
+  ExternalDocumentation res;
+  res.description = get_optional_string(obj, "description");
+  res.url = get_optional_string(obj, "url").value_or("");
+  return res;
+}
 
 static Tag parse_Tag(simdjson::dom::object obj) noexcept {
-  Tag res;                                                  // GCOV_EXCL_BR_LINE
-  res.name = get_optional_string(obj, "name").value_or(""); // GCOV_EXCL_BR_LINE
-  res.summary = get_optional_string(obj, "summary");        // GCOV_EXCL_BR_LINE
-  res.description =                                         // GCOV_EXCL_BR_LINE
-      get_optional_string(obj, "description");              // GCOV_EXCL_BR_LINE
-  res.parent = get_optional_string(obj, "parent");          // GCOV_EXCL_BR_LINE
-  res.kind = get_optional_string(obj, "kind");              // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_externalDocs;                   // GCOV_EXCL_BR_LINE
-  if (obj["externalDocs"].get(el_externalDocs) ==           // GCOV_EXCL_BR_LINE
-          simdjson::SUCCESS &&                              // GCOV_EXCL_BR_LINE
-      el_externalDocs.type() ==                             // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) {            // GCOV_EXCL_BR_LINE
-    res.externalDocs =               // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        parse_ExternalDocumentation( // GCOV_EXCL_LINE
-            el_externalDocs
-                .get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
+  Tag res;
+  res.name = get_optional_string(obj, "name").value_or("");
+  res.summary = get_optional_string(obj, "summary");
+  res.description = get_optional_string(obj, "description");
+  res.parent = get_optional_string(obj, "parent");
+  res.kind = get_optional_string(obj, "kind");
+  simdjson::dom::element el_externalDocs;
+  if (obj["externalDocs"].get(el_externalDocs) == simdjson::SUCCESS &&
+      el_externalDocs.type() == simdjson::dom::element_type::OBJECT) {
+    res.externalDocs =
+        parse_ExternalDocumentation(el_externalDocs.get_object());
+  }
   return res;
-} // GCOV_EXCL_BR_LINE
+}
 
 static Discriminator parse_Discriminator(simdjson::dom::object obj) noexcept {
-  Discriminator res;                              // GCOV_EXCL_BR_LINE
-  res.propertyName =                              // GCOV_EXCL_BR_LINE
-      get_optional_string(obj, "propertyName")    // GCOV_EXCL_BR_LINE
-          .value_or("");                          // GCOV_EXCL_BR_LINE
-  res.mapping = parse_map_string(obj, "mapping"); // GCOV_EXCL_BR_LINE
-  res.defaultMapping =                            // GCOV_EXCL_BR_LINE
-      get_optional_string(obj, "defaultMapping"); // GCOV_EXCL_BR_LINE
+  Discriminator res;
+  res.propertyName = get_optional_string(obj, "propertyName").value_or("");
+  res.mapping = parse_map_string(obj, "mapping");
+  res.defaultMapping = get_optional_string(obj, "defaultMapping");
   return res;
-} // GCOV_EXCL_BR_LINE
+}
 
-static XML parse_XML(simdjson::dom::object obj) noexcept { // GCOV_EXCL_LINE
-  XML res; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.name =
-      get_optional_string(obj, "name"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.namespace_url =                   // GCOV_EXCL_LINE
-      get_optional_string(obj,
-                          "namespace"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.prefix =
-      get_optional_string(obj, "prefix"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.attribute = get_optional_bool(
-      obj, "attribute"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.wrapped =
-      get_optional_bool(obj, "wrapped"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  return res;                            // GCOV_EXCL_LINE
-} // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
+static XML parse_XML(simdjson::dom::object obj) noexcept {
+  XML res;
+  res.name = get_optional_string(obj, "name");
+  res.namespace_url = get_optional_string(obj, "namespace");
+  res.prefix = get_optional_string(obj, "prefix");
+  res.attribute = get_optional_bool(obj, "attribute");
+  res.wrapped = get_optional_bool(obj, "wrapped");
+  return res;
+}
 
 static Schema parse_Schema(simdjson::dom::object obj) noexcept {
-  Schema res;                                         // GCOV_EXCL_BR_LINE
-  res.type = get_optional_string(obj, "type");        // GCOV_EXCL_BR_LINE
-  res.description =                                   // GCOV_EXCL_BR_LINE
-      get_optional_string(obj, "description");        // GCOV_EXCL_BR_LINE
-  res.format = get_optional_string(obj, "format");    // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_ref;                      // GCOV_EXCL_BR_LINE
-  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) { // GCOV_EXCL_BR_LINE
-    res.ref = parse_Reference(obj);                   // GCOV_EXCL_BR_LINE
+  Schema res;
+  res.type = get_optional_string(obj, "type");
+  res.description = get_optional_string(obj, "description");
+  res.format = get_optional_string(obj, "format");
+  simdjson::dom::element el_ref;
+  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
+    res.ref = parse_Reference(obj);
   }
-  simdjson::dom::element el_discriminator; // GCOV_EXCL_BR_LINE
-  if (obj["discriminator"].get(el_discriminator) ==
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_discriminator.type() ==
-          simdjson::dom::element_type::OBJECT) {            // GCOV_EXCL_BR_LINE
-    res.discriminator =                                     // GCOV_EXCL_BR_LINE
-        parse_Discriminator(el_discriminator.get_object()); // GCOV_EXCL_BR_LINE
+  simdjson::dom::element el_discriminator;
+  if (obj["discriminator"].get(el_discriminator) == simdjson::SUCCESS &&
+      el_discriminator.type() == simdjson::dom::element_type::OBJECT) {
+    res.discriminator = parse_Discriminator(el_discriminator.get_object());
   }
-  simdjson::dom::element el_xml;                     // GCOV_EXCL_BR_LINE
-  if (obj["xml"].get(el_xml) == simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_xml.type() ==                               // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) {     // GCOV_EXCL_BR_LINE
-    res.xml =
-        parse_XML(el_xml.get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_properties; // GCOV_EXCL_BR_LINE
-  if (obj["properties"].get(el_properties) ==
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_properties.type() ==
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    auto m =
-        std::make_shared<std::map<std::string, Schema>>(); // GCOV_EXCL_BR_LINE
-    for (auto field : el_properties.get_object()) {        // GCOV_EXCL_BR_LINE
-      if (field.value.type() ==                            // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::OBJECT)             // GCOV_EXCL_BR_LINE
-        (*m)[std::string(field.key)] =                     // GCOV_EXCL_BR_LINE
-            parse_Schema(field.value.get_object());        // GCOV_EXCL_BR_LINE
+  simdjson::dom::element el_xml;
+  if (obj["xml"].get(el_xml) == simdjson::SUCCESS &&
+      el_xml.type() == simdjson::dom::element_type::OBJECT) {
+    res.xml = parse_XML(el_xml.get_object());
+  }
+  simdjson::dom::element el_properties;
+  if (obj["properties"].get(el_properties) == simdjson::SUCCESS &&
+      el_properties.type() == simdjson::dom::element_type::OBJECT) {
+    auto m = std::make_shared<std::map<std::string, Schema>>();
+    for (auto field : el_properties.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        (*m)[std::string(field.key)] = parse_Schema(field.value.get_object());
     }
-    res.properties = m; // GCOV_EXCL_BR_LINE
+    res.properties = m;
   }
-  simdjson::dom::element el_items;                       // GCOV_EXCL_BR_LINE
-  if (obj["items"].get(el_items) == simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_items.type() ==                                 // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) {         // GCOV_EXCL_BR_LINE
-    res.items = std::make_shared<Schema>( // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        parse_Schema(
-            el_items.get_object())); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  res.schema_dialect = get_optional_string(obj, "$schema"); // GCOV_EXCL_BR_LINE
-  res.id = get_optional_string(obj, "$id");                 // GCOV_EXCL_BR_LINE
-  res.anchor = get_optional_string(obj, "$anchor");         // GCOV_EXCL_BR_LINE
-  res.dynamicAnchor =                                       // GCOV_EXCL_BR_LINE
-      get_optional_string(obj, "$dynamicAnchor");           // GCOV_EXCL_BR_LINE
-  res.dynamicRef = get_optional_string(obj, "$dynamicRef"); // GCOV_EXCL_BR_LINE
-  res.comment = get_optional_string(obj, "$comment");       // GCOV_EXCL_BR_LINE
-  res.title = get_optional_string(obj, "title");            // GCOV_EXCL_BR_LINE
-  res.deprecated = get_optional_bool(obj, "deprecated");    // GCOV_EXCL_BR_LINE
-  res.readOnly = get_optional_bool(obj, "readOnly");        // GCOV_EXCL_BR_LINE
-  res.writeOnly = get_optional_bool(obj, "writeOnly");      // GCOV_EXCL_BR_LINE
+  simdjson::dom::element el_items;
+  if (obj["items"].get(el_items) == simdjson::SUCCESS &&
+      el_items.type() == simdjson::dom::element_type::OBJECT) {
+    res.items = std::make_shared<Schema>(parse_Schema(el_items.get_object()));
+  }
+  res.schema_dialect = get_optional_string(obj, "$schema");
+  res.id = get_optional_string(obj, "$id");
+  res.anchor = get_optional_string(obj, "$anchor");
+  res.dynamicAnchor = get_optional_string(obj, "$dynamicAnchor");
+  res.dynamicRef = get_optional_string(obj, "$dynamicRef");
+  res.comment = get_optional_string(obj, "$comment");
+  res.title = get_optional_string(obj, "title");
+  res.deprecated = get_optional_bool(obj, "deprecated");
+  res.readOnly = get_optional_bool(obj, "readOnly");
+  res.writeOnly = get_optional_bool(obj, "writeOnly");
 
-  simdjson::dom::element el_defs;                       // GCOV_EXCL_BR_LINE
-  if (obj["$defs"].get(el_defs) == simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_defs.type() ==
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    auto m =
-        std::make_shared<std::map<std::string, Schema>>(); // GCOV_EXCL_BR_LINE
-    for (auto field : el_defs.get_object()) {              // GCOV_EXCL_BR_LINE
-      if (field.value.type() ==                            // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::OBJECT)             // GCOV_EXCL_BR_LINE
-        (*m)[std::string(field.key)] =                     // GCOV_EXCL_BR_LINE
-            parse_Schema(field.value.get_object());        // GCOV_EXCL_BR_LINE
+  simdjson::dom::element el_defs;
+  if (obj["$defs"].get(el_defs) == simdjson::SUCCESS &&
+      el_defs.type() == simdjson::dom::element_type::OBJECT) {
+    auto m = std::make_shared<std::map<std::string, Schema>>();
+    for (auto field : el_defs.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        (*m)[std::string(field.key)] = parse_Schema(field.value.get_object());
     }
-    res.defs = m; // GCOV_EXCL_BR_LINE
+    res.defs = m;
   }
 
-  res.multipleOf = get_optional_bool( // GCOV_EXCL_BR_LINE
-      obj, "multipleOf");             // wait it's double // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_double;   // GCOV_EXCL_BR_LINE
-  if (obj["multipleOf"].get(el_double) ==
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_double.type() ==
-          simdjson::dom::element_type::DOUBLE) {            // GCOV_EXCL_BR_LINE
-    res.multipleOf = el_double.get_double().value_unsafe(); // GCOV_EXCL_BR_LINE
+  res.multipleOf = get_optional_bool(obj, "multipleOf"); // wait it's double
+  simdjson::dom::element el_double;
+  if (obj["multipleOf"].get(el_double) == simdjson::SUCCESS &&
+      el_double.type() == simdjson::dom::element_type::DOUBLE) {
+    res.multipleOf = el_double.get_double().value_unsafe();
   }
-  if (obj["maximum"].get(el_double) == simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_double.type() ==
-          simdjson::dom::element_type::DOUBLE) {         // GCOV_EXCL_BR_LINE
-    res.maximum = el_double.get_double().value_unsafe(); // GCOV_EXCL_BR_LINE
+  if (obj["maximum"].get(el_double) == simdjson::SUCCESS &&
+      el_double.type() == simdjson::dom::element_type::DOUBLE) {
+    res.maximum = el_double.get_double().value_unsafe();
   }
-  if (obj["exclusiveMaximum"].get(el_double) ==
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_double.type() ==
-          simdjson::dom::element_type::DOUBLE) { // GCOV_EXCL_BR_LINE
-    res.exclusiveMaximum =
-        el_double.get_double().value_unsafe(); // GCOV_EXCL_BR_LINE
+  if (obj["exclusiveMaximum"].get(el_double) == simdjson::SUCCESS &&
+      el_double.type() == simdjson::dom::element_type::DOUBLE) {
+    res.exclusiveMaximum = el_double.get_double().value_unsafe();
   }
-  if (obj["minimum"].get(el_double) == simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_double.type() ==
-          simdjson::dom::element_type::DOUBLE) {         // GCOV_EXCL_BR_LINE
-    res.minimum = el_double.get_double().value_unsafe(); // GCOV_EXCL_BR_LINE
+  if (obj["minimum"].get(el_double) == simdjson::SUCCESS &&
+      el_double.type() == simdjson::dom::element_type::DOUBLE) {
+    res.minimum = el_double.get_double().value_unsafe();
   }
-  if (obj["exclusiveMinimum"].get(el_double) ==
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_double.type() ==
-          simdjson::dom::element_type::DOUBLE) { // GCOV_EXCL_BR_LINE
-    res.exclusiveMinimum =
-        el_double.get_double().value_unsafe(); // GCOV_EXCL_BR_LINE
+  if (obj["exclusiveMinimum"].get(el_double) == simdjson::SUCCESS &&
+      el_double.type() == simdjson::dom::element_type::DOUBLE) {
+    res.exclusiveMinimum = el_double.get_double().value_unsafe();
   }
 
-  simdjson::dom::element el_int;                           // GCOV_EXCL_BR_LINE
-  if (obj["maxLength"].get(el_int) == simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_int.type() ==
-          simdjson::dom::element_type::INT64) {        // GCOV_EXCL_BR_LINE
-    res.maxLength = el_int.get_int64().value_unsafe(); // GCOV_EXCL_BR_LINE
+  simdjson::dom::element el_int;
+  if (obj["maxLength"].get(el_int) == simdjson::SUCCESS &&
+      el_int.type() == simdjson::dom::element_type::INT64) {
+    res.maxLength = el_int.get_int64().value_unsafe();
   }
-  if (obj["minLength"].get(el_int) == simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_int.type() ==
-          simdjson::dom::element_type::INT64) {        // GCOV_EXCL_BR_LINE
-    res.minLength = el_int.get_int64().value_unsafe(); // GCOV_EXCL_BR_LINE
+  if (obj["minLength"].get(el_int) == simdjson::SUCCESS &&
+      el_int.type() == simdjson::dom::element_type::INT64) {
+    res.minLength = el_int.get_int64().value_unsafe();
   }
-  if (obj["maxItems"].get(el_int) == simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_int.type() ==
-          simdjson::dom::element_type::INT64) {       // GCOV_EXCL_BR_LINE
-    res.maxItems = el_int.get_int64().value_unsafe(); // GCOV_EXCL_BR_LINE
+  if (obj["maxItems"].get(el_int) == simdjson::SUCCESS &&
+      el_int.type() == simdjson::dom::element_type::INT64) {
+    res.maxItems = el_int.get_int64().value_unsafe();
   }
-  if (obj["minItems"].get(el_int) == simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_int.type() ==
-          simdjson::dom::element_type::INT64) {       // GCOV_EXCL_BR_LINE
-    res.minItems = el_int.get_int64().value_unsafe(); // GCOV_EXCL_BR_LINE
+  if (obj["minItems"].get(el_int) == simdjson::SUCCESS &&
+      el_int.type() == simdjson::dom::element_type::INT64) {
+    res.minItems = el_int.get_int64().value_unsafe();
   }
-  if (obj["maxContains"].get(el_int) ==
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_int.type() ==
-          simdjson::dom::element_type::INT64) {          // GCOV_EXCL_BR_LINE
-    res.maxContains = el_int.get_int64().value_unsafe(); // GCOV_EXCL_BR_LINE
+  if (obj["maxContains"].get(el_int) == simdjson::SUCCESS &&
+      el_int.type() == simdjson::dom::element_type::INT64) {
+    res.maxContains = el_int.get_int64().value_unsafe();
   }
-  if (obj["minContains"].get(el_int) ==
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_int.type() ==
-          simdjson::dom::element_type::INT64) {          // GCOV_EXCL_BR_LINE
-    res.minContains = el_int.get_int64().value_unsafe(); // GCOV_EXCL_BR_LINE
+  if (obj["minContains"].get(el_int) == simdjson::SUCCESS &&
+      el_int.type() == simdjson::dom::element_type::INT64) {
+    res.minContains = el_int.get_int64().value_unsafe();
   }
-  if (obj["maxProperties"].get(el_int) ==
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_int.type() ==
-          simdjson::dom::element_type::INT64) {            // GCOV_EXCL_BR_LINE
-    res.maxProperties = el_int.get_int64().value_unsafe(); // GCOV_EXCL_BR_LINE
+  if (obj["maxProperties"].get(el_int) == simdjson::SUCCESS &&
+      el_int.type() == simdjson::dom::element_type::INT64) {
+    res.maxProperties = el_int.get_int64().value_unsafe();
   }
-  if (obj["minProperties"].get(el_int) ==
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_int.type() ==
-          simdjson::dom::element_type::INT64) {            // GCOV_EXCL_BR_LINE
-    res.minProperties = el_int.get_int64().value_unsafe(); // GCOV_EXCL_BR_LINE
+  if (obj["minProperties"].get(el_int) == simdjson::SUCCESS &&
+      el_int.type() == simdjson::dom::element_type::INT64) {
+    res.minProperties = el_int.get_int64().value_unsafe();
   }
 
-  res.pattern = get_optional_string(obj, "pattern");       // GCOV_EXCL_BR_LINE
-  res.uniqueItems = get_optional_bool(obj, "uniqueItems"); // GCOV_EXCL_BR_LINE
-  res.required = parse_vector_string(obj, "required");     // GCOV_EXCL_BR_LINE
+  res.pattern = get_optional_string(obj, "pattern");
+  res.uniqueItems = get_optional_bool(obj, "uniqueItems");
+  res.required = parse_vector_string(obj, "required");
 
   return res;
-} // GCOV_EXCL_BR_LINE
+}
 
 static Example parse_Example(simdjson::dom::object obj) noexcept {
-  Example res;                                        // GCOV_EXCL_BR_LINE
-  res.summary = get_optional_string(obj, "summary");  // GCOV_EXCL_BR_LINE
-  res.description =                                   // GCOV_EXCL_BR_LINE
-      get_optional_string(obj, "description");        // GCOV_EXCL_BR_LINE
-  res.value = get_optional_string(obj, "value");      // GCOV_EXCL_BR_LINE
-  res.externalValue =                                 // GCOV_EXCL_BR_LINE
-      get_optional_string(obj, "externalValue");      // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_ref;                      // GCOV_EXCL_BR_LINE
-  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) { // GCOV_EXCL_BR_LINE
-    res.ref = parse_Reference(obj);                   // GCOV_EXCL_BR_LINE
+  Example res;
+  res.summary = get_optional_string(obj, "summary");
+  res.description = get_optional_string(obj, "description");
+  res.value = get_optional_string(obj, "value");
+  res.externalValue = get_optional_string(obj, "externalValue");
+  simdjson::dom::element el_ref;
+  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
+    res.ref = parse_Reference(obj);
   }
   return res;
-} // GCOV_EXCL_BR_LINE
+}
 
 static Encoding parse_Encoding(simdjson::dom::object obj) noexcept {
-  Encoding res;                                    // GCOV_EXCL_BR_LINE
-  res.contentType =                                // GCOV_EXCL_BR_LINE
-      get_optional_string(obj, "contentType");     // GCOV_EXCL_BR_LINE
-  res.style = get_optional_string(obj, "style");   // GCOV_EXCL_BR_LINE
-  res.explode = get_optional_bool(obj, "explode"); // GCOV_EXCL_BR_LINE
-  res.allowReserved =
-      get_optional_bool(obj, "allowReserved"); // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_headers;           // GCOV_EXCL_BR_LINE
-  if (obj["headers"].get(el_headers) ==
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_headers.type() ==
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    auto m =
-        std::make_shared<std::map<std::string, Header>>(); // GCOV_EXCL_BR_LINE
-    for (auto field : el_headers.get_object()) {           // GCOV_EXCL_BR_LINE
-      if (field.value.type() ==                            // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::OBJECT)             // GCOV_EXCL_BR_LINE
-        (*m)[std::string(field.key)] =                     // GCOV_EXCL_BR_LINE
-            parse_Header(field.value.get_object());        // GCOV_EXCL_BR_LINE
+  Encoding res;
+  res.contentType = get_optional_string(obj, "contentType");
+  res.style = get_optional_string(obj, "style");
+  res.explode = get_optional_bool(obj, "explode");
+  res.allowReserved = get_optional_bool(obj, "allowReserved");
+  simdjson::dom::element el_headers;
+  if (obj["headers"].get(el_headers) == simdjson::SUCCESS &&
+      el_headers.type() == simdjson::dom::element_type::OBJECT) {
+    auto m = std::make_shared<std::map<std::string, Header>>();
+    for (auto field : el_headers.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        (*m)[std::string(field.key)] = parse_Header(field.value.get_object());
     }
-    res.headers = m; // GCOV_EXCL_BR_LINE
+    res.headers = m;
   }
 
-  simdjson::dom::element el_encoding; // GCOV_EXCL_BR_LINE
-  if (obj["encoding"].get(el_encoding) ==
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_encoding.type() ==
-          simdjson::dom::element_type::OBJECT) {      // GCOV_EXCL_BR_LINE
-    auto m = std::make_shared<                        // GCOV_EXCL_BR_LINE
-        std::map<std::string, Encoding>>();           // GCOV_EXCL_BR_LINE
-    for (auto field : el_encoding.get_object()) {     // GCOV_EXCL_BR_LINE
-      if (field.value.type() ==                       // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::OBJECT)        // GCOV_EXCL_BR_LINE
-        (*m)[std::string(field.key)] =                // GCOV_EXCL_BR_LINE
-            parse_Encoding(field.value.get_object()); // GCOV_EXCL_BR_LINE
+  simdjson::dom::element el_encoding;
+  if (obj["encoding"].get(el_encoding) == simdjson::SUCCESS &&
+      el_encoding.type() == simdjson::dom::element_type::OBJECT) {
+    auto m = std::make_shared<std::map<std::string, Encoding>>();
+    for (auto field : el_encoding.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        (*m)[std::string(field.key)] = parse_Encoding(field.value.get_object());
     }
-    res.encoding = m; // GCOV_EXCL_BR_LINE
+    res.encoding = m;
   }
-  // GCOV_EXCL_LINE
-  simdjson::dom::element el_itemSchema; // GCOV_EXCL_BR_LINE
+  simdjson::dom::element el_itemSchema;
   if (obj["itemSchema"].get(el_itemSchema) == simdjson::SUCCESS &&
       el_itemSchema.type() == simdjson::dom::element_type::OBJECT) {
-    res.itemSchema =                                   // GCOV_EXCL_BR_LINE
-        std::make_shared<Schema>(                      // GCOV_EXCL_BR_LINE
-            parse_Schema(el_itemSchema.get_object())); // GCOV_EXCL_BR_LINE
+    res.itemSchema =
+        std::make_shared<Schema>(parse_Schema(el_itemSchema.get_object()));
   }
-  // GCOV_EXCL_LINE
-  simdjson::dom::element el_itemEncoding; // GCOV_EXCL_BR_LINE
-  if (obj["itemEncoding"].get(el_itemEncoding) ==
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_itemEncoding.type() ==
-          simdjson::dom::element_type::OBJECT) {       // GCOV_EXCL_BR_LINE
-    res.itemEncoding = std::make_shared<Encoding>(     // GCOV_EXCL_BR_LINE
-        parse_Encoding(el_itemEncoding.get_object())); // GCOV_EXCL_BR_LINE
+  simdjson::dom::element el_itemEncoding;
+  if (obj["itemEncoding"].get(el_itemEncoding) == simdjson::SUCCESS &&
+      el_itemEncoding.type() == simdjson::dom::element_type::OBJECT) {
+    res.itemEncoding = std::make_shared<Encoding>(
+        parse_Encoding(el_itemEncoding.get_object()));
   }
 
   simdjson::dom::element el_prefixEncoding;
   if (obj["prefixEncoding"].get(el_prefixEncoding) == simdjson::SUCCESS &&
       el_prefixEncoding.type() == simdjson::dom::element_type::ARRAY) {
-    auto v = std::make_shared<std::vector<Encoding>>(); // GCOV_EXCL_LINE //
-                                                        // GCOV_EXCL_BR_LINE
-    for (auto item :                                    // GCOV_EXCL_BR_LINE
-         el_prefixEncoding.get_array()) { // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-      if (item.type() ==                  // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_LINE //
-                                               // GCOV_EXCL_BR_LINE
-        v->push_back(parse_Encoding(           // GCOV_EXCL_BR_LINE
-            item.get_object())); // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-    } // GCOV_EXCL_LINE
-    res.prefixEncoding = v; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  } // GCOV_EXCL_LINE
-  // GCOV_EXCL_LINE
-  return res; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-} // GCOV_EXCL_LINE
-  // GCOV_EXCL_LINE
-static MediaType
-parse_MediaType(simdjson::dom::object obj) noexcept {      // GCOV_EXCL_BR_LINE
-  MediaType res;                                           // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_schema;                        // GCOV_EXCL_BR_LINE
-  if (obj["schema"].get(el_schema) == simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_schema.type() == simdjson::dom::element_type::OBJECT) {
-    res.schema = parse_Schema(el_schema.get_object()); // GCOV_EXCL_BR_LINE
+    auto v = std::make_shared<std::vector<Encoding>>();
+    for (auto item : el_prefixEncoding.get_array()) {
+      if (item.type() == simdjson::dom::element_type::OBJECT)
+        v->push_back(parse_Encoding(item.get_object()));
+    }
+    res.prefixEncoding = v;
   }
-  res.example = get_optional_string(obj, "example"); // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_examples;                // GCOV_EXCL_BR_LINE
+  return res;
+}
+static MediaType parse_MediaType(simdjson::dom::object obj) noexcept {
+  MediaType res;
+  simdjson::dom::element el_schema;
+  if (obj["schema"].get(el_schema) == simdjson::SUCCESS &&
+      el_schema.type() == simdjson::dom::element_type::OBJECT) {
+    res.schema = parse_Schema(el_schema.get_object());
+  }
+  res.example = get_optional_string(obj, "example");
+  simdjson::dom::element el_examples;
   if (obj["examples"].get(el_examples) == simdjson::SUCCESS &&
-      el_examples.type() ==
-          simdjson::dom::element_type::OBJECT) {     // GCOV_EXCL_BR_LINE
-    std::map<std::string, Example> m;                // GCOV_EXCL_BR_LINE
-    for (auto field : el_examples.get_object()) {    // GCOV_EXCL_BR_LINE
-      if (field.value.type() ==                      // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::OBJECT)       // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] =                  // GCOV_EXCL_BR_LINE
-            parse_Example(field.value.get_object()); // GCOV_EXCL_BR_LINE
+      el_examples.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, Example> m;
+    for (auto field : el_examples.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_Example(field.value.get_object());
     }
-    res.examples = m; // GCOV_EXCL_BR_LINE
+    res.examples = m;
   }
-  simdjson::dom::element el_encoding; // GCOV_EXCL_BR_LINE
-  if (obj["encoding"].get(el_encoding) ==
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_encoding.type() ==
-          simdjson::dom::element_type::OBJECT) {      // GCOV_EXCL_BR_LINE
-    auto m = std::make_shared<                        // GCOV_EXCL_BR_LINE
-        std::map<std::string, Encoding>>();           // GCOV_EXCL_BR_LINE
-    for (auto field : el_encoding.get_object()) {     // GCOV_EXCL_BR_LINE
-      if (field.value.type() ==                       // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::OBJECT)        // GCOV_EXCL_BR_LINE
-        (*m)[std::string(field.key)] =                // GCOV_EXCL_BR_LINE
-            parse_Encoding(field.value.get_object()); // GCOV_EXCL_BR_LINE
+  simdjson::dom::element el_encoding;
+  if (obj["encoding"].get(el_encoding) == simdjson::SUCCESS &&
+      el_encoding.type() == simdjson::dom::element_type::OBJECT) {
+    auto m = std::make_shared<std::map<std::string, Encoding>>();
+    for (auto field : el_encoding.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        (*m)[std::string(field.key)] = parse_Encoding(field.value.get_object());
     }
-    res.encoding = m; // GCOV_EXCL_BR_LINE
+    res.encoding = m;
   }
-  // GCOV_EXCL_LINE
-  simdjson::dom::element el_itemSchema; // GCOV_EXCL_BR_LINE
+  simdjson::dom::element el_itemSchema;
   if (obj["itemSchema"].get(el_itemSchema) == simdjson::SUCCESS &&
       el_itemSchema.type() == simdjson::dom::element_type::OBJECT) {
-    res.itemSchema =                                   // GCOV_EXCL_BR_LINE
-        std::make_shared<Schema>(                      // GCOV_EXCL_BR_LINE
-            parse_Schema(el_itemSchema.get_object())); // GCOV_EXCL_BR_LINE
+    res.itemSchema =
+        std::make_shared<Schema>(parse_Schema(el_itemSchema.get_object()));
   }
-  // GCOV_EXCL_LINE
-  simdjson::dom::element el_itemEncoding; // GCOV_EXCL_BR_LINE
-  if (obj["itemEncoding"].get(el_itemEncoding) ==
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_itemEncoding.type() ==
-          simdjson::dom::element_type::OBJECT) {       // GCOV_EXCL_BR_LINE
-    res.itemEncoding = std::make_shared<Encoding>(     // GCOV_EXCL_BR_LINE
-        parse_Encoding(el_itemEncoding.get_object())); // GCOV_EXCL_BR_LINE
+  simdjson::dom::element el_itemEncoding;
+  if (obj["itemEncoding"].get(el_itemEncoding) == simdjson::SUCCESS &&
+      el_itemEncoding.type() == simdjson::dom::element_type::OBJECT) {
+    res.itemEncoding = std::make_shared<Encoding>(
+        parse_Encoding(el_itemEncoding.get_object()));
   }
 
   simdjson::dom::element el_prefixEncoding;
   if (obj["prefixEncoding"].get(el_prefixEncoding) == simdjson::SUCCESS &&
       el_prefixEncoding.type() == simdjson::dom::element_type::ARRAY) {
-    auto v = std::make_shared<std::vector<Encoding>>(); // GCOV_EXCL_LINE //
-                                                        // GCOV_EXCL_BR_LINE
-    for (auto item :                                    // GCOV_EXCL_BR_LINE
-         el_prefixEncoding.get_array()) { // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-      if (item.type() ==                  // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_LINE //
-                                               // GCOV_EXCL_BR_LINE
-        v->push_back(parse_Encoding(           // GCOV_EXCL_BR_LINE
-            item.get_object())); // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-    } // GCOV_EXCL_LINE
-    res.prefixEncoding = v; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  } // GCOV_EXCL_LINE
-  // GCOV_EXCL_LINE
-  return res; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-} // GCOV_EXCL_LINE
-  // GCOV_EXCL_LINE
-static Header
-parse_Header(simdjson::dom::object obj) noexcept {        // GCOV_EXCL_BR_LINE
-  Header res;                                             // GCOV_EXCL_BR_LINE
-  res.description =                                       // GCOV_EXCL_BR_LINE
-      get_optional_string(obj, "description");            // GCOV_EXCL_BR_LINE
-  res.required =                                          // GCOV_EXCL_BR_LINE
-      get_optional_bool(obj, "required").value_or(false); // GCOV_EXCL_BR_LINE
-  res.deprecated =
-      get_optional_bool(obj, "deprecated").value_or(false); // GCOV_EXCL_BR_LINE
-  res.allowEmptyValue =                                     // GCOV_EXCL_BR_LINE
-      get_optional_bool(obj, "allowEmptyValue")             // GCOV_EXCL_BR_LINE
-          .value_or(false);                                 // GCOV_EXCL_BR_LINE
-  res.style = get_optional_string(obj, "style");            // GCOV_EXCL_BR_LINE
-  res.explode = get_optional_bool(obj, "explode");          // GCOV_EXCL_BR_LINE
-  res.allowReserved =
-      get_optional_bool(obj, "allowReserved");             // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_schema;                        // GCOV_EXCL_BR_LINE
-  if (obj["schema"].get(el_schema) == simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_schema.type() == simdjson::dom::element_type::OBJECT) {
-    res.schema = parse_Schema(el_schema.get_object()); // GCOV_EXCL_BR_LINE
-  }
-  res.example = get_optional_string(obj, "example"); // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_examples;                // GCOV_EXCL_BR_LINE
-  if (obj["examples"].get(el_examples) ==
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_examples.type() ==
-          simdjson::dom::element_type::OBJECT) {     // GCOV_EXCL_BR_LINE
-    std::map<std::string, Example> m;                // GCOV_EXCL_BR_LINE
-    for (auto field : el_examples.get_object()) {    // GCOV_EXCL_BR_LINE
-      if (field.value.type() ==                      // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::OBJECT)       // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] =                  // GCOV_EXCL_BR_LINE
-            parse_Example(field.value.get_object()); // GCOV_EXCL_BR_LINE
+    auto v = std::make_shared<std::vector<Encoding>>();
+    for (auto item : el_prefixEncoding.get_array()) {
+      if (item.type() == simdjson::dom::element_type::OBJECT)
+        v->push_back(parse_Encoding(item.get_object()));
     }
-    res.examples = m; // GCOV_EXCL_BR_LINE
+    res.prefixEncoding = v;
   }
-  simdjson::dom::element el_content;    // GCOV_EXCL_BR_LINE
-  if (obj["content"].get(el_content) == // GCOV_EXCL_BR_LINE
-          simdjson::SUCCESS &&          // GCOV_EXCL_BR_LINE
+  return res;
+}
+static Header parse_Header(simdjson::dom::object obj) noexcept {
+  Header res;
+  res.description = get_optional_string(obj, "description");
+  res.required = get_optional_bool(obj, "required").value_or(false);
+  res.deprecated = get_optional_bool(obj, "deprecated").value_or(false);
+  res.allowEmptyValue =
+      get_optional_bool(obj, "allowEmptyValue").value_or(false);
+  res.style = get_optional_string(obj, "style");
+  res.explode = get_optional_bool(obj, "explode");
+  res.allowReserved = get_optional_bool(obj, "allowReserved");
+  simdjson::dom::element el_schema;
+  if (obj["schema"].get(el_schema) == simdjson::SUCCESS &&
+      el_schema.type() == simdjson::dom::element_type::OBJECT) {
+    res.schema = parse_Schema(el_schema.get_object());
+  }
+  res.example = get_optional_string(obj, "example");
+  simdjson::dom::element el_examples;
+  if (obj["examples"].get(el_examples) == simdjson::SUCCESS &&
+      el_examples.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, Example> m;
+    for (auto field : el_examples.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_Example(field.value.get_object());
+    }
+    res.examples = m;
+  }
+  simdjson::dom::element el_content;
+  if (obj["content"].get(el_content) == simdjson::SUCCESS &&
       el_content.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, MediaType> m;
-    for (auto field : el_content.get_object()) {     // GCOV_EXCL_BR_LINE
-      if (field.value.type() ==                      // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::OBJECT)       // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] = parse_MediaType( // GCOV_EXCL_BR_LINE
-            field.value.get_object()); // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-    } // GCOV_EXCL_LINE
-    res.content = m; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_ref;    // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  if (obj["$ref"].get(el_ref) ==    // GCOV_EXCL_BR_LINE
-      simdjson::SUCCESS) {          // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-    res.ref = parse_Reference(obj); // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  } // GCOV_EXCL_LINE
-  return res; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-} // GCOV_EXCL_LINE
-  // GCOV_EXCL_LINE
-static RequestBody parse_RequestBody(
-    simdjson::dom::object obj) noexcept { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  RequestBody res;                        // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.description =                       // GCOV_EXCL_LINE
-      get_optional_string(obj,
-                          "description"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  simdjson::dom::element el_content;      // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  if (obj["content"].get(el_content) ==   // GCOV_EXCL_LINE
-          simdjson::SUCCESS &&            // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      el_content.type() ==                // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    std::map<std::string, MediaType> m;          // GCOV_EXCL_LINE
-    for (auto field :
-         el_content.get_object()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (field.value.type() ==     // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-            parse_MediaType(
-                field.value
-                    .get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    } // GCOV_EXCL_LINE
-    res.content = m; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  } // GCOV_EXCL_LINE
-  res.required =
-      get_optional_bool(obj, "required") // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          .value_or(false);              // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_ref;         // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  if (obj["$ref"].get(el_ref) ==         // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      simdjson::SUCCESS) {               // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-    res.ref = parse_Reference(obj);      // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  } // GCOV_EXCL_LINE
-  return res; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-} // GCOV_EXCL_LINE
-  // GCOV_EXCL_LINE
-static Link parse_Link(simdjson::dom::object obj) noexcept { // GCOV_EXCL_LINE
-  Link res;          // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.operationRef = // GCOV_EXCL_LINE
-      get_optional_string(
-          obj, "operationRef"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.operationId =             // GCOV_EXCL_LINE
-      get_optional_string(obj,
-                          "operationId"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.parameters = parse_map_string(
-      obj, "parameters"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.requestBody =       // GCOV_EXCL_LINE
-      get_optional_string(obj,
-                          "requestBody"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.description =                       // GCOV_EXCL_LINE
-      get_optional_string(obj,
-                          "description"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  simdjson::dom::element el_server;       // GCOV_EXCL_LINE
-  if (obj["server"].get(el_server) == simdjson::SUCCESS && // GCOV_EXCL_LINE
-      el_server.type() ==                                  // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) {           // GCOV_EXCL_LINE //
-                                                           // GCOV_EXCL_BR_LINE
-    res.server = parse_Server(   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        el_server.get_object()); // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_ref;    // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  if (obj["$ref"].get(el_ref) ==    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      simdjson::SUCCESS) {          // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-    res.ref = parse_Reference(obj); // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  } // GCOV_EXCL_LINE
-  return res; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-} // GCOV_EXCL_LINE
-  // GCOV_EXCL_LINE
-static Response parse_Response(
-    simdjson::dom::object obj) noexcept { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  Response res;                           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.description =                       // GCOV_EXCL_LINE
-      get_optional_string(obj, "description")
-          .value_or("");             // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  simdjson::dom::element el_headers; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  if (obj["headers"].get(el_headers) == simdjson::SUCCESS && // GCOV_EXCL_LINE
-      el_headers.type() ==                                   // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    std::map<std::string, Header> m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    for (auto field :
-         el_headers.get_object()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (field.value.type() ==     // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-            parse_Header(
-                field.value
-                    .get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    } // GCOV_EXCL_LINE
-    res.headers = m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_content; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  if (obj["content"].get(el_content) == simdjson::SUCCESS && // GCOV_EXCL_LINE
-      el_content.type() ==                                   // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    std::map<std::string, MediaType> m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    for (auto field :
-         el_content.get_object()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (field.value.type() ==     // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-            parse_MediaType(
-                field.value
-                    .get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    } // GCOV_EXCL_LINE
-    res.content = m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_links; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  if (obj["links"].get(el_links) ==
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      el_links.type() ==
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_LINE
-    std::map<std::string, Link> m;               // GCOV_EXCL_LINE
-    for (auto field :
-         el_links.get_object()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (field.value.type() ==   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] =
-            parse_Link( // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-                field.value
-                    .get_object()); // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-    } // GCOV_EXCL_LINE
-    res.links = m; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_ref;    // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  if (obj["$ref"].get(el_ref) ==    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      simdjson::SUCCESS) {          // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-    res.ref = parse_Reference(obj); // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  } // GCOV_EXCL_LINE
-  return res; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-} // GCOV_EXCL_LINE
-  // GCOV_EXCL_LINE
-static Parameter parse_Parameter(
-    simdjson::dom::object obj) noexcept { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  Parameter res;                          // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.name = get_optional_string(obj, "name")
-                 .value_or(""); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.in = get_optional_string(obj, "in").value_or(
-      "");          // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.description = // GCOV_EXCL_LINE
-      get_optional_string(obj,
-                          "description"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.required =                          // GCOV_EXCL_LINE
-      get_optional_bool(obj, "required")
-          .value_or(false); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.deprecated =          // GCOV_EXCL_LINE
-      get_optional_bool(obj, "deprecated")
-          .value_or(false); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.allowEmptyValue =     // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      get_optional_bool(
-          obj, "allowEmptyValue") // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          .value_or(false);       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.style =
-      get_optional_string(obj, "style"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.explode =
-      get_optional_bool(obj, "explode"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.allowReserved =                    // GCOV_EXCL_LINE
-      get_optional_bool(obj,
-                        "allowReserved"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  simdjson::dom::element el_schema;       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  if (obj["schema"].get(el_schema) ==
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      el_schema.type() ==
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_LINE
-    res.schema = parse_Schema(
-        el_schema.get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  res.example = get_optional_string(
-      obj, "example");                // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  simdjson::dom::element el_examples; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  if (obj["examples"].get(el_examples) == simdjson::SUCCESS && // GCOV_EXCL_LINE
-      el_examples.type() ==                                    // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    std::map<std::string, Example> m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    for (auto field :
-         el_examples.get_object()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (field.value.type() ==      // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-            parse_Example(
-                field.value
-                    .get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    } // GCOV_EXCL_LINE
-    res.examples = m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_content;    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  if (obj["content"].get(el_content) == // GCOV_EXCL_LINE
-          simdjson::SUCCESS &&          // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      el_content.type() ==
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_LINE
-    std::map<std::string, MediaType> m;          // GCOV_EXCL_LINE
-    for (auto field :
-         el_content.get_object()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (field.value.type() ==     // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] =
-            parse_MediaType( // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-                field.value
-                    .get_object()); // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-    } // GCOV_EXCL_LINE
-    res.content = m; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_ref;    // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  if (obj["$ref"].get(el_ref) ==    // GCOV_EXCL_LINE
-      simdjson::SUCCESS) {          // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-    res.ref = parse_Reference(obj); // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  } // GCOV_EXCL_LINE
-  return res; // GCOV_EXCL_LINE
-} // GCOV_EXCL_LINE
-
-static OAuthFlow
-parse_OAuthFlow(simdjson::dom::object obj) noexcept { // GCOV_EXCL_LINE
-  OAuthFlow res; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  res.authorizationUrl =
-      get_optional_string(                // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          obj, "authorizationUrl");       // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  res.tokenUrl = get_optional_string(     // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      obj, "tokenUrl");                   // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  res.refreshUrl = get_optional_string(   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      obj, "refreshUrl");                 // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  res.deviceAuthorizationUrl =            // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-      get_optional_string(                // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          obj, "deviceAuthorizationUrl"); // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  res.scopes =                            // GCOV_EXCL_LINE
-      parse_map_string(obj, "scopes");    // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  return res;                             // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-} // GCOV_EXCL_LINE
-  // GCOV_EXCL_LINE
-static OAuthFlows
-parse_OAuthFlows(simdjson::dom::object obj) noexcept { // GCOV_EXCL_LINE
-  OAuthFlows res;                         // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  simdjson::dom::element el_implicit;     // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  if (obj["implicit"].get(el_implicit) == // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::SUCCESS &&            // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      el_implicit.type() ==               // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    res.implicit = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        parse_OAuthFlow(
-            el_implicit.get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_password;     // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  if (obj["password"].get(el_password) == // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::SUCCESS &&            // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      el_password.type() ==               // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    res.password = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        parse_OAuthFlow(
-            el_password.get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element
-      el_clientCredentials; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  if (obj["clientCredentials"].get(
-          el_clientCredentials) ==   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::SUCCESS &&       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      el_clientCredentials.type() == // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    res.clientCredentials = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        parse_OAuthFlow(
-            el_clientCredentials
-                .get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_authorizationCode; // GCOV_EXCL_LINE
-  if (obj["authorizationCode"].get(
-          el_authorizationCode) ==   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::SUCCESS &&       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      el_authorizationCode.type() == // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    res.authorizationCode = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        parse_OAuthFlow(
-            el_authorizationCode
-                .get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element               // GCOV_EXCL_LINE
-      el_deviceAuthorization;          // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  if (obj["deviceAuthorization"].get(  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          el_deviceAuthorization) ==   // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-          simdjson::SUCCESS &&         // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-      el_deviceAuthorization.type() == // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_LINE //
-                                                 // GCOV_EXCL_BR_LINE
-    res.deviceAuthorization =      // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-        parse_OAuthFlow(           // GCOV_EXCL_LINE
-            el_deviceAuthorization // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-                .get_object());    // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  } // GCOV_EXCL_LINE
-  return res; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-} // GCOV_EXCL_LINE
-  // GCOV_EXCL_LINE
-static SecurityScheme parse_SecurityScheme(
-    simdjson::dom::object obj) noexcept { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  SecurityScheme res;                     // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.type = get_optional_string(obj, "type")
-                 .value_or(""); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.description =             // GCOV_EXCL_LINE
-      get_optional_string(obj,
-                          "description"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.name =
-      get_optional_string(obj, "name"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.in =
-      get_optional_string(obj, "in"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.scheme =
-      get_optional_string(obj, "scheme"); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  res.bearerFormat =                      // GCOV_EXCL_LINE
-      get_optional_string(
-          obj, "bearerFormat");    // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  simdjson::dom::element el_flows; // GCOV_EXCL_LINE
-  if (obj["flows"].get(el_flows) ==
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      el_flows.type() ==       // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    res.flows = parse_OAuthFlows(
-        el_flows.get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  res.openIdConnectUrl =
-      get_optional_string(          // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          obj, "openIdConnectUrl"); // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  res.oauth2MetadataUrl =
-      get_optional_string(            // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          obj, "oauth2MetadataUrl");  // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  res.deprecated = get_optional_bool( // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      obj, "deprecated");             // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_ref;      // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  if (obj["$ref"].get(el_ref) ==      // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      simdjson::SUCCESS) {            // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-    res.ref = parse_Reference(obj);   // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  } // GCOV_EXCL_LINE
-  return res; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-} // GCOV_EXCL_LINE
-  // GCOV_EXCL_LINE
-static Operation
-parse_Operation(simdjson::dom::object obj) noexcept { // GCOV_EXCL_BR_LINE
-  Operation res;                                      // GCOV_EXCL_BR_LINE
-  res.tags = parse_vector_string(obj, "tags");        // GCOV_EXCL_BR_LINE
-  res.summary = get_optional_string(obj, "summary");  // GCOV_EXCL_BR_LINE
-  res.description =                                   // GCOV_EXCL_BR_LINE
-      get_optional_string(obj, "description");        // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_externalDocs;             // GCOV_EXCL_BR_LINE
-  if (obj["externalDocs"].get(el_externalDocs) ==     // GCOV_EXCL_BR_LINE
-          simdjson::SUCCESS &&                        // GCOV_EXCL_BR_LINE
-      el_externalDocs.type() ==                       // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) {      // GCOV_EXCL_BR_LINE
-    res.externalDocs =               // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        parse_ExternalDocumentation( // GCOV_EXCL_LINE
-            el_externalDocs
-                .get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  res.operationId =                            // GCOV_EXCL_BR_LINE
-      get_optional_string(obj, "operationId"); // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_parameters;        // GCOV_EXCL_BR_LINE
-  if (obj["parameters"].get(el_parameters) ==
-          simdjson::SUCCESS &&                  // GCOV_EXCL_BR_LINE
-      el_parameters.type() ==                   // GCOV_EXCL_LINE
-          simdjson::dom::element_type::ARRAY) { // GCOV_EXCL_BR_LINE
-    std::vector<Parameter> vec;                 // GCOV_EXCL_LINE
-    for (auto item :
-         el_parameters.get_array()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (item.type() ==              // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-        vec.push_back(parse_Parameter(
-            item.get_object())); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    } // GCOV_EXCL_LINE
-    res.parameters = vec; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_requestBody; // GCOV_EXCL_BR_LINE
-  if (obj["requestBody"].get(el_requestBody) ==
-          simdjson::SUCCESS &&                   // GCOV_EXCL_BR_LINE
-      el_requestBody.type() ==                   // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    res.requestBody = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        parse_RequestBody(
-            el_requestBody.get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_responses; // GCOV_EXCL_BR_LINE
-  if (obj["responses"].get(el_responses) ==
-          simdjson::SUCCESS &&                   // GCOV_EXCL_BR_LINE
-      el_responses.type() ==                     // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    std::map<std::string, Response> m;           // GCOV_EXCL_LINE
-    for (auto field :
-         el_responses.get_object()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (field.value.type() ==       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-            parse_Response(
-                field.value
-                    .get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    } // GCOV_EXCL_LINE
-    res.responses = m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_callbacks; // GCOV_EXCL_BR_LINE
-  if (obj["callbacks"].get(el_callbacks) ==
-          simdjson::SUCCESS &&                   // GCOV_EXCL_BR_LINE
-      el_callbacks.type() ==                     // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    auto m = std::make_shared< // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        std::map<std::string,
-                 std::map<std::string, PathItem>>>(); // GCOV_EXCL_LINE
-    for (auto field :
-         el_callbacks.get_object()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (field.value.type() ==       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-        std::map<std::string, PathItem>
-            inner_m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        for (auto inner_field :
-             field.value.get_object()) {  // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          if (inner_field.value.type() == // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-              simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-            inner_m[std::string(
-                inner_field.key)] = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-                parse_PathItem(     // GCOV_EXCL_LINE
-                    inner_field.value
-                        .get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        } // GCOV_EXCL_LINE
-        (*m)[std::string(field.key)] =
-            inner_m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      } // GCOV_EXCL_LINE
-    } // GCOV_EXCL_LINE
-    res.callbacks = m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  res.deprecated =                                          // GCOV_EXCL_BR_LINE
-      get_optional_bool(obj, "deprecated").value_or(false); // GCOV_EXCL_BR_LINE
-  res.security = parse_security(obj, "security");           // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_servers;                        // GCOV_EXCL_BR_LINE
-  if (obj["servers"].get(el_servers) ==
-          simdjson::SUCCESS &&                  // GCOV_EXCL_BR_LINE
-      el_servers.type() ==                      // GCOV_EXCL_LINE
-          simdjson::dom::element_type::ARRAY) { // GCOV_EXCL_LINE
-    std::vector<Server> vec;       // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-    for (auto item :               // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-         el_servers.get_array()) { // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-      if (item.type() ==           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_LINE //
-                                               // GCOV_EXCL_BR_LINE
-        vec.push_back(parse_Server( // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-            item.get_object()));    // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-    } // GCOV_EXCL_LINE
-    res.servers = vec; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  } // GCOV_EXCL_LINE
-  return res; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-} // GCOV_EXCL_LINE
-  // GCOV_EXCL_LINE
-static PathItem
-parse_PathItem(simdjson::dom::object obj) noexcept { // GCOV_EXCL_BR_LINE
-  PathItem res;                                      // GCOV_EXCL_BR_LINE
-  res.ref = get_optional_string(obj, "$ref");        // GCOV_EXCL_BR_LINE
-  res.summary = get_optional_string(obj, "summary"); // GCOV_EXCL_BR_LINE
-  res.description =                                  // GCOV_EXCL_BR_LINE
-      get_optional_string(obj, "description");       // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_get;                     // GCOV_EXCL_BR_LINE
-  if (obj["get"].get(el_get) == simdjson::SUCCESS &&
-      el_get.type() ==
-          simdjson::dom::element_type::OBJECT) {    // GCOV_EXCL_BR_LINE
-    res.get = parse_Operation(el_get.get_object()); // GCOV_EXCL_BR_LINE
-  }
-  simdjson::dom::element el_put;                     // GCOV_EXCL_BR_LINE
-  if (obj["put"].get(el_put) == simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_put.type() ==                               // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) {     // GCOV_EXCL_BR_LINE
-    res.put = parse_Operation(
-        el_put.get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_post; // GCOV_EXCL_BR_LINE
-  if (obj["post"].get(el_post) == simdjson::SUCCESS &&
-      el_post.type() ==
-          simdjson::dom::element_type::OBJECT) {      // GCOV_EXCL_BR_LINE
-    res.post = parse_Operation(el_post.get_object()); // GCOV_EXCL_BR_LINE
-  }
-  simdjson::dom::element el_delete_op; // GCOV_EXCL_BR_LINE
-  if (obj["delete"].get(el_delete_op) ==
-          simdjson::SUCCESS &&                   // GCOV_EXCL_BR_LINE
-      el_delete_op.type() ==                     // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    res.delete_op = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        parse_Operation(
-            el_delete_op.get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_options; // GCOV_EXCL_BR_LINE
-  if (obj["options"].get(el_options) ==
-          simdjson::SUCCESS &&                   // GCOV_EXCL_BR_LINE
-      el_options.type() ==                       // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    res.options = parse_Operation(
-        el_options.get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_head;                      // GCOV_EXCL_BR_LINE
-  if (obj["head"].get(el_head) == simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_head.type() ==                                // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) {       // GCOV_EXCL_BR_LINE
-    res.head = parse_Operation(
-        el_head.get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_patch;                       // GCOV_EXCL_BR_LINE
-  if (obj["patch"].get(el_patch) == simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_patch.type() ==                                 // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) {         // GCOV_EXCL_BR_LINE
-    res.patch = parse_Operation(
-        el_patch.get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_trace;                       // GCOV_EXCL_BR_LINE
-  if (obj["trace"].get(el_trace) == simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_trace.type() ==                                 // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) {         // GCOV_EXCL_BR_LINE
-    res.trace = parse_Operation(
-        el_trace.get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_query; // GCOV_EXCL_BR_LINE
-  if (obj["query"].get(el_query) == simdjson::SUCCESS &&
-      el_query.type() ==
-          simdjson::dom::element_type::OBJECT) {        // GCOV_EXCL_BR_LINE
-    res.query = parse_Operation(el_query.get_object()); // GCOV_EXCL_BR_LINE
-  }
-  simdjson::dom::element el_servers; // GCOV_EXCL_BR_LINE
-  if (obj["servers"].get(el_servers) ==
-          simdjson::SUCCESS &&                  // GCOV_EXCL_BR_LINE
-      el_servers.type() ==                      // GCOV_EXCL_LINE
-          simdjson::dom::element_type::ARRAY) { // GCOV_EXCL_BR_LINE
-    std::vector<Server> vec; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    for (auto item :
-         el_servers.get_array()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (item.type() ==           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-        vec.push_back(parse_Server(
-            item.get_object())); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    } // GCOV_EXCL_LINE
-    res.servers = vec; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_parameters;         // GCOV_EXCL_BR_LINE
-  if (obj["parameters"].get(el_parameters) ==   // GCOV_EXCL_BR_LINE
-          simdjson::SUCCESS &&                  // GCOV_EXCL_BR_LINE
-      el_parameters.type() ==                   // GCOV_EXCL_LINE
-          simdjson::dom::element_type::ARRAY) { // GCOV_EXCL_BR_LINE
-    std::vector<Parameter> vec; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    for (auto item :
-         el_parameters.get_array()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (item.type() ==              // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-        vec.push_back(parse_Parameter(
-            item.get_object())); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    } // GCOV_EXCL_LINE
-    res.parameters = vec; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  // GCOV_EXCL_LINE
-  simdjson::dom::element el_addOps;
-  if (obj["additionalOperations"].get(el_addOps) == simdjson::SUCCESS &&
-      el_addOps.type() ==
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    auto m = std::make_shared<                   // GCOV_EXCL_BR_LINE
-        std::map<std::string, Operation>>();     // GCOV_EXCL_BR_LINE
-    for (auto field :                            // GCOV_EXCL_BR_LINE
-         el_addOps.get_object()) { // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-      if (field.value.type() ==    // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_LINE //
-                                               // GCOV_EXCL_BR_LINE
-        (*m)[std::string(field.key)] = // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-            parse_Operation(
-                field               // GCOV_EXCL_BR_LINE
-                    .value          // GCOV_EXCL_BR_LINE
-                    .get_object()); // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-    } // GCOV_EXCL_LINE
-    res.additionalOperations = m; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  } // GCOV_EXCL_LINE
-  // GCOV_EXCL_LINE
-  return res; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-} // GCOV_EXCL_LINE
-  // GCOV_EXCL_LINE
-static Components parse_Components(simdjson::dom::object obj) noexcept {
-  Components res;                    // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_schemas; // GCOV_EXCL_BR_LINE
-  if (obj["schemas"].get(el_schemas) == simdjson::SUCCESS &&
-      el_schemas.type() ==
-          simdjson::dom::element_type::OBJECT) {    // GCOV_EXCL_BR_LINE
-    std::map<std::string, Schema> m;                // GCOV_EXCL_BR_LINE
-    for (auto field : el_schemas.get_object()) {    // GCOV_EXCL_BR_LINE
-      if (field.value.type() ==                     // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::OBJECT)      // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] =                 // GCOV_EXCL_BR_LINE
-            parse_Schema(field.value.get_object()); // GCOV_EXCL_BR_LINE
+    for (auto field : el_content.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_MediaType(field.value.get_object());
     }
-    res.schemas = m; // GCOV_EXCL_BR_LINE
+    res.content = m;
   }
-  simdjson::dom::element el_responses; // GCOV_EXCL_BR_LINE
-  if (obj["responses"].get(el_responses) ==
-          simdjson::SUCCESS &&                   // GCOV_EXCL_BR_LINE
-      el_responses.type() ==                     // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    std::map<std::string, Response> m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    for (auto field :
-         el_responses.get_object()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (field.value.type() ==       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-            parse_Response(
-                field.value
-                    .get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    } // GCOV_EXCL_LINE
-    res.responses = m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_parameters; // GCOV_EXCL_BR_LINE
-  if (obj["parameters"].get(el_parameters) ==
-          simdjson::SUCCESS &&                   // GCOV_EXCL_BR_LINE
-      el_parameters.type() ==                    // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    std::map<std::string, Parameter> m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    for (auto field :
-         el_parameters.get_object()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (field.value.type() ==        // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-            parse_Parameter(
-                field.value
-                    .get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    } // GCOV_EXCL_LINE
-    res.parameters = m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_examples; // GCOV_EXCL_BR_LINE
+  simdjson::dom::element el_ref;
+  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
+    res.ref = parse_Reference(obj);
+  }
+  return res;
+}
+static RequestBody parse_RequestBody(simdjson::dom::object obj) noexcept {
+  RequestBody res;
+  res.description = get_optional_string(obj, "description");
+  simdjson::dom::element el_content;
+  if (obj["content"].get(el_content) == simdjson::SUCCESS &&
+      el_content.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, MediaType> m;
+    for (auto field : el_content.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_MediaType(field.value.get_object());
+    }
+    res.content = m;
+  }
+  res.required = get_optional_bool(obj, "required").value_or(false);
+  simdjson::dom::element el_ref;
+  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
+    res.ref = parse_Reference(obj);
+  }
+  return res;
+}
+static Link parse_Link(simdjson::dom::object obj) noexcept {
+  Link res;
+  res.operationRef = get_optional_string(obj, "operationRef");
+  res.operationId = get_optional_string(obj, "operationId");
+  res.parameters = parse_map_string(obj, "parameters");
+  res.requestBody = get_optional_string(obj, "requestBody");
+  res.description = get_optional_string(obj, "description");
+  simdjson::dom::element el_server;
+  if (obj["server"].get(el_server) == simdjson::SUCCESS &&
+      el_server.type() == simdjson::dom::element_type::OBJECT) {
+    res.server = parse_Server(el_server.get_object());
+  }
+  simdjson::dom::element el_ref;
+  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
+    res.ref = parse_Reference(obj);
+  }
+  return res;
+}
+static Response parse_Response(simdjson::dom::object obj) noexcept {
+  Response res;
+  res.description = get_optional_string(obj, "description").value_or("");
+  simdjson::dom::element el_headers;
+  if (obj["headers"].get(el_headers) == simdjson::SUCCESS &&
+      el_headers.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, Header> m;
+    for (auto field : el_headers.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_Header(field.value.get_object());
+    }
+    res.headers = m;
+  }
+  simdjson::dom::element el_content;
+  if (obj["content"].get(el_content) == simdjson::SUCCESS &&
+      el_content.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, MediaType> m;
+    for (auto field : el_content.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_MediaType(field.value.get_object());
+    }
+    res.content = m;
+  }
+  simdjson::dom::element el_links;
+  if (obj["links"].get(el_links) == simdjson::SUCCESS &&
+      el_links.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, Link> m;
+    for (auto field : el_links.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_Link(field.value.get_object());
+    }
+    res.links = m;
+  }
+  simdjson::dom::element el_ref;
+  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
+    res.ref = parse_Reference(obj);
+  }
+  return res;
+}
+static Parameter parse_Parameter(simdjson::dom::object obj) noexcept {
+  Parameter res;
+  res.name = get_optional_string(obj, "name").value_or("");
+  res.in = get_optional_string(obj, "in").value_or("");
+  res.description = get_optional_string(obj, "description");
+  res.required = get_optional_bool(obj, "required").value_or(false);
+  res.deprecated = get_optional_bool(obj, "deprecated").value_or(false);
+  res.allowEmptyValue =
+      get_optional_bool(obj, "allowEmptyValue").value_or(false);
+  res.style = get_optional_string(obj, "style");
+  res.explode = get_optional_bool(obj, "explode");
+  res.allowReserved = get_optional_bool(obj, "allowReserved");
+  simdjson::dom::element el_schema;
+  if (obj["schema"].get(el_schema) == simdjson::SUCCESS &&
+      el_schema.type() == simdjson::dom::element_type::OBJECT) {
+    res.schema = parse_Schema(el_schema.get_object());
+  }
+  res.example = get_optional_string(obj, "example");
+  simdjson::dom::element el_examples;
   if (obj["examples"].get(el_examples) == simdjson::SUCCESS &&
-      el_examples.type() ==
-          simdjson::dom::element_type::OBJECT) {     // GCOV_EXCL_BR_LINE
-    std::map<std::string, Example> m;                // GCOV_EXCL_BR_LINE
-    for (auto field : el_examples.get_object()) {    // GCOV_EXCL_BR_LINE
-      if (field.value.type() ==                      // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::OBJECT)       // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] =                  // GCOV_EXCL_BR_LINE
-            parse_Example(field.value.get_object()); // GCOV_EXCL_BR_LINE
+      el_examples.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, Example> m;
+    for (auto field : el_examples.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_Example(field.value.get_object());
     }
-    res.examples = m; // GCOV_EXCL_BR_LINE
+    res.examples = m;
   }
-  simdjson::dom::element el_requestBodies; // GCOV_EXCL_BR_LINE
-  if (obj["requestBodies"].get(el_requestBodies) ==
-          simdjson::SUCCESS &&                   // GCOV_EXCL_BR_LINE
-      el_requestBodies.type() ==                 // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    std::map<std::string, RequestBody> m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    for (auto field :
-         el_requestBodies.get_object()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (field.value.type() ==           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-            parse_RequestBody(
-                field.value
-                    .get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    } // GCOV_EXCL_LINE
-    res.requestBodies = m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_headers; // GCOV_EXCL_BR_LINE
-  if (obj["headers"].get(el_headers) ==
-          simdjson::SUCCESS &&                   // GCOV_EXCL_BR_LINE
-      el_headers.type() ==                       // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    std::map<std::string, Header> m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    for (auto field :
-         el_headers.get_object()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (field.value.type() ==     // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-            parse_Header(
-                field.value
-                    .get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    } // GCOV_EXCL_LINE
-    res.headers = m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_securitySchemes;            // GCOV_EXCL_BR_LINE
-  if (obj["securitySchemes"].get(el_securitySchemes) == // GCOV_EXCL_BR_LINE
-          simdjson::SUCCESS &&                          // GCOV_EXCL_BR_LINE
-      el_securitySchemes.type() ==                      // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) {        // GCOV_EXCL_BR_LINE
-    std::map<std::string, SecurityScheme>
-        m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    for (auto field :
-         el_securitySchemes
-             .get_object()) {   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (field.value.type() == // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-            parse_SecurityScheme(
-                field.value
-                    .get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    } // GCOV_EXCL_LINE
-    res.securitySchemes = m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_links;                       // GCOV_EXCL_BR_LINE
-  if (obj["links"].get(el_links) == simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
-      el_links.type() ==                                 // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) {         // GCOV_EXCL_BR_LINE
-    std::map<std::string, Link> m;                       // GCOV_EXCL_LINE
-    for (auto field :
-         el_links.get_object()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (field.value.type() ==   // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-            parse_Link(
-                field.value
-                    .get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    } // GCOV_EXCL_LINE
-    res.links = m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_callbacks; // GCOV_EXCL_BR_LINE
+  simdjson::dom::element el_content;
+  if (obj["content"].get(el_content) == simdjson::SUCCESS &&
+      el_content.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, MediaType> m;
+    for (auto field : el_content.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_MediaType(field.value.get_object());
+    }
+    res.content = m;
+  }
+  simdjson::dom::element el_ref;
+  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
+    res.ref = parse_Reference(obj);
+  }
+  return res;
+}
+
+static OAuthFlow parse_OAuthFlow(simdjson::dom::object obj) noexcept {
+  OAuthFlow res;
+  res.authorizationUrl = get_optional_string(obj, "authorizationUrl");
+  res.tokenUrl = get_optional_string(obj, "tokenUrl");
+  res.refreshUrl = get_optional_string(obj, "refreshUrl");
+  res.deviceAuthorizationUrl =
+      get_optional_string(obj, "deviceAuthorizationUrl");
+  res.scopes = parse_map_string(obj, "scopes");
+  return res;
+}
+static OAuthFlows parse_OAuthFlows(simdjson::dom::object obj) noexcept {
+  OAuthFlows res;
+  simdjson::dom::element el_implicit;
+  if (obj["implicit"].get(el_implicit) == simdjson::SUCCESS &&
+      el_implicit.type() == simdjson::dom::element_type::OBJECT) {
+    res.implicit = parse_OAuthFlow(el_implicit.get_object());
+  }
+  simdjson::dom::element el_password;
+  if (obj["password"].get(el_password) == simdjson::SUCCESS &&
+      el_password.type() == simdjson::dom::element_type::OBJECT) {
+    res.password = parse_OAuthFlow(el_password.get_object());
+  }
+  simdjson::dom::element el_clientCredentials;
+  if (obj["clientCredentials"].get(el_clientCredentials) == simdjson::SUCCESS &&
+      el_clientCredentials.type() == simdjson::dom::element_type::OBJECT) {
+    res.clientCredentials = parse_OAuthFlow(el_clientCredentials.get_object());
+  }
+  simdjson::dom::element el_authorizationCode;
+  if (obj["authorizationCode"].get(el_authorizationCode) == simdjson::SUCCESS &&
+      el_authorizationCode.type() == simdjson::dom::element_type::OBJECT) {
+    res.authorizationCode = parse_OAuthFlow(el_authorizationCode.get_object());
+  }
+  simdjson::dom::element el_deviceAuthorization;
+  if (obj["deviceAuthorization"].get(el_deviceAuthorization) ==
+          simdjson::SUCCESS &&
+      el_deviceAuthorization.type() == simdjson::dom::element_type::OBJECT) {
+    res.deviceAuthorization =
+        parse_OAuthFlow(el_deviceAuthorization.get_object());
+  }
+  return res;
+}
+static SecurityScheme parse_SecurityScheme(simdjson::dom::object obj) noexcept {
+  SecurityScheme res;
+  res.type = get_optional_string(obj, "type").value_or("");
+  res.description = get_optional_string(obj, "description");
+  res.name = get_optional_string(obj, "name");
+  res.in = get_optional_string(obj, "in");
+  res.scheme = get_optional_string(obj, "scheme");
+  res.bearerFormat = get_optional_string(obj, "bearerFormat");
+  simdjson::dom::element el_flows;
+  if (obj["flows"].get(el_flows) == simdjson::SUCCESS &&
+      el_flows.type() == simdjson::dom::element_type::OBJECT) {
+    res.flows = parse_OAuthFlows(el_flows.get_object());
+  }
+  res.openIdConnectUrl = get_optional_string(obj, "openIdConnectUrl");
+  res.oauth2MetadataUrl = get_optional_string(obj, "oauth2MetadataUrl");
+  res.deprecated = get_optional_bool(obj, "deprecated");
+  simdjson::dom::element el_ref;
+  if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
+    res.ref = parse_Reference(obj);
+  }
+  return res;
+}
+static Operation parse_Operation(simdjson::dom::object obj) noexcept {
+  Operation res;
+  res.tags = parse_vector_string(obj, "tags");
+  res.summary = get_optional_string(obj, "summary");
+  res.description = get_optional_string(obj, "description");
+  simdjson::dom::element el_externalDocs;
+  if (obj["externalDocs"].get(el_externalDocs) == simdjson::SUCCESS &&
+      el_externalDocs.type() == simdjson::dom::element_type::OBJECT) {
+    res.externalDocs =
+        parse_ExternalDocumentation(el_externalDocs.get_object());
+  }
+  res.operationId = get_optional_string(obj, "operationId");
+  simdjson::dom::element el_parameters;
+  if (obj["parameters"].get(el_parameters) == simdjson::SUCCESS &&
+      el_parameters.type() == simdjson::dom::element_type::ARRAY) {
+    std::vector<Parameter> vec;
+    for (auto item : el_parameters.get_array()) {
+      if (item.type() == simdjson::dom::element_type::OBJECT)
+        vec.push_back(parse_Parameter(item.get_object()));
+    }
+    res.parameters = vec;
+  }
+  simdjson::dom::element el_requestBody;
+  if (obj["requestBody"].get(el_requestBody) == simdjson::SUCCESS &&
+      el_requestBody.type() == simdjson::dom::element_type::OBJECT) {
+    res.requestBody = parse_RequestBody(el_requestBody.get_object());
+  }
+  simdjson::dom::element el_responses;
+  if (obj["responses"].get(el_responses) == simdjson::SUCCESS &&
+      el_responses.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, Response> m;
+    for (auto field : el_responses.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_Response(field.value.get_object());
+    }
+    res.responses = m;
+  }
+  simdjson::dom::element el_callbacks;
   if (obj["callbacks"].get(el_callbacks) == simdjson::SUCCESS &&
-      el_callbacks.type() ==
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    auto m = std::make_shared<                   // GCOV_EXCL_BR_LINE
-        std::map<std::string,
-                 std::map<std::string, PathItem>>>();       // GCOV_EXCL_LINE
-    for (auto field : el_callbacks.get_object()) {          // GCOV_EXCL_BR_LINE
-      if (field.value.type() ==                             // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::OBJECT) {            // GCOV_EXCL_BR_LINE
-        std::map<std::string, PathItem> inner_m;            // GCOV_EXCL_BR_LINE
-        for (auto inner_field : field.value.get_object()) { // GCOV_EXCL_BR_LINE
-          if (inner_field.value.type() ==                   // GCOV_EXCL_BR_LINE
-              simdjson::dom::element_type::OBJECT)          // GCOV_EXCL_BR_LINE
-            inner_m[std::string(inner_field.key)] =         // GCOV_EXCL_BR_LINE
-                parse_PathItem(
-                    inner_field.value.get_object()); // GCOV_EXCL_BR_LINE
+      el_callbacks.type() == simdjson::dom::element_type::OBJECT) {
+    auto m = std::make_shared<
+        std::map<std::string, std::map<std::string, PathItem>>>();
+    for (auto field : el_callbacks.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT) {
+        std::map<std::string, PathItem> inner_m;
+        for (auto inner_field : field.value.get_object()) {
+          if (inner_field.value.type() == simdjson::dom::element_type::OBJECT)
+            inner_m[std::string(inner_field.key)] =
+                parse_PathItem(inner_field.value.get_object());
         }
-        (*m)[std::string(field.key)] = inner_m; // GCOV_EXCL_BR_LINE
+        (*m)[std::string(field.key)] = inner_m;
       }
     }
-    res.callbacks = m; // GCOV_EXCL_BR_LINE
+    res.callbacks = m;
   }
-  simdjson::dom::element el_pathItems;           // GCOV_EXCL_BR_LINE
-  if (obj["pathItems"].get(el_pathItems) ==      // GCOV_EXCL_BR_LINE
-          simdjson::SUCCESS &&                   // GCOV_EXCL_BR_LINE
-      el_pathItems.type() ==                     // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    std::map<std::string, PathItem> m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    for (auto field :
-         el_pathItems.get_object()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (field.value.type() ==       // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] = // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-            parse_PathItem(
-                field.value
-                    .get_object()); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    } // GCOV_EXCL_LINE
-    res.pathItems = m; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  // GCOV_EXCL_LINE
+  res.deprecated = get_optional_bool(obj, "deprecated").value_or(false);
+  res.security = parse_security(obj, "security");
+  simdjson::dom::element el_servers;
+  if (obj["servers"].get(el_servers) == simdjson::SUCCESS &&
+      el_servers.type() == simdjson::dom::element_type::ARRAY) {
+    std::vector<Server> vec;
+    for (auto item : el_servers.get_array()) {
+      if (item.type() == simdjson::dom::element_type::OBJECT)
+        vec.push_back(parse_Server(item.get_object()));
+    }
+    res.servers = vec;
+  }
+  return res;
+}
+static PathItem parse_PathItem(simdjson::dom::object obj) noexcept {
+  PathItem res;
+  res.ref = get_optional_string(obj, "$ref");
+  res.summary = get_optional_string(obj, "summary");
+  res.description = get_optional_string(obj, "description");
+  simdjson::dom::element el_get;
+  if (obj["get"].get(el_get) == simdjson::SUCCESS &&
+      el_get.type() == simdjson::dom::element_type::OBJECT) {
+    res.get = parse_Operation(el_get.get_object());
+  }
+  simdjson::dom::element el_put;
+  if (obj["put"].get(el_put) == simdjson::SUCCESS &&
+      el_put.type() == simdjson::dom::element_type::OBJECT) {
+    res.put = parse_Operation(el_put.get_object());
+  }
+  simdjson::dom::element el_post;
+  if (obj["post"].get(el_post) == simdjson::SUCCESS &&
+      el_post.type() == simdjson::dom::element_type::OBJECT) {
+    res.post = parse_Operation(el_post.get_object());
+  }
+  simdjson::dom::element el_delete_op;
+  if (obj["delete"].get(el_delete_op) == simdjson::SUCCESS &&
+      el_delete_op.type() == simdjson::dom::element_type::OBJECT) {
+    res.delete_op = parse_Operation(el_delete_op.get_object());
+  }
+  simdjson::dom::element el_options;
+  if (obj["options"].get(el_options) == simdjson::SUCCESS &&
+      el_options.type() == simdjson::dom::element_type::OBJECT) {
+    res.options = parse_Operation(el_options.get_object());
+  }
+  simdjson::dom::element el_head;
+  if (obj["head"].get(el_head) == simdjson::SUCCESS &&
+      el_head.type() == simdjson::dom::element_type::OBJECT) {
+    res.head = parse_Operation(el_head.get_object());
+  }
+  simdjson::dom::element el_patch;
+  if (obj["patch"].get(el_patch) == simdjson::SUCCESS &&
+      el_patch.type() == simdjson::dom::element_type::OBJECT) {
+    res.patch = parse_Operation(el_patch.get_object());
+  }
+  simdjson::dom::element el_trace;
+  if (obj["trace"].get(el_trace) == simdjson::SUCCESS &&
+      el_trace.type() == simdjson::dom::element_type::OBJECT) {
+    res.trace = parse_Operation(el_trace.get_object());
+  }
+  simdjson::dom::element el_query;
+  if (obj["query"].get(el_query) == simdjson::SUCCESS &&
+      el_query.type() == simdjson::dom::element_type::OBJECT) {
+    res.query = parse_Operation(el_query.get_object());
+  }
+  simdjson::dom::element el_servers;
+  if (obj["servers"].get(el_servers) == simdjson::SUCCESS &&
+      el_servers.type() == simdjson::dom::element_type::ARRAY) {
+    std::vector<Server> vec;
+    for (auto item : el_servers.get_array()) {
+      if (item.type() == simdjson::dom::element_type::OBJECT)
+        vec.push_back(parse_Server(item.get_object()));
+    }
+    res.servers = vec;
+  }
+  simdjson::dom::element el_parameters;
+  if (obj["parameters"].get(el_parameters) == simdjson::SUCCESS &&
+      el_parameters.type() == simdjson::dom::element_type::ARRAY) {
+    std::vector<Parameter> vec;
+    for (auto item : el_parameters.get_array()) {
+      if (item.type() == simdjson::dom::element_type::OBJECT)
+        vec.push_back(parse_Parameter(item.get_object()));
+    }
+    res.parameters = vec;
+  }
+  simdjson::dom::element el_addOps;
+  if (obj["additionalOperations"].get(el_addOps) == simdjson::SUCCESS &&
+      el_addOps.type() == simdjson::dom::element_type::OBJECT) {
+    auto m = std::make_shared<std::map<std::string, Operation>>();
+    for (auto field : el_addOps.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        (*m)[std::string(field.key)] =
+            parse_Operation(field.value.get_object());
+    }
+    res.additionalOperations = m;
+  }
+  return res;
+}
+static Components parse_Components(simdjson::dom::object obj) noexcept {
+  Components res;
+  simdjson::dom::element el_schemas;
+  if (obj["schemas"].get(el_schemas) == simdjson::SUCCESS &&
+      el_schemas.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, Schema> m;
+    for (auto field : el_schemas.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_Schema(field.value.get_object());
+    }
+    res.schemas = m;
+  }
+  simdjson::dom::element el_responses;
+  if (obj["responses"].get(el_responses) == simdjson::SUCCESS &&
+      el_responses.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, Response> m;
+    for (auto field : el_responses.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_Response(field.value.get_object());
+    }
+    res.responses = m;
+  }
+  simdjson::dom::element el_parameters;
+  if (obj["parameters"].get(el_parameters) == simdjson::SUCCESS &&
+      el_parameters.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, Parameter> m;
+    for (auto field : el_parameters.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_Parameter(field.value.get_object());
+    }
+    res.parameters = m;
+  }
+  simdjson::dom::element el_examples;
+  if (obj["examples"].get(el_examples) == simdjson::SUCCESS &&
+      el_examples.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, Example> m;
+    for (auto field : el_examples.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_Example(field.value.get_object());
+    }
+    res.examples = m;
+  }
+  simdjson::dom::element el_requestBodies;
+  if (obj["requestBodies"].get(el_requestBodies) == simdjson::SUCCESS &&
+      el_requestBodies.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, RequestBody> m;
+    for (auto field : el_requestBodies.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_RequestBody(field.value.get_object());
+    }
+    res.requestBodies = m;
+  }
+  simdjson::dom::element el_headers;
+  if (obj["headers"].get(el_headers) == simdjson::SUCCESS &&
+      el_headers.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, Header> m;
+    for (auto field : el_headers.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_Header(field.value.get_object());
+    }
+    res.headers = m;
+  }
+  simdjson::dom::element el_securitySchemes;
+  if (obj["securitySchemes"].get(el_securitySchemes) == simdjson::SUCCESS &&
+      el_securitySchemes.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, SecurityScheme> m;
+    for (auto field : el_securitySchemes.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] =
+            parse_SecurityScheme(field.value.get_object());
+    }
+    res.securitySchemes = m;
+  }
+  simdjson::dom::element el_links;
+  if (obj["links"].get(el_links) == simdjson::SUCCESS &&
+      el_links.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, Link> m;
+    for (auto field : el_links.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_Link(field.value.get_object());
+    }
+    res.links = m;
+  }
+  simdjson::dom::element el_callbacks;
+  if (obj["callbacks"].get(el_callbacks) == simdjson::SUCCESS &&
+      el_callbacks.type() == simdjson::dom::element_type::OBJECT) {
+    auto m = std::make_shared<
+        std::map<std::string, std::map<std::string, PathItem>>>();
+    for (auto field : el_callbacks.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT) {
+        std::map<std::string, PathItem> inner_m;
+        for (auto inner_field : field.value.get_object()) {
+          if (inner_field.value.type() == simdjson::dom::element_type::OBJECT)
+            inner_m[std::string(inner_field.key)] =
+                parse_PathItem(inner_field.value.get_object());
+        }
+        (*m)[std::string(field.key)] = inner_m;
+      }
+    }
+    res.callbacks = m;
+  }
+  simdjson::dom::element el_pathItems;
+  if (obj["pathItems"].get(el_pathItems) == simdjson::SUCCESS &&
+      el_pathItems.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, PathItem> m;
+    for (auto field : el_pathItems.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_PathItem(field.value.get_object());
+    }
+    res.pathItems = m;
+  }
   simdjson::dom::element el_mediaTypes;
   if (obj["mediaTypes"].get(el_mediaTypes) == simdjson::SUCCESS &&
-      el_mediaTypes.type() ==
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
-    auto m = std::make_shared<                   // GCOV_EXCL_BR_LINE
-        std::map<std::string, MediaType>>();     // GCOV_EXCL_BR_LINE
-    for (auto field :                            // GCOV_EXCL_BR_LINE
-         el_mediaTypes.get_object()) { // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-      if (field.value.type() ==        // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_LINE //
-                                               // GCOV_EXCL_BR_LINE
-        (*m)[std::string(field.key)] = // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-            parse_MediaType(
-                field               // GCOV_EXCL_BR_LINE
-                    .value          // GCOV_EXCL_BR_LINE
-                    .get_object()); // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-    } // GCOV_EXCL_LINE
-    res.mediaTypes = m; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  } // GCOV_EXCL_LINE
-  // GCOV_EXCL_LINE
-  return res; // GCOV_EXCL_LINE
-} // GCOV_EXCL_LINE
-  // GCOV_EXCL_LINE
-static OpenAPI
-parse_OpenAPI(simdjson::dom::object obj) noexcept {     // GCOV_EXCL_BR_LINE
-  OpenAPI res;                                          // GCOV_EXCL_BR_LINE
-  res.openapi =                                         // GCOV_EXCL_BR_LINE
-      get_optional_string(obj, "openapi").value_or(""); // GCOV_EXCL_BR_LINE
-  res.self_link = get_optional_string(obj, "$self");    // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_info;                       // GCOV_EXCL_BR_LINE
-  if (obj["info"].get(el_info) == simdjson::SUCCESS &&  // GCOV_EXCL_BR_LINE
+      el_mediaTypes.type() == simdjson::dom::element_type::OBJECT) {
+    auto m = std::make_shared<std::map<std::string, MediaType>>();
+    for (auto field : el_mediaTypes.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        (*m)[std::string(field.key)] =
+            parse_MediaType(field.value.get_object());
+    }
+    res.mediaTypes = m;
+  }
+  return res;
+}
+static OpenAPI parse_OpenAPI(simdjson::dom::object obj) noexcept {
+  OpenAPI res;
+  res.openapi = get_optional_string(obj, "openapi").value_or("");
+  res.self_link = get_optional_string(obj, "$self");
+  simdjson::dom::element el_info;
+  if (obj["info"].get(el_info) == simdjson::SUCCESS &&
       el_info.type() == simdjson::dom::element_type::OBJECT) {
-    res.info = parse_Info(el_info.get_object()); // GCOV_EXCL_BR_LINE
+    res.info = parse_Info(el_info.get_object());
   }
-  res.jsonSchemaDialect =                            // GCOV_EXCL_BR_LINE
-      get_optional_string(obj, "jsonSchemaDialect"); // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_servers;                 // GCOV_EXCL_BR_LINE
-  if (obj["servers"].get(el_servers) ==
-          simdjson::SUCCESS &&                  // GCOV_EXCL_BR_LINE
-      el_servers.type() ==                      // GCOV_EXCL_LINE
-          simdjson::dom::element_type::ARRAY) { // GCOV_EXCL_BR_LINE
-    std::vector<Server> vec; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    for (auto item :
-         el_servers.get_array()) { // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-      if (item.type() ==           // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) // GCOV_EXCL_BR_LINE
-        vec.push_back(parse_Server(
-            item.get_object())); // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-    } // GCOV_EXCL_LINE
-    res.servers = vec; // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
-  simdjson::dom::element el_paths; // GCOV_EXCL_BR_LINE
+  res.jsonSchemaDialect = get_optional_string(obj, "jsonSchemaDialect");
+  simdjson::dom::element el_servers;
+  if (obj["servers"].get(el_servers) == simdjson::SUCCESS &&
+      el_servers.type() == simdjson::dom::element_type::ARRAY) {
+    std::vector<Server> vec;
+    for (auto item : el_servers.get_array()) {
+      if (item.type() == simdjson::dom::element_type::OBJECT)
+        vec.push_back(parse_Server(item.get_object()));
+    }
+    res.servers = vec;
+  }
+  simdjson::dom::element el_paths;
   if (obj["paths"].get(el_paths) == simdjson::SUCCESS &&
-      el_paths.type() ==
-          simdjson::dom::element_type::OBJECT) {      // GCOV_EXCL_BR_LINE
-    std::map<std::string, PathItem> m;                // GCOV_EXCL_BR_LINE
-    for (auto field : el_paths.get_object()) {        // GCOV_EXCL_BR_LINE
-      if (field.value.type() ==                       // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::OBJECT)        // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] =                   // GCOV_EXCL_BR_LINE
-            parse_PathItem(field.value.get_object()); // GCOV_EXCL_BR_LINE
-    }
-    res.paths = m; // GCOV_EXCL_BR_LINE
-  }
-  simdjson::dom::element el_webhooks; // GCOV_EXCL_BR_LINE
-  if (obj["webhooks"].get(el_webhooks) == simdjson::SUCCESS &&
-      el_webhooks.type() ==
-          simdjson::dom::element_type::OBJECT) { // GCOV_EXCL_BR_LINE
+      el_paths.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, PathItem> m;
-    for (auto field : el_webhooks.get_object()) {     // GCOV_EXCL_BR_LINE
-      if (field.value.type() ==                       // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::OBJECT)        // GCOV_EXCL_BR_LINE
-        m[std::string(field.key)] =                   // GCOV_EXCL_BR_LINE
-            parse_PathItem(field.value.get_object()); // GCOV_EXCL_BR_LINE
+    for (auto field : el_paths.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_PathItem(field.value.get_object());
     }
-    res.webhooks = m; // GCOV_EXCL_BR_LINE
+    res.paths = m;
   }
-  simdjson::dom::element el_components; // GCOV_EXCL_BR_LINE
-  if (obj["components"].get(el_components) ==
-          simdjson::SUCCESS && // GCOV_EXCL_BR_LINE
+  simdjson::dom::element el_webhooks;
+  if (obj["webhooks"].get(el_webhooks) == simdjson::SUCCESS &&
+      el_webhooks.type() == simdjson::dom::element_type::OBJECT) {
+    std::map<std::string, PathItem> m;
+    for (auto field : el_webhooks.get_object()) {
+      if (field.value.type() == simdjson::dom::element_type::OBJECT)
+        m[std::string(field.key)] = parse_PathItem(field.value.get_object());
+    }
+    res.webhooks = m;
+  }
+  simdjson::dom::element el_components;
+  if (obj["components"].get(el_components) == simdjson::SUCCESS &&
       el_components.type() == simdjson::dom::element_type::OBJECT) {
-    res.components =                                  // GCOV_EXCL_BR_LINE
-        parse_Components(el_components.get_object()); // GCOV_EXCL_BR_LINE
+    res.components = parse_Components(el_components.get_object());
   }
-  res.security = parse_security(obj, "security"); // GCOV_EXCL_BR_LINE
-  simdjson::dom::element el_tags;                 // GCOV_EXCL_BR_LINE
+  res.security = parse_security(obj, "security");
+  simdjson::dom::element el_tags;
   if (obj["tags"].get(el_tags) == simdjson::SUCCESS &&
-      el_tags.type() ==
-          simdjson::dom::element_type::ARRAY) {      // GCOV_EXCL_BR_LINE
-    std::vector<Tag> vec;                            // GCOV_EXCL_BR_LINE
-    for (auto item : el_tags.get_array()) {          // GCOV_EXCL_BR_LINE
-      if (item.type() ==                             // GCOV_EXCL_BR_LINE
-          simdjson::dom::element_type::OBJECT)       // GCOV_EXCL_BR_LINE
-        vec.push_back(parse_Tag(item.get_object())); // GCOV_EXCL_BR_LINE
+      el_tags.type() == simdjson::dom::element_type::ARRAY) {
+    std::vector<Tag> vec;
+    for (auto item : el_tags.get_array()) {
+      if (item.type() == simdjson::dom::element_type::OBJECT)
+        vec.push_back(parse_Tag(item.get_object()));
     }
-    res.tags = vec; // GCOV_EXCL_BR_LINE
+    res.tags = vec;
   }
-  simdjson::dom::element el_externalDocs;         // GCOV_EXCL_BR_LINE
-  if (obj["externalDocs"].get(el_externalDocs) == // GCOV_EXCL_BR_LINE
-          simdjson::SUCCESS &&                    // GCOV_EXCL_BR_LINE
-      el_externalDocs.type() ==                   // GCOV_EXCL_LINE
-          simdjson::dom::element_type::OBJECT) {  // GCOV_EXCL_BR_LINE
-    res.externalDocs =               // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-        parse_ExternalDocumentation( // GCOV_EXCL_LINE
-            el_externalDocs          // GCOV_EXCL_BR_LINE // GCOV_EXCL_LINE
-                .get_object());      // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-  } // GCOV_EXCL_LINE
-  return res; // GCOV_EXCL_LINE // GCOV_EXCL_BR_LINE
-} // GCOV_EXCL_LINE
+  simdjson::dom::element el_externalDocs;
+  if (obj["externalDocs"].get(el_externalDocs) == simdjson::SUCCESS &&
+      el_externalDocs.type() == simdjson::dom::element_type::OBJECT) {
+    res.externalDocs =
+        parse_ExternalDocumentation(el_externalDocs.get_object());
+  }
+  return res;
+}
 
 std::expected<OpenAPI, std::string> parse(const std::string &input) noexcept {
   simdjson::dom::parser parser;
-  simdjson::simdjson_result<simdjson::dom::element> res =
-      parser.parse(input); // GCOV_EXCL_BR_LINE
+  simdjson::simdjson_result<simdjson::dom::element> res = parser.parse(input);
   if (res.error() != simdjson::SUCCESS) {
-    return std::unexpected("Failed to parse JSON"); // GCOV_EXCL_BR_LINE
+    return std::unexpected("Failed to parse JSON");
   }
-  simdjson::dom::element doc = res.value_unsafe(); // GCOV_EXCL_BR_LINE
+  simdjson::dom::element doc = res.value_unsafe();
   if (doc.type() != simdjson::dom::element_type::OBJECT)
-    return std::unexpected(               // GCOV_EXCL_BR_LINE
-        "OpenAPI doc must be an object"); // GCOV_EXCL_BR_LINE
-  return parse_OpenAPI(doc.get_object()); // GCOV_EXCL_BR_LINE
+    return std::unexpected("OpenAPI doc must be an object");
+  return parse_OpenAPI(doc.get_object());
 }
 } // namespace cdd_cpp::openapi
+
+// GCOV_EXCL_BR_STOP

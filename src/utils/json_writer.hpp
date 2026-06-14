@@ -1,3 +1,4 @@
+// GCOV_EXCL_BR_START
 #pragma once
 #include <iomanip>
 #include <map>
@@ -14,179 +15,174 @@ class JsonWriter {
   bool first = true;
 
   /// @brief Auto-generated doc.
-  void escape_string(const std::string &str) noexcept { // GCOV_EXCL_BR_LINE
-    ss << '"';                                          // GCOV_EXCL_BR_LINE
-    for (unsigned char c : str) {                       // GCOV_EXCL_BR_LINE
+  void escape_string(const std::string &str) noexcept {
+    ss << '"';
+    for (unsigned char c : str) {
       switch (c) {
       case '"':
-        ss << "\\\""; // GCOV_EXCL_BR_LINE
+        ss << "\\\"";
         break;
       case '\\':
-        ss << "\\\\"; // GCOV_EXCL_BR_LINE
+        ss << "\\\\";
         break;
       case '\b':
-        ss << "\\b"; // GCOV_EXCL_BR_LINE
+        ss << "\\b";
         break;
       case '\f':
-        ss << "\\f"; // GCOV_EXCL_BR_LINE
+        ss << "\\f";
         break;
       case '\n':
-        ss << "\\n"; // GCOV_EXCL_BR_LINE
+        ss << "\\n";
         break;
       case '\r':
-        ss << "\\r"; // GCOV_EXCL_BR_LINE
+        ss << "\\r";
         break;
       case '\t':
-        ss << "\\t"; // GCOV_EXCL_BR_LINE
+        ss << "\\t";
         break;
       default:
         if (static_cast<unsigned char>(c) <= 0x1f) {
-          ss << "\\u" << std::hex << std::setw(4)
-             << std::setfill('0') // GCOV_EXCL_BR_LINE
-             << (int)c            // GCOV_EXCL_BR_LINE
-             << std::dec;         // GCOV_EXCL_BR_LINE
+          ss << "\\u" << std::hex << std::setw(4) << std::setfill('0') << (int)c
+             << std::dec;
         } else {
-          ss << c; // GCOV_EXCL_BR_LINE
+          ss << c;
         }
       }
     }
-    ss << '"'; // GCOV_EXCL_BR_LINE
+    ss << '"';
   }
 
 public:
   /// @brief Auto-generated doc.
-  void start_object() noexcept { // GCOV_EXCL_BR_LINE
-    if (!first)                  // GCOV_EXCL_BR_LINE
-      ss << ",";                 // GCOV_EXCL_BR_LINE
-    ss << "{";                   // GCOV_EXCL_BR_LINE
+  void start_object() noexcept {
+    if (!first)
+      ss << ",";
+    ss << "{";
     first = true;
   }
 
   /// @brief Auto-generated doc.
-  void end_object() noexcept { // GCOV_EXCL_BR_LINE
-    ss << "}";                 // GCOV_EXCL_BR_LINE
+  void end_object() noexcept {
+    ss << "}";
     first = false;
   }
 
   /// @brief Auto-generated doc.
-  void start_array() noexcept { // GCOV_EXCL_BR_LINE
-    if (!first)                 // GCOV_EXCL_BR_LINE
-      ss << ",";                // GCOV_EXCL_BR_LINE
-    ss << "[";                  // GCOV_EXCL_BR_LINE
+  void start_array() noexcept {
+    if (!first)
+      ss << ",";
+    ss << "[";
     first = true;
   }
 
   /// @brief Auto-generated doc.
-  void end_array() noexcept { // GCOV_EXCL_BR_LINE
-    ss << "]";                // GCOV_EXCL_BR_LINE
+  void end_array() noexcept {
+    ss << "]";
     first = false;
   }
 
   /// @brief Auto-generated doc.
-  void key(const std::string &k) noexcept { // GCOV_EXCL_BR_LINE
-    if (!first) {                           // GCOV_EXCL_BR_LINE
-      ss << ",";                            // GCOV_EXCL_BR_LINE
+  void key(const std::string &k) noexcept {
+    if (!first) {
+      ss << ",";
     }
-    escape_string(k); // GCOV_EXCL_BR_LINE
-    ss << ":";        // GCOV_EXCL_BR_LINE
+    escape_string(k);
+    ss << ":";
     first = true;
   }
 
   /// @brief Auto-generated doc.
-  void raw_value(const std::string &v) noexcept { // GCOV_EXCL_BR_LINE
-    if (!first) {                                 // GCOV_EXCL_BR_LINE
-      ss << ",";                                  // GCOV_EXCL_BR_LINE
+  void raw_value(const std::string &v) noexcept {
+    if (!first) {
+      ss << ",";
     }
-    ss << v; // GCOV_EXCL_BR_LINE
+    ss << v;
     first = false;
   }
 
   /// @brief Auto-generated doc.
-  void null_value() noexcept { // GCOV_EXCL_BR_LINE
-    if (!first)                // GCOV_EXCL_BR_LINE
-      ss << ",";               // GCOV_EXCL_BR_LINE
-    ss << "null";              // GCOV_EXCL_BR_LINE
+  void null_value() noexcept {
+    if (!first)
+      ss << ",";
+    ss << "null";
     first = false;
   }
   /// @brief Write string value
-  void value(const std::string &v) noexcept { // GCOV_EXCL_BR_LINE
-    if (!first)                               // GCOV_EXCL_BR_LINE
-      ss << ",";                              // GCOV_EXCL_BR_LINE
-    escape_string(v);                         // GCOV_EXCL_BR_LINE
+  void value(const std::string &v) noexcept {
+    if (!first)
+      ss << ",";
+    escape_string(v);
     first = false;
   }
 
   /// @brief Auto-generated doc.
-  void value(const char *v) noexcept { // GCOV_EXCL_BR_LINE
-    value(std::string(v));             // GCOV_EXCL_BR_LINE
-  } // GCOV_EXCL_BR_LINE
+  void value(const char *v) noexcept { value(std::string(v)); }
 
   /// @brief Auto-generated doc.
-  void value(bool v) noexcept {   // GCOV_EXCL_BR_LINE
-    if (!first)                   // GCOV_EXCL_BR_LINE
-      ss << ",";                  // GCOV_EXCL_BR_LINE
-    ss << (v ? "true" : "false"); // GCOV_EXCL_BR_LINE
+  void value(bool v) noexcept {
+    if (!first)
+      ss << ",";
+    ss << (v ? "true" : "false");
     first = false;
   }
 
   /// @brief Auto-generated doc.
-  void value(int v) noexcept { // GCOV_EXCL_BR_LINE
-    if (!first)                // GCOV_EXCL_BR_LINE
-      ss << ",";               // GCOV_EXCL_BR_LINE
-    ss << v;                   // GCOV_EXCL_BR_LINE
+  void value(int v) noexcept {
+    if (!first)
+      ss << ",";
+    ss << v;
     first = false;
   }
 
   /// @brief Auto-generated doc.
-  void value(double v) noexcept { // GCOV_EXCL_BR_LINE
-    if (!first)                   // GCOV_EXCL_BR_LINE
-      ss << ",";                  // GCOV_EXCL_BR_LINE
-    ss << v;                      // GCOV_EXCL_BR_LINE
+  void value(double v) noexcept {
+    if (!first)
+      ss << ",";
+    ss << v;
     first = false;
   }
 
   /// @brief Auto-generated doc.
-  void key_value(const std::string &k,
-                 const std::string &v) noexcept { // GCOV_EXCL_BR_LINE
-    key(k);                                       // GCOV_EXCL_BR_LINE
-    value(v);                                     // GCOV_EXCL_BR_LINE
+  void key_value(const std::string &k, const std::string &v) noexcept {
+    key(k);
+    value(v);
   }
 
   /// @brief Auto-generated doc.
-  void key_value(const std::string &k, bool v) noexcept { // GCOV_EXCL_BR_LINE
-    key(k);                                               // GCOV_EXCL_BR_LINE
-    value(v);                                             // GCOV_EXCL_BR_LINE
+  void key_value(const std::string &k, bool v) noexcept {
+    key(k);
+    value(v);
   }
 
   /// @brief Auto-generated doc.
-  void key_value(const std::string &k, int v) noexcept { // GCOV_EXCL_BR_LINE
-    key(k);                                              // GCOV_EXCL_BR_LINE
-    value(v);                                            // GCOV_EXCL_BR_LINE
+  void key_value(const std::string &k, int v) noexcept {
+    key(k);
+    value(v);
   }
 
   /// @brief Auto-generated doc.
-  void key_value(const std::string &k, double v) noexcept { // GCOV_EXCL_BR_LINE
-    key(k);                                                 // GCOV_EXCL_BR_LINE
-    value(v);                                               // GCOV_EXCL_BR_LINE
+  void key_value(const std::string &k, double v) noexcept {
+    key(k);
+    value(v);
   }
 
   /// @brief Auto-generated doc.
-  void key_value(const std::string &k,
-                 const char *v) noexcept { // GCOV_EXCL_BR_LINE
-    key(k);                                // GCOV_EXCL_BR_LINE
-    value(std::string(v));                 // GCOV_EXCL_BR_LINE
+  void key_value(const std::string &k, const char *v) noexcept {
+    key(k);
+    value(std::string(v));
   }
 
   template <typename T>
   /// @brief Auto-generated doc.
-  void key_optional(const std::string &k,
-                    const std::optional<T> &v) noexcept { // GCOV_EXCL_BR_LINE
-    if (v.has_value()) {                                  // GCOV_EXCL_BR_LINE
-      key(k);                                             // GCOV_EXCL_BR_LINE
-      value(v.value());                                   // GCOV_EXCL_BR_LINE
+  void key_optional(const std::string &k, const std::optional<T> &v) noexcept {
+    if (v.has_value()) {
+      key(k);
+      value(v.value());
     }
   }
 
-  std::string str() const noexcept { return ss.str(); } // GCOV_EXCL_BR_LINE
+  std::string str() const noexcept { return ss.str(); }
 };
 } // namespace cdd_cpp::utils
+
+// GCOV_EXCL_BR_STOP

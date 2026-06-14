@@ -120,6 +120,13 @@ void print_help(std::ostream &out) noexcept {
          "  cdd-cpp --help\n"
          "  cdd-cpp --version\n"
          "  cdd-cpp to_openapi -i <path/to/code> [-o <spec.json>]\n"
+         "  cdd-cpp from_google_discovery to_sdk_cli -i <discovery.json> -o "
+         "<target_directory> [--no-github-actions] [--no-installable-package] "
+         "[--tests]\n"
+         "  cdd-cpp from_google_discovery to_sdk -i <discovery.json> -o "
+         "<target_directory> [--no-github-actions] [--no-installable-package] "
+         "[--tests]\n"
+
          "  cdd-cpp to_docs_json [--no-imports] [--no-wrapping] -i <spec.json> "
          "[-o <docs.json>]\n"
          "  cdd-cpp from_openapi to_sdk_cli -i <spec.json> -o "
@@ -148,6 +155,8 @@ void print_help(std::ostream &out) noexcept {
          "  to_docs_json : Generate JSON documentation with code snippets for "
          "an OpenAPI specification.\n"
          "  serve_json_rpc: Expose CLI interface as JSON-RPC server.\n"
+         "  from_google_discovery: Generate code from a Google Discovery "
+         "JSON.\n"
          "\nOptions:\n"
          "  -i, --input                     Path or URL to the OpenAPI "
          "specification.\n"
@@ -406,6 +415,110 @@ int main_impl(int argc, char **argv, std::ostream &out,
       }
     }
 
+  } else if (command == "from_google_discovery") {
+    for (int i = 2; i < argc; ++i) {
+      std::string arg = argv[i];
+      if (arg == "--help" || arg == "-h") {
+        out << "Usage:\n"
+            << "  cdd-cpp from_google_discovery to_sdk_cli -i <discovery.json> "
+               "-o <target_directory> [--no-github-actions] "
+               "[--no-installable-package] [--tests]\n"
+            << "  cdd-cpp from_google_discovery to_sdk -i <discovery.json> -o "
+               "<target_directory> [--no-github-actions] "
+               "[--no-installable-package] [--tests]\n";
+        return 0;
+      }
+    }
+
+    if (argc < 3) {
+      err << "Missing subcommand for from_google_discovery\n";
+      return 1;
+    }
+    std::string subcommand = argv[2];
+    std::string input;
+    std::string output;
+    bool no_github_actions = false;
+    bool no_installable_package = false;
+    bool tests = false;
+
+    for (int i = 3; i < argc; ++i) {
+      std::string arg = argv[i];
+      if ((arg == "-i" || arg == "--input") && i + 1 < argc) {
+        input = argv[++i];
+      } else if ((arg == "-o" || arg == "--output") && i + 1 < argc) {
+        output = argv[++i];
+      } else if (arg == "--no-github-actions") {
+        no_github_actions = true;
+      } else if (arg == "--no-installable-package") {
+        no_installable_package = true;
+      } else if (arg == "--tests") {
+        tests = true;
+      }
+    }
+
+    input = get_arg_or_env(input, "CDD_INPUT");
+    output = get_arg_or_env(output, "CDD_OUTPUT", ".");
+    no_github_actions =
+        get_bool_arg_or_env(no_github_actions, "CDD_NO_GITHUB_ACTIONS");
+    no_installable_package = get_bool_arg_or_env(no_installable_package,
+                                                 "CDD_NO_INSTALLABLE_PACKAGE");
+    tests = get_bool_arg_or_env(tests, "CDD_TESTS");
+
+    if (input.empty()) {
+      err << "Missing -i <discovery.json>\n";
+      return 1;
+    }
+
+    auto content_res = read_file(input);
+    if (!content_res) {
+      err << "Error: " << content_res.error() << "\n";
+      return 1;
+    }
+    std::string content = *content_res;
+
+    auto apis_res = google_discovery::parse(content);
+    if (!apis_res) {
+      err << "Error: " << apis_res.error() << "\n";
+      return 1;
+    }
+
+    for (const auto &spec : *apis_res) {
+      std::map<std::string, std::string> multiple_files;
+
+      if (subcommand == "to_sdk_cli") {
+        multiple_files = client_sdk_cli::emit_cli(
+            spec, no_github_actions, no_installable_package, tests);
+      } else if (subcommand == "to_sdk") {
+        multiple_files = client_sdk::emit_client(spec, no_github_actions,
+                                                 no_installable_package, tests);
+      } else {
+        err << "Unknown subcommand: " << subcommand << "\n";
+        return 1;
+      }
+
+      if (!multiple_files.empty()) {
+        std::string api_output = output;
+        if (apis_res->size() > 1) {
+          api_output += "/" + spec.info.title;
+        }
+        for (const auto &[fname, fcontent] : multiple_files) {
+          std::string out_path = api_output + "/" + fname;
+          std::filesystem::path p(out_path);
+          if (p.has_parent_path()) {
+            std::error_code ec;
+            std::filesystem::create_directories(p.parent_path(), ec);
+          }
+          std::ofstream out_file(out_path);
+          if (!out_file) {
+            err << "Could not open output file: " << out_path << "\n";
+            return 1;
+          }
+          out_file << fcontent;
+          out << "Successfully generated " << out_path << "\n";
+        }
+      }
+    }
+
   } else if (command == "to_openapi") {
     for (int i = 2; i < argc; ++i) {
       std::string arg = argv[i];
@@ -648,4 +761,5 @@ int main(int argc, char **argv) noexcept {
 
   return main_impl(argc, argv, std::cout, std::cerr);
 }
+
 // GCOV_EXCL_BR_STOP

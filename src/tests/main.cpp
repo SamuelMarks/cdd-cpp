@@ -5,37 +5,46 @@ void test_emit() noexcept;
 }
 namespace cdd_cpp::google_discovery {
 void test_parse() noexcept;
-}
+void test_openapi_parse();
+} // namespace cdd_cpp::google_discovery
 namespace cdd_cpp::openapi {
 void test_parse() noexcept;
+void test_openapi_parse();
 void test_emit() noexcept;
 } // namespace cdd_cpp::openapi
 namespace cdd_cpp::models {
 void test_parse() noexcept;
+void test_openapi_parse();
 void test_emit() noexcept;
 } // namespace cdd_cpp::models
 namespace cdd_cpp::client_sdk {
 void test_parse() noexcept;
+void test_openapi_parse();
 void test_emit_client() noexcept;
 } // namespace cdd_cpp::client_sdk
 namespace cdd_cpp::client_sdk_cli {
 void test_emit_cli() noexcept;
 void test_parse() noexcept;
+void test_openapi_parse();
 } // namespace cdd_cpp::client_sdk_cli
 namespace cdd_cpp::functions {
 void test_parse() noexcept;
+void test_openapi_parse();
 void test_emit() noexcept;
 } // namespace cdd_cpp::functions
 namespace cdd_cpp::docstrings {
 void test_parse() noexcept;
+void test_openapi_parse();
 void test_emit() noexcept;
 } // namespace cdd_cpp::docstrings
 namespace cdd_cpp::server {
 void test_parse() noexcept;
+void test_openapi_parse();
 void test_emit() noexcept;
 } // namespace cdd_cpp::server
 namespace cdd_cpp::mocks {
 void test_parse() noexcept;
+void test_openapi_parse();
 void test_emit() noexcept;
 } // namespace cdd_cpp::mocks
 namespace cdd_cpp::utils {
@@ -105,7 +114,9 @@ int main() {
   test_mcp_resources();
   test_mcp_remaining();
   test_mcp_logging_progress();
+
   std::cout << "All tests passed with 100% simulated coverage.\n";
   return 0;
 }
+
 // GCOV_EXCL_BR_STOP

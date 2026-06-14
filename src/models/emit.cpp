@@ -95,7 +95,8 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   ss << "#pragma once\n";
   ss << "#define SIMDJSON_STATIC_REFLECTION 1\n";
   ss << "#include <simdjson.h>\n";
-  ss << "#include <string>\n#include <vector>\n#include <optional>\n\n";
+  ss << "#include <string>\n#include <vector>\n#include <optional>\n#include "
+        "<memory>\n\n";
 
   ss << "namespace cdd_models {\n\n";
 
@@ -157,6 +158,7 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
       dfs(name);
     }
 
+    std::set<std::string> fully_defined;
     for (const auto &name : sorted_names) {
       auto it = spec.components->schemas->find(name);
       if (it == spec.components->schemas->end())
@@ -175,16 +177,48 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
                 is_required = true;
             }
           }
-          if (is_required) {
-            ss << "        " << map_type(prop_schema) << " " << prop_name
-               << ";\n";
+
+          std::string safe_prop = prop_name;
+          if (safe_prop == "default" || safe_prop == "enum" ||
+              safe_prop == "class" || safe_prop == "struct" ||
+              safe_prop == "union" || safe_prop == "namespace" ||
+              safe_prop == "template" || safe_prop == "typename" ||
+              safe_prop == "auto") {
+            safe_prop += "_";
+          }
+
+          std::string t = map_type(prop_schema);
+          bool is_incomplete = false;
+          if (prop_schema.ref.has_value()) {
+            std::string ref = prop_schema.ref.operator*().ref;
+            size_t last_slash = ref.find_last_of('/');
+            std::string ref_name = (last_slash != std::string::npos)
+                                       ? ref.substr(last_slash + 1)
+                                       : ref;
+            if (fully_defined.find(ref_name) == fully_defined.end()) {
+              is_incomplete = true;
+            }
+          }
+
+          if (is_incomplete) {
+            if (is_required) {
+              ss << "        std::unique_ptr<" << t << "> " << safe_prop
+                 << ";\n";
+            } else {
+              ss << "        std::unique_ptr<" << t << "> " << safe_prop
+                 << ";\n";
+            }
           } else {
-            ss << "        std::optional<" << map_type(prop_schema) << "> "
-               << prop_name << ";\n";
+            if (is_required) {
+              ss << "        " << t << " " << safe_prop << ";\n";
+            } else {
+              ss << "        std::optional<" << t << "> " << safe_prop << ";\n";
+            }
           }
         }
       }
       ss << "    };\n\n";
+      fully_defined.insert(name);
     }
   }
 
@@ -193,4 +227,5 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
 }
 
 } // namespace cdd_cpp::models
+
 // GCOV_EXCL_BR_STOP

@@ -8,13 +8,13 @@
 namespace cdd_cpp::utils {
 
 /// @brief Auto-generated doc.
-struct Trivia { // GCOV_EXCL_LINE
+struct Trivia {
   std::string leading;
   std::string trailing;
 };
 
 /// @brief Auto-generated doc.
-struct CppField { // GCOV_EXCL_LINE
+struct CppField {
   std::string type;
   std::string name;
   std::string docstring;
@@ -22,7 +22,7 @@ struct CppField { // GCOV_EXCL_LINE
 };
 
 /// @brief Auto-generated doc.
-struct CppClass { // GCOV_EXCL_LINE
+struct CppClass {
   std::string name;
   std::string docstring;
   std::vector<CppField> fields;
@@ -30,7 +30,7 @@ struct CppClass { // GCOV_EXCL_LINE
 };
 
 /// @brief Auto-generated doc.
-struct CppFunction { // GCOV_EXCL_LINE
+struct CppFunction {
   std::string return_type;
   std::string name;
   std::vector<CppField> params;
@@ -40,7 +40,7 @@ struct CppFunction { // GCOV_EXCL_LINE
 };
 
 /// @brief Auto-generated doc.
-struct CppAST { // GCOV_EXCL_LINE
+struct CppAST {
   std::vector<CppClass> classes;
   std::vector<CppFunction> functions;
   Trivia file_trivia;
@@ -52,4 +52,5 @@ CppAST parse_cpp(const std::string &source) noexcept;
 std::string emit_cpp(const CppAST &ast) noexcept;
 
 } // namespace cdd_cpp::utils
+
 // GCOV_EXCL_BR_STOP

@@ -62,7 +62,7 @@ void test_http() {
     assert(res->find("body") != std::string::npos ||
            res->find("html") != std::string::npos || !res->empty());
   } else {
-    assert(res.error().find("curl") != std::string::npos || // GCOV_EXCL_LINE
+    assert(res.error().find("curl") != std::string::npos ||
            res.error().find("not implemented") != std::string::npos);
   }
 
@@ -73,4 +73,5 @@ void test_http() {
   std::cout << "utils::test_http passed.\n";
 }
 } // namespace cdd_cpp::utils
+
 // GCOV_EXCL_BR_STOP

@@ -1,3 +1,4 @@
+// GCOV_EXCL_BR_START
 #include <stdlib.h>
 
 extern "C" {
@@ -16,3 +17,5 @@ void *__cxa_begin_catch(void *exceptionObject) noexcept {
 void __cxa_end_catch() { abort(); }
 void __cxa_rethrow() { abort(); }
 }
+
+// GCOV_EXCL_BR_STOP

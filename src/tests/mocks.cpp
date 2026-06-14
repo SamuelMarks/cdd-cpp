@@ -28,4 +28,5 @@ void test_emit() {
   std::cout << "mocks::test_emit passed.\n";
 }
 } // namespace cdd_cpp::mocks
+
 // GCOV_EXCL_BR_STOP

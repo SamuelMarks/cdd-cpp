@@ -128,4 +128,5 @@ void test_parse() {
   std::cout << "google_discovery::test_parse passed.\n";
 }
 } // namespace cdd_cpp::google_discovery
+
 // GCOV_EXCL_BR_STOP

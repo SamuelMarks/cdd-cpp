@@ -155,4 +155,5 @@ void parse_schemas(const CppAST &ast, openapi::OpenAPI &spec) noexcept {
   }
 }
 } // namespace cdd_cpp::utils
+
 // GCOV_EXCL_BR_STOP

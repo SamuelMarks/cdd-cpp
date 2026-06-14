@@ -51,4 +51,5 @@ void test_emit() {
   std::cout << "docstrings::test_emit passed.\n";
 }
 } // namespace cdd_cpp::docstrings
+
 // GCOV_EXCL_BR_STOP

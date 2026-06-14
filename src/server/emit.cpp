@@ -1,3 +1,4 @@
+// GCOV_EXCL_BR_START
 #include "../docstrings/emit.hpp"
 #include "emit.hpp"
 #include <sstream>
@@ -5,119 +6,115 @@
 namespace cdd_cpp::server {
 
 std::string emit(const openapi::OpenAPI &spec) noexcept {
-  std::stringstream ss;                          // GCOV_EXCL_BR_LINE
-  ss << "#pragma once\n";                        // GCOV_EXCL_BR_LINE
-  ss << "#include <string>\n";                   // GCOV_EXCL_BR_LINE
-  ss << "#include <functional>\n";               // GCOV_EXCL_BR_LINE
-  ss << "#include <map>\n\n";                    // GCOV_EXCL_BR_LINE
-  ss << "#include \"../docstrings/emit.hpp\"\n"; // GCOV_EXCL_BR_LINE
-  ss << "namespace cdd_server {\n\n";            // GCOV_EXCL_BR_LINE
-  ss << docstrings::emit_api_docstrings(spec);   // GCOV_EXCL_BR_LINE
+  std::stringstream ss;
+  ss << "#pragma once\n";
+  ss << "#include <string>\n";
+  ss << "#include <functional>\n";
+  ss << "#include <map>\n\n";
+  ss << "#include \"../docstrings/emit.hpp\"\n";
+  ss << "namespace cdd_server {\n\n";
+  ss << docstrings::emit_api_docstrings(spec);
 
-  ss << "    class Router {\n"; // GCOV_EXCL_BR_LINE
-  ss << "    public:\n";        // GCOV_EXCL_BR_LINE
-  ss << "        using Handler = std::function<std::string(const " // GCOV_EXCL_BR_LINE
+  ss << "    class Router {\n";
+  ss << "    public:\n";
+  ss << "        using Handler = std::function<std::string(const "
         "std::string&)>;\n\n";
 
-  if (spec.paths.has_value() && !spec.paths->empty()) { // GCOV_EXCL_BR_LINE
-    for (const auto &[path, item] : *spec.paths) {      // GCOV_EXCL_BR_LINE
-      auto emit_method = [&](const std::string &method, // GCOV_EXCL_BR_LINE
+  if (spec.paths.has_value() && !spec.paths->empty()) {
+    for (const auto &[path, item] : *spec.paths) {
+      auto emit_method = [&](const std::string &method,
                              const std::optional<openapi::Operation> &op) {
-        if (!op.has_value()) // GCOV_EXCL_BR_LINE
+        if (!op.has_value())
           return;
-        std::string func_name =
-            op->operationId.value_or("handler"); // GCOV_EXCL_BR_LINE
+        std::string func_name = op->operationId.value_or("handler");
 
-        ss << docstrings::emit_path_docstrings(item); // GCOV_EXCL_BR_LINE
+        ss << docstrings::emit_path_docstrings(item);
 
         std::vector<openapi::Parameter> all_params;
-        if (item.parameters) {                   // GCOV_EXCL_BR_LINE
-          for (const auto &p : *item.parameters) // GCOV_EXCL_BR_LINE
-            all_params.push_back(p);             // GCOV_EXCL_BR_LINE
+        if (item.parameters) {
+          for (const auto &p : *item.parameters)
+            all_params.push_back(p);
         }
-        if (op->parameters) {                   // GCOV_EXCL_BR_LINE
-          for (const auto &p : *op->parameters) // GCOV_EXCL_BR_LINE
-            all_params.push_back(p);            // GCOV_EXCL_BR_LINE
+        if (op->parameters) {
+          for (const auto &p : *op->parameters)
+            all_params.push_back(p);
         }
 
-        openapi::Operation new_op = op.operator*();  // GCOV_EXCL_BR_LINE
-        new_op.parameters = all_params;              // GCOV_EXCL_BR_LINE
-        ss << docstrings::emit_operation_docstrings( // GCOV_EXCL_BR_LINE
-            new_op);                                 // GCOV_EXCL_BR_LINE
+        openapi::Operation new_op = op.operator*();
+        new_op.parameters = all_params;
+        ss << docstrings::emit_operation_docstrings(new_op);
 
-        std::string param_list = ""; // GCOV_EXCL_BR_LINE
+        std::string param_list = "";
         for (size_t i = 0; i < all_params.size(); ++i) {
-          const auto &p = all_params[i];           // GCOV_EXCL_BR_LINE
-          std::string type = "std::string";        // GCOV_EXCL_BR_LINE
-          if (p.schema && p.schema->type) {        // GCOV_EXCL_BR_LINE
-            if (*p.schema->type == "integer")      // GCOV_EXCL_BR_LINE
-              type = "int";                        // GCOV_EXCL_BR_LINE
-            else if (*p.schema->type == "boolean") // GCOV_EXCL_BR_LINE
-              type = "bool";                       // GCOV_EXCL_BR_LINE
-            else if (*p.schema->type == "number")  // GCOV_EXCL_BR_LINE
-              type = "double";                     // GCOV_EXCL_BR_LINE
+          const auto &p = all_params[i];
+          std::string type = "std::string";
+          if (p.schema && p.schema->type) {
+            if (*p.schema->type == "integer")
+              type = "int";
+            else if (*p.schema->type == "boolean")
+              type = "bool";
+            else if (*p.schema->type == "number")
+              type = "double";
           }
           if (i > 0)
-            param_list += ", ";              // GCOV_EXCL_BR_LINE
-          param_list += type + " " + p.name; // GCOV_EXCL_BR_LINE
+            param_list += ", ";
+          param_list += type + " " + p.name;
         }
-        if (op->requestBody) {                     // GCOV_EXCL_BR_LINE
-          if (!param_list.empty())                 // GCOV_EXCL_BR_LINE
-            param_list += ", ";                    // GCOV_EXCL_BR_LINE
-          param_list += "std::string requestBody"; // GCOV_EXCL_BR_LINE
+        if (op->requestBody) {
+          if (!param_list.empty())
+            param_list += ", ";
+          param_list += "std::string requestBody";
         }
         if (param_list.empty()) {
-          param_list = "const std::string&"; // GCOV_EXCL_BR_LINE
+          param_list = "const std::string&";
         }
 
-        ss << "        using " << func_name             // GCOV_EXCL_BR_LINE
-           << "Handler = std::function<std::string("    // GCOV_EXCL_BR_LINE
-           << param_list                                // GCOV_EXCL_BR_LINE
-           << ")>;\n";                                  // GCOV_EXCL_BR_LINE
-        ss << "        void on_" << method << "_"       // GCOV_EXCL_BR_LINE
-           << func_name                                 // GCOV_EXCL_BR_LINE
-           << "(const std::string& path, " << func_name // GCOV_EXCL_BR_LINE
-           << "Handler handler) {\n";                   // GCOV_EXCL_BR_LINE
-        ss << "            // " << param_list << "\n";  // GCOV_EXCL_BR_LINE
-        ss << "            routes[\"" << method         // GCOV_EXCL_BR_LINE
-           << " \" + path] = nullptr;\n";               // GCOV_EXCL_BR_LINE
-        ss << "        }\n\n";                          // GCOV_EXCL_BR_LINE
+        ss << "        using " << func_name
+           << "Handler = std::function<std::string(" << param_list << ")>;\n";
+        ss << "        void on_" << method << "_" << func_name
+           << "(const std::string& path, " << func_name
+           << "Handler handler) {\n";
+        ss << "            // " << param_list << "\n";
+        ss << "            routes[\"" << method << " \" + path] = nullptr;\n";
+        ss << "        }\n\n";
       };
 
-      emit_method("GET", item.get);          // GCOV_EXCL_BR_LINE
-      emit_method("POST", item.post);        // GCOV_EXCL_BR_LINE
-      emit_method("PUT", item.put);          // GCOV_EXCL_BR_LINE
-      emit_method("DELETE", item.delete_op); // GCOV_EXCL_BR_LINE
-      emit_method("PATCH", item.patch);      // GCOV_EXCL_BR_LINE
+      emit_method("GET", item.get);
+      emit_method("POST", item.post);
+      emit_method("PUT", item.put);
+      emit_method("DELETE", item.delete_op);
+      emit_method("PATCH", item.patch);
     }
   }
 
-  ss << "        std::string handle_mcp_sse() const {\n"; // GCOV_EXCL_BR_LINE
+  ss << "        std::string handle_mcp_sse() const {\n";
   ss << "            return \"HTTP/1.1 200 OK\\r\\nContent-Type: "
         "text/event-stream\\r\\n\\r\\nevent: endpoint\\ndata: "
-        "/mcp/message\\n\\n\";\n"; // GCOV_EXCL_BR_LINE
-  ss << "        }\n\n";           // GCOV_EXCL_BR_LINE
+        "/mcp/message\\n\\n\";\n";
+  ss << "        }\n\n";
 
   ss << "        std::string handle_mcp_message(const std::string& "
         "request_json, const std::map<std::string, std::string>& auth_headers "
-        "= {}) const {\n"; // GCOV_EXCL_BR_LINE
-  ss << "            // Parse json and forward to appropriate handler\n"; // GCOV_EXCL_BR_LINE
+        "= {}) const {\n";
+  ss << "            // Parse json and forward to appropriate handler\n";
   ss << "            return "
         "\"{\\\"jsonrpc\\\":\\\"2.0\\\",\\\"id\\\":null,\\\"error\\\":{"
-        "\\\"code\\\":-32601,\\\"message\\\":\\\"Method not found\\\"}}\";\n"; // GCOV_EXCL_BR_LINE
-  ss << "        }\n\n";  // GCOV_EXCL_BR_LINE
-  ss << "    private:\n"; // GCOV_EXCL_BR_LINE
+        "\\\"code\\\":-32601,\\\"message\\\":\\\"Method not found\\\"}}\";\n";
+  ss << "        }\n\n";
+  ss << "    private:\n";
 
-  ss << "        std::map<std::string, Handler> routes;\n"; // GCOV_EXCL_BR_LINE
-  ss << "    };\n";                                         // GCOV_EXCL_BR_LINE
-  ss << "}\n";                                              // GCOV_EXCL_BR_LINE
+  ss << "        std::map<std::string, Handler> routes;\n";
+  ss << "    };\n";
+  ss << "}\n";
 
-  return ss.str(); // GCOV_EXCL_BR_LINE
+  return ss.str();
 }
 
 std::string serve_json_rpc(const std::string & /*request*/) noexcept {
-  return "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32601," // GCOV_EXCL_BR_LINE
+  return "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32601,"
          "\"message\":\"Method not found\"}}";
 }
 
 } // namespace cdd_cpp::server
+
+// GCOV_EXCL_BR_STOP

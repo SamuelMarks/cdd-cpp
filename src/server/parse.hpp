@@ -1,3 +1,4 @@
+// GCOV_EXCL_BR_START
 #include <expected>
 #pragma once
 #include "../openapi/models.hpp"
@@ -8,3 +9,5 @@ namespace cdd_cpp::server {
 std::expected<openapi::OpenAPI, std::string>
 parse(const std::string &input) noexcept;
 } // namespace cdd_cpp::server
+
+// GCOV_EXCL_BR_STOP

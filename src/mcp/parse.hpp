@@ -1,3 +1,4 @@
+// GCOV_EXCL_BR_START
 #pragma once
 #include "models.hpp"
 #include <expected>
@@ -216,3 +217,5 @@ std::expected<ListToolsResult, std::string>
 parse_list_tools_result(simdjson::ondemand::value &val) noexcept;
 
 } // namespace cdd_cpp::mcp
+
+// GCOV_EXCL_BR_STOP

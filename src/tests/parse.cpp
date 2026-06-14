@@ -282,4 +282,5 @@ void test_parse() {
   std::cout << "test_parse passed.\n";
 }
 } // namespace cdd_cpp::openapi
+
 // GCOV_EXCL_BR_STOP

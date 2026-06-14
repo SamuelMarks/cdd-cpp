@@ -10,4 +10,5 @@ int main() {
   }
   return 0;
 }
+
 // GCOV_EXCL_BR_STOP

@@ -369,4 +369,5 @@ void test_emit() {
   std::cout << "models::test_emit passed.\n";
 }
 } // namespace cdd_cpp::models
+
 // GCOV_EXCL_BR_STOP

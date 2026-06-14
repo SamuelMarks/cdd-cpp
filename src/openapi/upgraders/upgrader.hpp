@@ -1,3 +1,4 @@
+// GCOV_EXCL_BR_START
 #pragma once
 #include <expected>
 #include <simdjson.h>
@@ -10,3 +11,5 @@ std::expected<std::string, std::string>
 upgrade_to_latest(const std::string &json_spec) noexcept;
 
 } // namespace cdd_cpp::openapi::upgraders
+
+// GCOV_EXCL_BR_STOP

@@ -420,4 +420,5 @@ parse(const std::string &input) noexcept {
 }
 
 } // namespace cdd_cpp::client_sdk
+
 // GCOV_EXCL_BR_STOP

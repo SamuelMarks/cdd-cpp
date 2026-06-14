@@ -68,6 +68,17 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
   ss << "#include <simdjson.h>\n\n";
 
   ss << "using namespace simdjson;\n\n";
+  ss << "static std::string escape_string(const std::string& s) {\n";
+  ss << "    std::string out;\n";
+  ss << "    for (char c : s) {\n";
+  ss << "        if (c == '\\\"') out += \"\\\\\\\"\";\n";
+  ss << "        else if (c == '\\n') out += \"\\\\n\";\n";
+  ss << "        else if (c == '\\r') out += \"\\\\r\";\n";
+  ss << "        else if (c == '\\\\') out += \"\\\\\\\\\";\n";
+  ss << "        else out += c;\n";
+  ss << "    }\n";
+  ss << "    return out;\n";
+  ss << "}\n\n";
   ss << "namespace cdd_cli {\n\n";
   ss << docstrings::emit_api_docstrings(spec);
   ss << "    class Client {\n";
@@ -241,17 +252,17 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
       if (n->op->parameters.has_value()) {
         for (const auto &p : n->op->parameters.operator*()) {
           if (p.description.has_value()) {
-            ss << " * @param " << p.name << " "
+            ss << "/// @param " << p.name << " "
                << escape_string(p.description.operator*()) << "\n";
           } else {
-            ss << " * @param " << p.name << " " << p.in << " parameter\n";
+            ss << "/// @param " << p.name << " " << p.in << " parameter\n";
           }
           if (p.example.has_value()) {
-            ss << " * @param_example " << p.name << " "
+            ss << "/// @param_example " << p.name << " "
                << escape_string(p.example.operator*()) << "\n";
           }
           if (p.deprecated) {
-            ss << " * @param_deprecated " << p.name << "\n";
+            ss << "/// @param_deprecated " << p.name << "\n";
           }
         }
       }
@@ -429,11 +440,11 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
       ss << "                simdjson::ondemand::value id_val;\n";
       ss << "                if (!doc[\"id\"].get(id_val)) {\n";
       ss << "                    if (id_val.type() == "
-            "simdjson::ondemand::json_type::number) id_str = "
-            "std::to_string(id_val.get_int64().value_or(0));\n";
+            "simdjson::ondemand::json_type::number) { int64_t v=0; "
+            "id_val.get(v); id_str = std::to_string(v); }\n";
       ss << "                    else if (id_val.type() == "
-            "simdjson::ondemand::json_type::string) id_str = \"\\\"\" + "
-            "std::string(id_val.get_string().value_or(\"\")) + \"\\\"\";\n";
+            "simdjson::ondemand::json_type::string) { std::string_view v; "
+            "id_val.get(v); id_str = \"\\\"\" + std::string(v) + \"\\\"\"; }\n";
       ss << "                }\n";
       ss << "                std::string_view jsonrpc_v;\n";
       ss << "                if (doc[\"jsonrpc\"].get(jsonrpc_v) || jsonrpc_v "
@@ -695,6 +706,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
       ss << "                }\n";
       ss << "            }\n";
       ss << "            break;\n";
+      ss << "        }\n";
     } else if (n->method.has_value() && n->op.has_value()) {
       std::string op_id =
           n->op->operationId.value_or("op_" + std::to_string(node_ids[n]));
@@ -752,10 +764,28 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
   result["src/generated_cli.cpp"] = ss.str();
 
   if (!no_installable_package) {
-    std::string cmake_content = "cmake_minimum_required(VERSION 3.15)\n"
-                                "project(generated_project LANGUAGES CXX)\n"
-                                "set(CMAKE_CXX_STANDARD 26)\n"
-                                "add_subdirectory(src)\n";
+    std::string cmake_content =
+        "cmake_minimum_required(VERSION 3.15)\n"
+        "project(generated_project LANGUAGES CXX)\n"
+        "set(CMAKE_CXX_STANDARD 26)\n"
+        "include(FetchContent)\n"
+        "FetchContent_Declare(simdjson GIT_REPOSITORY "
+        "https://github.com/simdjson/simdjson.git GIT_TAG v3.9.5)\n"
+        "FetchContent_MakeAvailable(simdjson)\n"
+        "find_package(CURL QUIET)\n"
+        "if(NOT CURL_FOUND)\n"
+        "  FetchContent_Declare(curl GIT_REPOSITORY "
+        "https://github.com/curl/curl.git GIT_TAG curl-8_7_1)\n"
+        "  set(BUILD_CURL_EXE OFF CACHE BOOL \"\" FORCE)\n"
+        "  set(BUILD_TESTING OFF CACHE BOOL \"\" FORCE)\n"
+        "  set(CURL_USE_OPENSSL OFF CACHE BOOL \"\" FORCE)\n"
+        "  set(CURL_DISABLE_LDAP ON CACHE BOOL \"\" FORCE)\n"
+        "  set(CURL_DISABLE_LDAPS ON CACHE BOOL \"\" FORCE)\n"
+        "  set(CURL_USE_LIBPSL OFF CACHE BOOL \"\" FORCE)\n"
+        "  set(CURL_USE_LIBSSH2 OFF CACHE BOOL \"\" FORCE)\n"
+        "  FetchContent_MakeAvailable(curl)\n"
+        "endif()\n"
+        "add_subdirectory(src)\n";
     if (tests) {
       cmake_content += "add_subdirectory(tests)\n";
     }
@@ -764,6 +794,13 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
         "set(HEADERS )\n"
         "set(SOURCES generated_cli.cpp)\n"
         "add_executable(generated_bin ${SOURCES} ${HEADERS})\n"
+        "if(TARGET curl)\n"
+        "  target_link_libraries(generated_bin PUBLIC simdjson::simdjson "
+        "curl)\n"
+        "else()\n"
+        "  target_link_libraries(generated_bin PUBLIC simdjson::simdjson "
+        "CURL::libcurl)\n"
+        "endif()\n"
         "install(TARGETS generated_bin)\n";
   }
 
@@ -808,4 +845,5 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
 }
 
 } // namespace cdd_cpp::client_sdk_cli
+
 // GCOV_EXCL_BR_STOP

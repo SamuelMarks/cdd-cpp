@@ -281,4 +281,5 @@ parse(const std::string &input) noexcept {
 }
 
 } // namespace cdd_cpp::client_sdk_cli
+
 // GCOV_EXCL_BR_STOP

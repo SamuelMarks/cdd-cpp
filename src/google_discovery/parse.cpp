@@ -76,7 +76,12 @@ void process_methods(simdjson::dom::object methods,
     openapi::Operation op;
     simdjson::dom::element id_el;
     if (method_obj["id"].get(id_el) == simdjson::SUCCESS && id_el.is_string()) {
-      op.operationId = std::string(id_el.get_string().value_unsafe());
+      std::string id_str = std::string(id_el.get_string().value_unsafe());
+      for (char &c : id_str) {
+        if (c == '.')
+          c = '_';
+      }
+      op.operationId = id_str;
     }
     simdjson::dom::element desc_el;
     if (method_obj["description"].get(desc_el) == simdjson::SUCCESS &&
@@ -298,4 +303,5 @@ parse(const std::string &input) noexcept {
   return results;
 }
 } // namespace cdd_cpp::google_discovery
+
 // GCOV_EXCL_BR_STOP

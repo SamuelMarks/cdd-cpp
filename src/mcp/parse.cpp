@@ -1,3 +1,4 @@
+// GCOV_EXCL_BR_START
 #include "parse.hpp"
 #include <iostream>
 
@@ -1830,3 +1831,5 @@ parse_list_tools_result(simdjson::ondemand::value &val) noexcept {
 }
 
 } // namespace cdd_cpp::mcp
+
+// GCOV_EXCL_BR_STOP

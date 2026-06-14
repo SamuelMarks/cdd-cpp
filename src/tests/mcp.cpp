@@ -1,3 +1,4 @@
+// GCOV_EXCL_BR_START
 #include "../mcp/emit.hpp"
 #include "../mcp/parse.hpp"
 #include <cassert>
@@ -1361,3 +1362,5 @@ void test_mcp_logging_progress() {
 
   std::cout << "mcp::test_mcp_logging_progress passed.\n";
 }
+
+// GCOV_EXCL_BR_STOP

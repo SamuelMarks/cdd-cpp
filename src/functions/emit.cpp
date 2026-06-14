@@ -8,4 +8,5 @@ std::string emit() noexcept {
   return "{}";
 }
 } // namespace cdd_cpp::functions
+
 // GCOV_EXCL_BR_STOP

@@ -162,4 +162,5 @@ void test_upgraders() {
   std::cout << "openapi::upgraders::test_upgraders passed.\n";
 }
 } // namespace cdd_cpp::openapi::upgraders
+
 // GCOV_EXCL_BR_STOP

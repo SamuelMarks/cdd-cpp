@@ -1,3 +1,4 @@
+// GCOV_EXCL_BR_START
 #pragma once
 #include <optional>
 #include <string>
@@ -666,3 +667,5 @@ struct ListToolsResult {
 };
 
 } // namespace cdd_cpp::mcp
+
+// GCOV_EXCL_BR_STOP

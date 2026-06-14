@@ -64,4 +64,5 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   return ss.str();
 }
 } // namespace cdd_cpp::mocks
+
 // GCOV_EXCL_BR_STOP

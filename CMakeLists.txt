@@ -158,13 +158,22 @@ enable_extreme_checks(cdd-cpp)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     # Tests
-    add_executable(cdd-tests src/tests/client_sdk_cli_test.cpp  src/tests/main.cpp src/tests/parse.cpp src/tests/emit.cpp src/tests/upgrader_test.cpp src/tests/google_discovery.cpp src/tests/models.cpp src/tests/client_sdk_test.cpp src/tests/functions.cpp src/tests/docstrings.cpp src/tests/server.cpp src/tests/mocks.cpp src/tests/http.cpp src/tests/cli.cpp src/tests/orm.cpp src/tests/mcp.cpp)
+    add_executable(cdd-tests src/tests/client_sdk_cli_test.cpp  src/tests/main.cpp src/tests/parse.cpp src/tests/openapi_parse.cpp src/tests/emit.cpp src/tests/upgrader_test.cpp src/tests/google_discovery.cpp src/tests/models.cpp src/tests/client_sdk_test.cpp src/tests/functions.cpp src/tests/docstrings.cpp src/tests/server.cpp src/tests/mocks.cpp src/tests/http.cpp src/tests/cli.cpp src/tests/orm.cpp src/tests/mcp.cpp)
     target_link_libraries(cdd-tests PRIVATE cdd_lib)
     enable_extreme_checks(cdd-tests)
 
     # Testing config
     enable_testing()
     add_test(NAME CDDTests COMMAND cdd-tests)
+
+    # Add Python-based integration test for Google Discovery
+    find_package(Python COMPONENTS Interpreter)
+    if(Python_FOUND)
+        add_test(NAME GoogleDiscoveryIntegrationTest COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/scripts/test_google_discovery.py)
+    else()
+        add_test(NAME GoogleDiscoveryIntegrationTest COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/scripts/test_google_discovery.py)
+    endif()
+
 
 
     # Append ast_test to tests
