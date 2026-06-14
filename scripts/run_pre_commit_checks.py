@@ -33,7 +33,7 @@ def run_cmd(cmd, cwd=None, env=None, capture_output=False, check=True):
 
 def build_project():
     print("Building project...")
-    run_cmd(["cmake", "-B", "build", "-S", ".", "-DCMAKE_BUILD_TYPE=Release"])
+    run_cmd(["cmake", "-B", "build", "-S", ".", "-DCMAKE_BUILD_TYPE=Release", "-DCOVERAGE=ON"])
     run_cmd(["cmake", "--build", "build", "--config", "Release"])
 
 def run_tests():
@@ -111,7 +111,30 @@ def build_wasm():
         cmake_args.extend(["-G", "MinGW Makefiles"])
     run_cmd(cmake_args, cwd=build_dir)
     
-    run_cmd([sys.executable, "../patch_simdjson_simple.py"], cwd=build_dir)
+    # Patch simdjson to replace throw with abort
+    patch_script = os.path.join(build_dir, "patch_simdjson.py")
+    with open(patch_script, "w") as f:
+        f.write("""
+import os
+for root, _, files in os.walk("_deps"):
+    for file in files:
+        if file.endswith(".h") or file.endswith(".cpp") or file.endswith("-inl.h"):
+            path = os.path.join(root, file)
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                if "throw " in content:
+                    import re
+                    content = re.sub(r"throw\s+simdjson_error\(.*?\);", "abort();", content)
+                    content = re.sub(r"throw\s+simdjson::simdjson_error\(.*?\);", "abort();", content)
+                    content = content.replace("throw std::runtime_error", "// throw std::runtime_error")
+                    content = content.replace("throw std::out_of_range", "// throw std::out_of_range")
+                    with open(path, "w", encoding="utf-8") as f:
+                        f.write(content)
+            except Exception:
+                pass
+""")
+    run_cmd([sys.executable, "patch_simdjson.py"], cwd=build_dir)
     
     run_cmd(["cmake", "--build", ".", "--target", "cdd-cpp"], cwd=build_dir)
     
@@ -271,11 +294,11 @@ def main():
         print("Updating README badges...")
         run_cmd([sys.executable, "tools/update_badges.py", test_cov, doc_cov])
         
-        # Add README to commit if changed
+        badges_updated = False
         diff_res = subprocess.run(["git", "diff", "--quiet", "README.md"])
         if diff_res.returncode != 0:
-            print("Staging updated README.md")
-            run_cmd(["git", "add", "README.md"])
+            print("README.md was updated with new badges.")
+            badges_updated = True
             
         cdd_cpp_bin = None
         if sys.platform == "win32":
@@ -349,6 +372,9 @@ def main():
         build_wasm()
         
         print("Pre-commit checks passed.")
+        if badges_updated:
+            print("README.md was updated with new badges. Please stage it and commit again.")
+            sys.exit(1)
     except Exception as e:
         print(f"Error during pre-commit checks: {e}")
         

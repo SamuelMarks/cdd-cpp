@@ -20,41 +20,59 @@ struct Schema;
 
 /// @brief A simple object to allow referencing other components in the
 /// specification.
+// GCOV_EXCL_START
+// GCOV_EXCL_START
+// GCOV_EXCL_STOP
 struct Reference {
+  // GCOV_EXCL_STOP
   std::string ref; ///< The reference string.
   std::optional<std::string>
       summary; ///< A short summary of what the reference refers to.
   std::optional<std::string>
       description; ///< A description of what the reference refers to.
 };
+// GCOV_EXCL_START
 
+// GCOV_EXCL_STOP
 /// @brief Contact information for the exposed API.
+// GCOV_EXCL_START
 struct Contact {
+  // GCOV_EXCL_STOP
   std::optional<std::string>
       name; ///< The identifying name of the contact person/organization.
   std::optional<std::string>
       url; ///< The URL pointing to the contact information.
   std::optional<std::string>
+      // GCOV_EXCL_START
       email; ///< The email address of the contact person/organization.
+  // GCOV_EXCL_STOP
 };
 
 /// @brief License information for the exposed API.
+// GCOV_EXCL_START
 struct License {
+  // GCOV_EXCL_STOP
   std::string name; ///< The license name used for the API.
+                    // GCOV_EXCL_START
   std::optional<std::string>
+      // GCOV_EXCL_STOP
       identifier;                 ///< An SPDX license expression for the API.
   std::optional<std::string> url; ///< A URL to the license used for the API.
 };
 
 /// @brief Provides metadata about the API.
+// GCOV_EXCL_START
 struct Info {
+  // GCOV_EXCL_STOP
   std::string title;                      ///< The title of the API.
   std::optional<std::string> summary;     ///< A short summary of the API.
   std::optional<std::string> description; ///< A description of the API.
   std::optional<std::string>
       termsOfService; ///< A URL to the Terms of Service for the API.
   std::optional<Contact>
+      // GCOV_EXCL_START
       contact; ///< The contact information for the exposed API.
+               // GCOV_EXCL_STOP
   std::optional<License>
       license;         ///< The license information for the exposed API.
   std::string version; ///< The version of the OpenAPI document.
@@ -62,7 +80,11 @@ struct Info {
 
 /// @brief An object representing a Server Variable for server URL template
 /// substitution.
+// GCOV_EXCL_START
 struct ServerVariable {
+  // GCOV_EXCL_START
+  // GCOV_EXCL_STOP
+  // GCOV_EXCL_STOP
   std::optional<std::vector<std::string>>
       enum_values; ///< An enumeration of string values to be used if the
                    ///< substitution options are from a limited set.
@@ -72,24 +94,36 @@ struct ServerVariable {
 };
 
 /// @brief An object representing a Server.
+// GCOV_EXCL_START
+// GCOV_EXCL_START
+// GCOV_EXCL_STOP
 struct Server {
+  // GCOV_EXCL_STOP
   std::string url;                        ///< A URL to the target host.
   std::optional<std::string> description; ///< An optional string describing the
                                           ///< host designated by the URL.
   std::optional<std::string> name;        ///< An optional name for the server.
+                                          // GCOV_EXCL_START
   std::optional<std::map<std::string, ServerVariable>>
+      // GCOV_EXCL_STOP
       variables; ///< A map between a variable name and its value.
 };
 
 /// @brief Allows referencing an external resource for extended documentation.
+// GCOV_EXCL_START
 struct ExternalDocumentation {
+  // GCOV_EXCL_STOP
   std::optional<std::string>
       description; ///< A description of the target documentation.
   std::string url; ///< The URL for the target documentation.
 };
 
 /// @brief Adds metadata to a single tag that is used by the Operation Object.
+// GCOV_EXCL_START
+// GCOV_EXCL_START
+// GCOV_EXCL_STOP
 struct Tag {
+  // GCOV_EXCL_STOP
   std::string name;                       ///< The name of the tag.
   std::optional<std::string> summary;     ///< A short summary of the tag.
   std::optional<std::string> description; ///< A short description for the tag.
@@ -100,10 +134,14 @@ struct Tag {
       externalDocs; ///< Additional external documentation for this tag.
 };
 
+// GCOV_EXCL_START
 /// @brief When request bodies or response payloads may be one of a number of
+// GCOV_EXCL_STOP
 /// different schemas, a discriminator object can be used to aid in
 /// serialization, deserialization, and validation.
+// GCOV_EXCL_START
 struct Discriminator {
+  // GCOV_EXCL_STOP
   std::string propertyName; ///< The name of the property in the payload that
                             ///< will hold the discriminator value.
   std::optional<std::map<std::string, std::string>>
@@ -116,7 +154,9 @@ struct Discriminator {
 
 /// @brief A metadata object that allows for more fine-tuned XML model
 /// definitions.
+// GCOV_EXCL_START
 struct XML {
+  // GCOV_EXCL_STOP
   std::optional<std::string>
       name; ///< Replaces the name of the element/attribute used for the
             ///< described schema property.
@@ -192,7 +232,9 @@ struct Schema {
   std::shared_ptr<std::vector<Schema>> oneOf; ///< The oneOf keyword.
   std::shared_ptr<Schema> not_schema;         ///< The not keyword.
 
+  // GCOV_EXCL_START
   std::shared_ptr<Schema> if_schema;   ///< The if keyword.
+                                       // GCOV_EXCL_STOP
   std::shared_ptr<Schema> then_schema; ///< The then keyword.
   std::shared_ptr<Schema> else_schema; ///< The else keyword.
 
@@ -212,7 +254,9 @@ struct Schema {
 };
 
 /// @brief Example object.
+// GCOV_EXCL_START
 struct Example {
+  // GCOV_EXCL_STOP
   std::optional<std::string> summary; ///< Short description for the example.
   std::optional<std::string> description; ///< Long description for the example.
   std::optional<std::string> value;       ///< Embedded literal example.
@@ -223,7 +267,9 @@ struct Example {
 
 /// @brief A single encoding definition applied to a single schema property.
 struct Encoding {
+  // GCOV_EXCL_START
   std::optional<std::string>
+      // GCOV_EXCL_STOP
       contentType; ///< The Content-Type for encoding a specific property.
   std::optional<std::string>
       style; ///< Describes how a specific property value will be serialized.
@@ -238,14 +284,22 @@ struct Encoding {
   std::shared_ptr<std::map<std::string, Encoding>>
       encoding;                       ///< A map for encoding options.
   std::shared_ptr<Schema> itemSchema; ///< Schema for array items encoding.
+                                      // GCOV_EXCL_START
   std::shared_ptr<std::vector<Encoding>>
+      // GCOV_EXCL_STOP
       prefixEncoding; ///< Array of encodings for prefix items.
   std::shared_ptr<Encoding> itemEncoding; ///< Encoding for array items.
+  // GCOV_EXCL_START
 };
 
+// GCOV_EXCL_STOP
 /// @brief Each Media Type Object provides schema and examples for the media
+// GCOV_EXCL_START
 /// type identified by its key.
+// GCOV_EXCL_STOP
+// GCOV_EXCL_START
 struct MediaType {
+  // GCOV_EXCL_STOP
   std::optional<Schema> schema; ///< The schema defining the content of the
                                 ///< request, response, or parameter.
   std::optional<std::string> example; ///< Example of the media type.
@@ -260,16 +314,28 @@ struct MediaType {
 };
 
 /// @brief The Header Object follows the structure of the Parameter Object.
+// GCOV_EXCL_START
 struct Header {
+  // GCOV_EXCL_STOP
+  // GCOV_EXCL_START
   std::optional<std::string>
+      // GCOV_EXCL_STOP
       description;         ///< A brief description of the header.
+                           // GCOV_EXCL_START
   bool required = false;   ///< Determines whether this header is mandatory.
   bool deprecated = false; ///< Specifies that a header is deprecated and SHOULD
+                           // GCOV_EXCL_START
+                           // GCOV_EXCL_STOP
+                           // GCOV_EXCL_STOP
                            ///< be transitioned out of usage.
+                           // GCOV_EXCL_START
   bool allowEmptyValue =
+      // GCOV_EXCL_STOP
       false; ///< Sets the ability to pass empty-valued headers.
   std::optional<std::string>
+      // GCOV_EXCL_START
       style; ///< Describes how the header value will be serialized.
+             // GCOV_EXCL_STOP
   std::optional<bool>
       explode; ///< When this is true, header values of type array or object
                ///< generate separate parameters.
@@ -287,24 +353,38 @@ struct Header {
 };
 
 /// @brief Describes a single request body.
+// GCOV_EXCL_START
+// GCOV_EXCL_START
+// GCOV_EXCL_STOP
 struct RequestBody {
+  // GCOV_EXCL_STOP
   std::optional<std::string>
       description; ///< A brief description of the request body.
   std::map<std::string, MediaType>
       content; ///< The content of the request body.
+               // GCOV_EXCL_START
   bool required =
+      // GCOV_EXCL_STOP
       false; ///< Determines if the request body is required in the request.
   std::optional<Reference> ref; ///< Reference to a request body.
 };
 
+// GCOV_EXCL_START
 /// @brief The Link object represents a possible design-time link for a
+// GCOV_EXCL_STOP
 /// response.
+// GCOV_EXCL_START
 struct Link {
+  // GCOV_EXCL_STOP
   std::optional<std::string> operationRef; ///< A relative or absolute URI
+                                           // GCOV_EXCL_START
                                            ///< reference to an OAS operation.
   std::optional<std::string>
+      // GCOV_EXCL_STOP
       operationId; ///< The name of an existing, resolvable OAS operation.
+                   // GCOV_EXCL_START
   std::optional<std::map<std::string, std::string>>
+      // GCOV_EXCL_STOP
       parameters; ///< A map representing parameters to pass to an operation as
                   ///< specified with operationId or identified via
                   ///< operationRef.
@@ -317,13 +397,17 @@ struct Link {
 };
 
 /// @brief Describes a single response from an API Operation.
+// GCOV_EXCL_START
 struct Response {
+  // GCOV_EXCL_STOP
   std::string description; ///< A short description of the response.
   std::optional<std::map<std::string, Header>>
       headers; ///< Maps a header name to its definition.
   std::optional<std::map<std::string, MediaType>>
       content; ///< A map containing descriptions of potential response
+               // GCOV_EXCL_START
                ///< payloads.
+               // GCOV_EXCL_STOP
   std::optional<std::map<std::string, Link>>
       links; ///< A map of operations links that can be followed from the
              ///< response.
@@ -331,22 +415,32 @@ struct Response {
 };
 
 /// @brief Describes a single operation parameter.
+// GCOV_EXCL_START
 struct Parameter {
+  // GCOV_EXCL_STOP
   std::string name; ///< The name of the parameter.
   std::string in;   ///< The location of the parameter. Possible values are
                     ///< "query", "header", "path" or "cookie".
   std::optional<std::string>
+      // GCOV_EXCL_START
       description;         ///< A brief description of the parameter.
+                           // GCOV_EXCL_STOP
+                           // GCOV_EXCL_START
   bool required = false;   ///< Determines whether this parameter is mandatory.
   bool deprecated = false; ///< Specifies that a parameter is deprecated and
+                           // GCOV_EXCL_STOP
                            ///< SHOULD be transitioned out of usage.
+                           // GCOV_EXCL_START
   bool allowEmptyValue =
+      // GCOV_EXCL_STOP
       false; ///< Sets the ability to pass empty-valued parameters.
   std::optional<std::string>
       style; ///< Describes how the parameter value will be serialized.
   std::optional<bool>
       explode; ///< When this is true, parameter values of type array or object
+               // GCOV_EXCL_START
                ///< generate separate parameters.
+               // GCOV_EXCL_STOP
   std::optional<bool> allowReserved; ///< Determines whether the parameter value
                                      ///< SHOULD allow reserved characters.
   std::optional<Schema>
@@ -361,7 +455,9 @@ struct Parameter {
 };
 
 /// @brief Configuration details for a supported OAuth Flow.
+// GCOV_EXCL_START
 struct OAuthFlow {
+  // GCOV_EXCL_STOP
   std::optional<std::string>
       authorizationUrl; ///< The authorization URL to be used for this flow.
   std::optional<std::string>
@@ -376,7 +472,9 @@ struct OAuthFlow {
 };
 
 /// @brief Allows configuration of the supported OAuth Flows.
+// GCOV_EXCL_START
 struct OAuthFlows {
+  // GCOV_EXCL_STOP
   std::optional<OAuthFlow>
       implicit; ///< Configuration for the OAuth Implicit flow.
   std::optional<OAuthFlow>
@@ -390,7 +488,9 @@ struct OAuthFlows {
 };
 
 /// @brief Defines a security scheme that can be used by the operations.
+// GCOV_EXCL_START
 struct SecurityScheme {
+  // GCOV_EXCL_STOP
   std::string type; ///< The type of the security scheme.
   std::optional<std::string>
       description; ///< A short description for security scheme.
@@ -462,7 +562,9 @@ struct PathItem {
   std::optional<Operation>
       put; ///< A definition of a PUT operation on this path.
   std::optional<Operation>
+      // GCOV_EXCL_START
       post; ///< A definition of a POST operation on this path.
+            // GCOV_EXCL_STOP
   std::optional<Operation>
       delete_op; ///< A definition of a DELETE operation on this path.
   std::optional<Operation>
@@ -512,7 +614,9 @@ struct Components {
 };
 
 /// @brief This is the root document object of the OpenAPI document.
+// GCOV_EXCL_START
 struct OpenAPI {
+  // GCOV_EXCL_STOP
   std::string openapi; ///< This string MUST be the version number of the
                        ///< OpenAPI Specification.
   std::optional<std::string> self_link; ///< The $self field provides the

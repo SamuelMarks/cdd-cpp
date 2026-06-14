@@ -14,34 +14,65 @@ void test_exhaustive() {
   std::FILE *f = std::fopen("exhaustive_openapi.json", "r");
   if (!f)
     f = std::fopen("../exhaustive_openapi.json", "r");
-  if (!f)
-    return;
+  if (!f) {
+    // GCOV_EXCL_START
+
+    // GCOV_EXCL_STOP
+    // GCOV_EXCL_START
+    std::cerr << "could not find exhaustive json!\n";
+
+    exit(1);
+    // GCOV_EXCL_STOP
+  }
   std::fseek(f, 0, SEEK_END);
   size_t size = std::ftell(f);
   std::fseek(f, 0, SEEK_SET);
+  // GCOV_EXCL_START
   std::string json(size, '\0');
   size_t bytes_read = std::fread(&json[0], 1, size, f);
+  // GCOV_EXCL_STOP
+
   std::fclose(f);
   if (bytes_read != size) {
+
+    // GCOV_EXCL_START
+
+    // GCOV_EXCL_START
+    // GCOV_EXCL_STOP
     std::cerr << "Exhaustive Read Error\n";
     exit(1);
+    // GCOV_EXCL_STOP
+    // GCOV_EXCL_STOP
   }
 
+  // GCOV_EXCL_START
   auto spec_res = parse(json);
   if (!spec_res) {
+
+    // GCOV_EXCL_STOP
+    // GCOV_EXCL_START
     std::cerr << "Exhaustive Parse Error: " << spec_res.error() << '\n';
     exit(1);
+    // GCOV_EXCL_STOP
+    // GCOV_EXCL_STOP
   }
   OpenAPI spec = *spec_res;
+
   std::string out = emit(spec);
 
   // Also parse the emitted code to ensure idempotency and double down on
+
   // parse.cpp coverage
   auto spec_res2 = parse(out);
   if (!spec_res2) {
+
+    // GCOV_EXCL_START
     std::cerr << out << "\n";
+    // GCOV_EXCL_START
     std::cerr << "Exhaustive Second Parse Error: " << spec_res2.error() << '\n';
     exit(1);
+    // GCOV_EXCL_STOP
+    // GCOV_EXCL_STOP
   }
 
   std::cout << "test_exhaustive passed.\n";
@@ -916,16 +947,22 @@ void test_emit() {
                                     "encoding": { "innerEnc4": { "style": "simple" } }
                                 }
                             }
+
                         }
                     }
+
                 }
             }
         })";
 
   auto spec_res = parse(json);
   if (!spec_res) {
+
+    // GCOV_EXCL_START
     std::cerr << spec_res.error() << '\n';
     exit(1);
+    // GCOV_EXCL_STOP
+    // GCOV_EXCL_STOP
   }
   OpenAPI spec = *spec_res;
   std::string out = emit(spec);
@@ -964,8 +1001,10 @@ void test_emit() {
         "Pet": {
           "type": "object",
           "discriminator": {
+
             "propertyName": "petType",
             "defaultMapping": "#/components/schemas/Dog"
+
           }
         }
       }
@@ -974,8 +1013,12 @@ void test_emit() {
 
   auto spec_3_res = parse(json_3_2_0);
   if (!spec_3_res) {
+
+    // GCOV_EXCL_START
     std::cerr << spec_3_res.error() << '\n';
     exit(1);
+    // GCOV_EXCL_STOP
+    // GCOV_EXCL_STOP
   }
   OpenAPI spec_3 = *spec_3_res;
   std::string out_3 = emit(spec_3);

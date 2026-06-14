@@ -177,20 +177,20 @@ void test_emit() {
   assert(code.find("int age;") != std::string::npos);
   assert(code.find("bool active;") != std::string::npos);
   assert(code.find("double score;") != std::string::npos);
-  assert(code.find("OtherStruct ref;") != std::string::npos);
+  assert(code.find("std::unique_ptr<OtherStruct> ref;") != std::string::npos);
   assert(code.find("std::vector<int> array;") != std::string::npos);
   assert(code.find("std::optional<std::string> opt_string;") !=
          std::string::npos);
-  assert(code.find("OtherStruct ref;") != std::string::npos);
+  assert(code.find("std::unique_ptr<OtherStruct> ref;") != std::string::npos);
   assert(code.find("std::vector<int> array;") != std::string::npos);
   assert(code.find("std::optional<std::string> opt_string;") !=
          std::string::npos);
-  assert(code.find("std::optional<no_slash> ref2;") != std::string::npos);
+  assert(code.find("std::unique_ptr<no_slash> ref2;") != std::string::npos);
   assert(code.find("std::optional<std::vector<std::string>> array2;") !=
          std::string::npos);
   assert(code.find("std::optional<std::string> none;") != std::string::npos);
   assert(code.find("std::optional<std::string> rand;") != std::string::npos);
-  assert(code.find("std::optional<no_slash> ref2;") != std::string::npos);
+  assert(code.find("std::unique_ptr<no_slash> ref2;") != std::string::npos);
   assert(code.find("std::optional<std::vector<std::string>> array2;") !=
          std::string::npos);
   assert(code.find("std::optional<std::string> none;") != std::string::npos);

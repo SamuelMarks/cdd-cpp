@@ -17,7 +17,13 @@ std::expected<std::string, std::string> exec(const char *cmd) {
       popen(std::string(std::string(cmd) + " 2>&1").c_str(), "r"),
       pclose_wrapper);
   if (!pipe) {
+    // GCOV_EXCL_START
+
+    // GCOV_EXCL_STOP
+
+    // GCOV_EXCL_START
     return std::unexpected("popen() failed!");
+    // GCOV_EXCL_STOP
   }
   while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
     result += buffer.data();

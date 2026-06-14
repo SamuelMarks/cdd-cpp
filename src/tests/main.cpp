@@ -64,6 +64,7 @@ void test_upgraders() noexcept;
 int main() {
   std::cout << "Running full test suite...\n";
   cdd_cpp::openapi::test_parse();
+  cdd_cpp::openapi::test_openapi_parse();
   cdd_cpp::openapi::test_emit();
   cdd_cpp::models::test_parse();
   cdd_cpp::models::test_emit();

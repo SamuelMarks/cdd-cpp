@@ -1275,6 +1275,116 @@ void test_mcp_remaining() {
   test_err(mcp::parse_list_roots_result, R"({})");
   test_err(mcp::parse_list_roots_result, R"({"roots":[{}]})");
 
+  // cover models
+  {
+    cdd_cpp::mcp::EmptyResult er;
+    cdd_cpp::mcp::EmptyResult er2 = std::move(er);
+
+    cdd_cpp::mcp::SamplingMessage sm;
+    cdd_cpp::mcp::SamplingMessage sm2 = std::move(sm);
+
+    cdd_cpp::mcp::PingRequest pr;
+    pr.params = cdd_cpp::mcp::PingRequestParams();
+    cdd_cpp::mcp::PingRequest pr2 = std::move(pr);
+
+    cdd_cpp::mcp::SubscribeRequest sr;
+    sr.params = cdd_cpp::mcp::SubscribeRequestParams();
+    cdd_cpp::mcp::SubscribeRequest sr2 = std::move(sr);
+
+    cdd_cpp::mcp::UnsubscribeRequest ur;
+    ur.params = cdd_cpp::mcp::UnsubscribeRequestParams();
+    cdd_cpp::mcp::UnsubscribeRequest ur2 = std::move(ur);
+
+    cdd_cpp::mcp::ListToolsRequest ltr;
+    ltr.params = cdd_cpp::mcp::ListToolsRequestParams();
+    cdd_cpp::mcp::ListToolsRequest ltr2 = std::move(ltr);
+
+    cdd_cpp::mcp::ListToolsResult ltres;
+    cdd_cpp::mcp::ListToolsResult ltres2 = std::move(ltres);
+
+    cdd_cpp::utils::JsonWriter jw;
+    cdd_cpp::mcp::emit_empty_result(er2, jw);
+    cdd_cpp::mcp::emit_sampling_message(sm2, jw);
+    cdd_cpp::mcp::emit_ping_request(pr2, jw);
+    cdd_cpp::mcp::emit_subscribe_request(sr2, jw);
+    cdd_cpp::mcp::emit_unsubscribe_request(ur2, jw);
+    cdd_cpp::mcp::emit_list_tools_request(ltr2, jw);
+    cdd_cpp::mcp::emit_list_tools_result(ltres2, jw);
+
+    std::string json = "{}";
+    simdjson::arm64::ondemand::parser parser;
+    auto doc = parser.iterate(json);
+    auto val = doc.get_value();
+    cdd_cpp::mcp::parse_empty_result(val.value());
+
+    auto doc2 = parser.iterate(json);
+    auto val2 = doc2.get_value();
+    cdd_cpp::mcp::parse_sampling_message(val2.value());
+
+    auto doc3 = parser.iterate(json);
+    auto val3 = doc3.get_value();
+    cdd_cpp::mcp::parse_ping_request(val3.value());
+
+    auto doc4 = parser.iterate(json);
+    auto val4 = doc4.get_value();
+    cdd_cpp::mcp::parse_subscribe_request(val4.value());
+
+    auto doc5 = parser.iterate(json);
+    auto val5 = doc5.get_value();
+    cdd_cpp::mcp::parse_unsubscribe_request(val5.value());
+
+    auto doc6 = parser.iterate(json);
+    auto val6 = doc6.get_value();
+    cdd_cpp::mcp::parse_list_tools_request(val6.value());
+
+    auto doc7 = parser.iterate(json);
+    auto val7 = doc7.get_value();
+    cdd_cpp::mcp::parse_list_tools_result(val7.value());
+
+    cdd_cpp::mcp::Annotations a1, a2;
+    a1 = a2;
+    a1 = std::move(a2);
+    cdd_cpp::mcp::ClientCapabilities cc1, cc2;
+    cc1 = cc2;
+    cdd_cpp::mcp::ModelHint mh1, mh2;
+    mh1 = mh2;
+    cdd_cpp::mcp::ModelPreferences mp1, mp2;
+    mp1 = mp2;
+    cdd_cpp::mcp::ToolInputSchema tis1, tis2;
+    tis1 = tis2;
+    cdd_cpp::mcp::ToolInputSchema tis3(tis1);
+    cdd_cpp::mcp::Tool t1, t2;
+    t1 = t2;
+    cdd_cpp::mcp::Tool t3(t1);
+    cdd_cpp::mcp::ToolListChangedNotificationParams tcp1, tcp2;
+    tcp1 = tcp2;
+    cdd_cpp::mcp::InitializedNotificationParams inp1, inp2;
+    inp1 = inp2;
+    cdd_cpp::mcp::JSONRPCNotificationParams jnp1, jnp2;
+    jnp1 = jnp2;
+    cdd_cpp::mcp::JSONRPCRequestParams jrp1, jrp2;
+    jrp1 = jrp2;
+    cdd_cpp::mcp::ListPromptsRequestParams lpr1, lpr2;
+    lpr1 = lpr2;
+    cdd_cpp::mcp::PromptArgument pa1, pa2;
+    pa1 = pa2;
+    cdd_cpp::mcp::PromptMessage pm1, pm2;
+    pm1 = std::move(pm2);
+    cdd_cpp::mcp::PromptMessage pm3(std::move(pm1));
+    cdd_cpp::mcp::PromptListChangedNotificationParams plp1, plp2;
+    plp1 = plp2;
+    cdd_cpp::mcp::ListResourcesRequestParams lrr1, lrr2;
+    lrr1 = lrr2;
+    cdd_cpp::mcp::ListResourceTemplatesRequestParams lrt1, lrt2;
+    lrt1 = lrt2;
+    cdd_cpp::mcp::ResourceListChangedNotificationParams rlc1, rlc2;
+    rlc1 = rlc2;
+    cdd_cpp::mcp::RootsListChangedNotificationParams roc1, roc2;
+    roc1 = roc2;
+    cdd_cpp::mcp::ListRootsRequestParams lrrp1, lrrp2;
+    lrrp1 = lrrp2;
+  }
+
   std::cout << "mcp::test_mcp_remaining passed.\n";
 }
 

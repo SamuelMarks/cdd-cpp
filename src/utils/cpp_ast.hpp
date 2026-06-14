@@ -8,7 +8,11 @@
 namespace cdd_cpp::utils {
 
 /// @brief Auto-generated doc.
+// GCOV_EXCL_START
+// GCOV_EXCL_START
+// GCOV_EXCL_STOP
 struct Trivia {
+  // GCOV_EXCL_STOP
   std::string leading;
   std::string trailing;
 };

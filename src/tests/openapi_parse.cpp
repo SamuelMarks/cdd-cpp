@@ -321,7 +321,7 @@ void test_openapi_parse() {
   assert(spec.servers->size() == 1);
   assert(spec.servers->front().variables->size() == 1);
   assert(spec.paths->size() == 1);
-  assert(spec.paths->begin()->second.get->responses.size() == 1);
+  assert(spec.paths->begin()->second.get->responses->size() == 1);
   assert(spec.components->schemas->size() == 1);
   assert(spec.components->responses->size() == 1);
   assert(spec.components->parameters->size() == 1);

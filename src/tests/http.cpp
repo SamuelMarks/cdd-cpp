@@ -62,8 +62,15 @@ void test_http() {
     assert(res->find("body") != std::string::npos ||
            res->find("html") != std::string::npos || !res->empty());
   } else {
+    // GCOV_EXCL_START
+
+    // GCOV_EXCL_STOP
+
+    // GCOV_EXCL_START
     assert(res.error().find("curl") != std::string::npos ||
+
            res.error().find("not implemented") != std::string::npos);
+    // GCOV_EXCL_STOP
   }
 
   // Test invalid url

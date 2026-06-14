@@ -108,6 +108,11 @@ void test_client_sdk_cli_emit_details4() {
 }
 
 void test_emit_cli() {
+  test_client_sdk_cli_emit_details();
+  test_client_sdk_cli_emit_details2();
+  test_client_sdk_cli_emit_details3();
+  test_client_sdk_cli_emit_details4();
+
   openapi::OpenAPI spec;
   spec.info.title = "Test CLI";
   spec.info.version = "1.0.0";
