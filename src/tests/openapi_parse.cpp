@@ -140,7 +140,8 @@ void test_openapi_parse_final_details() {
             "content": {"app/json": {"schema": {"type": "string"}, "example": {"k": "v"}, "examples": {"ex1": {"value": {"k": "v"}, "summary": "sum", "description": "desc", "externalValue": "http", "$ref": "#/components/examples/Ex1"}}}},
             "headers": {"H1": {"description": "h1", "required": true, "deprecated": true, "allowEmptyValue": true, "style": "simple", "explode": true, "allowReserved": true, "schema": {"type": "string"}, "example": {"k": "v"}}},
             "links": {"L1": {"operationRef": "ref", "operationId": "id", "parameters": {"p1": "v1"}, "requestBody": "body", "description": "desc", "server": {"url": "http"}}}
-        }
+        },
+        "R2": {"$ref": "#/components/responses/R1"}
       },
       "parameters": {
         "P1": {
@@ -157,16 +158,19 @@ void test_openapi_parse_final_details() {
             "example": {"k": "v"},
             "examples": {"ex1": {"value": "v"}},
             "content": {"app/json": {"schema": {"type": "string"}}}
-        }
+        },
+        "P2": {"$ref": "#/components/parameters/P1"}
       },
       "examples": {
         "Ex1": {"summary": "sum", "description": "desc", "value": {"k": "v"}, "externalValue": "http"}
       },
       "requestBodies": {
-        "Req1": {"description": "desc", "content": {"app/json": {"schema": {"type": "string"}}}, "required": true}
+        "Req1": {"description": "desc", "content": {"app/json": {"schema": {"type": "string"}}}, "required": true},
+        "Req2": {"$ref": "#/components/requestBodies/Req1"}
       },
       "headers": {
-        "H1": {"description": "h1", "schema": {"type": "string"}}
+        "H1": {"description": "h1", "schema": {"type": "string"}},
+        "H2": {"$ref": "#/components/headers/H1"}
       },
       "securitySchemes": {
         "Sec1": {
@@ -184,16 +188,31 @@ void test_openapi_parse_final_details() {
                 "authorizationCode": {"authorizationUrl": "http", "tokenUrl": "http", "refreshUrl": "http", "scopes": {"read": "read access"}},
                 "deviceAuthorization": {"authorizationUrl": "http", "tokenUrl": "http", "refreshUrl": "http", "scopes": {"read": "read access"}}
             }
-        }
+        },
+        "Sec2": {"$ref": "#/components/securitySchemes/Sec1"}
       },
       "links": {
-        "L1": {"operationRef": "ref"}
+        "L1": {"operationRef": "ref"},
+        "L2": {"$ref": "#/components/links/L1"}
       },
       "callbacks": {
         "Cb1": {"url": {"summary": "sum", "description": "desc"}}
       },
       "pathItems": {
-        "PI1": {"summary": "sum", "description": "desc", "$ref": "#/components/pathItems/PI2"}
+        "PI1": {
+          "summary": "sum",
+          "description": "desc",
+          "$ref": "#/components/pathItems/PI2",
+          "put": {"operationId": "put1"},
+          "post": {"operationId": "post1"},
+          "delete": {"operationId": "del1"},
+          "options": {"operationId": "opt1"},
+          "head": {"operationId": "head1"},
+          "patch": {"operationId": "patch1"},
+          "trace": {"operationId": "trace1"},
+          "servers": [{"url": "http://server"}],
+          "parameters": [{"name": "p", "in": "query"}]
+        }
       }
     }
   })";

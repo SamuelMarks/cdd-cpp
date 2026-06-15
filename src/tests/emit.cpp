@@ -11,9 +11,9 @@ namespace cdd_cpp::openapi {
 
 //
 void test_exhaustive() {
-  std::FILE *f = std::fopen("exhaustive_openapi.json", "r");
+  std::FILE *f = std::fopen("spec.json", "r");
   if (!f)
-    f = std::fopen("../exhaustive_openapi.json", "r");
+    f = std::fopen("../spec.json", "r");
   if (!f) {
     // GCOV_EXCL_START
 
@@ -194,7 +194,7 @@ void test_openapi_emit_more_details() {
   param.in = "query";
   param.description = "param desc";
   param.required = true;
-  param.deprecated = false;
+  param.deprecated = true;
   param.allowEmptyValue = true;
   param.style = "form";
   param.explode = true;
