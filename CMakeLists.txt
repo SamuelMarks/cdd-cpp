@@ -36,7 +36,7 @@ endfunction()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "WASI")
     add_compile_options(-fno-exceptions)
-    add_definitions(-DSIMDJSON_EXCEPTIONS=1)
+    add_definitions(-DSIMDJSON_EXCEPTIONS=0)
 endif()
 
 option(USE_VCPKG "Use vcpkg for dependencies" OFF)
@@ -188,6 +188,7 @@ if(EMSCRIPTEN)
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
     set_target_properties(cdd-cpp PROPERTIES LINK_FLAGS "-s WASM=1 -s STANDALONE_WASM=1")
 endif()
+
 set_source_files_properties(
     src/cli/main.cpp
     src/cli/sync.cpp
