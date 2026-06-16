@@ -36,7 +36,7 @@ endfunction()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "WASI")
     add_compile_options(-fno-exceptions)
-    add_definitions(-DSIMDJSON_EXCEPTIONS=0)
+    add_definitions(-DSIMDJSON_EXCEPTIONS=1)
 endif()
 
 option(USE_VCPKG "Use vcpkg for dependencies" OFF)
@@ -71,8 +71,7 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Ems
         if(NOT CURL_FOUND)
             FetchContent_Declare(
                 curl
-                GIT_REPOSITORY https://github.com/curl/curl.git
-                GIT_TAG curl-8_7_1
+                URL https://github.com/curl/curl/archive/refs/tags/curl-8_7_1.tar.gz
             )
             set(BUILD_CURL_EXE OFF CACHE BOOL "Disable curl executable" FORCE)
             set(BUILD_TESTING OFF CACHE BOOL "Disable curl testing" FORCE)
@@ -98,7 +97,7 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Ems
             endif()
             FetchContent_Declare(
                 postgresql
-                URL "https://ftp.postgresql.org/pub/source/v15.5/postgresql-15.5.tar.bz2"
+                URL https://github.com/postgres/postgres/archive/refs/tags/REL_15_5.tar.gz
                 PATCH_COMMAND ${CMAKE_COMMAND} -E touch CMakeLists.txt
             )
             FetchContent_MakeAvailable(postgresql)

@@ -104,7 +104,7 @@ def build_wasm():
         "-DCDD_EXTREME_CHECKS=OFF",
         "-DSIMDJSON_ENABLE_THREADS=OFF",
         "-DCMAKE_BUILD_TYPE=Release",
-        "-DCMAKE_CXX_FLAGS=-fno-exceptions -DSIMDJSON_EXCEPTIONS=1",
+        "-DCMAKE_CXX_FLAGS=-fno-exceptions",
         "-DCMAKE_C_FLAGS=-fno-exceptions"
     ]
     if sys.platform == "win32":

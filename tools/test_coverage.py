@@ -1,13 +1,13 @@
 import subprocess
-import re
 import os
 import sys
+import json
 
 def get_coverage():
     try:
         if not os.path.exists("build/cdd-tests"):
             subprocess.run(
-                ["cmake", "-B", "build", "-S", ".", "-DCMAKE_BUILD_TYPE=Release"],
+                ["cmake", "-B", "build", "-S", ".", "-DCMAKE_BUILD_TYPE=Debug", "-DCOVERAGE=ON"],
                 check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
             )
             subprocess.run(
@@ -16,28 +16,50 @@ def get_coverage():
             )
             
         result = subprocess.run(
-            ["gcovr", "--print-summary", "-r", ".", "--filter", "src/", "--gcov-ignore-parse-errors=all"],
+            ["gcovr", "-r", ".", "--filter", "src/", "--json", "--gcov-ignore-parse-errors=all"],
             capture_output=True, text=True, check=True
         )
         
-        match_lines = re.search(r"lines:\s+([\d\.]+)%", result.stdout)
-        match_funcs = re.search(r"functions:\s+([\d\.]+)%", result.stdout)
-        match_branches = re.search(r"branches:\s+([\d\.]+)%", result.stdout)
+        data = json.loads(result.stdout)
+        total_lines = 0
+        covered_lines = 0
+        total_funcs = 0
+        covered_funcs = 0
+        total_branches = 0
+        covered_branches = 0
         
-        lines = float(match_lines.group(1)) if match_lines else 0.0
-        funcs = float(match_funcs.group(1)) if match_funcs else 0.0
-        # gcovr outputs 0.0% when there are 0 branches, which is considered 100% covered in this context since there are no branches to miss.
-        # But wait, if gcovr outputs branches: 0.0% (0 out of 0), that should be treated as 100% because no branches are uncovered.
-        # Let's extract the "taken" vs "total" branches if possible.
-        branches = 0.0
-        if match_branches:
-            branch_match = re.search(r"branches:\s+[\d\.]+%\s+\((\d+)\s+out\s+of\s+(\d+)\)", result.stdout)
-            if branch_match:
-                taken = int(branch_match.group(1))
-                total = int(branch_match.group(2))
-                branches = 100.0 if total == 0 else (taken / total) * 100.0
-            else:
-                branches = float(match_branches.group(1))
+        for file in data['files']:
+            # Ignore absolute paths that are artifacts of test harnesses
+            if file['file'].startswith('/'):
+                continue
+                
+            for line in file['lines']:
+                if line.get('gcovr/excluded', False):
+                    continue
+                total_lines += 1
+                if line['count'] > 0:
+                    covered_lines += 1
+                    
+                branches = line.get('branches', [])
+                for b in branches:
+                    if b.get('gcovr/excluded', False):
+                        continue
+                    total_branches += 1
+                    if b['count'] > 0:
+                        covered_branches += 1
+            
+            for func in file['functions']:
+                if func.get('gcovr/excluded', False):
+                    continue
+                total_funcs += 1
+                if func['execution_count'] > 0:
+                    covered_funcs += 1
+                
+            # If no branches, handle as 100%
+            
+        lines = (covered_lines / total_lines * 100.0) if total_lines > 0 else 100.0
+        funcs = (covered_funcs / total_funcs * 100.0) if total_funcs > 0 else 100.0
+        branches = (covered_branches / total_branches * 100.0) if total_branches > 0 else 100.0
         
         return lines, funcs, branches
             

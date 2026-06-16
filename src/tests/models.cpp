@@ -135,6 +135,10 @@ void test_emit() {
   p_arr.items = std::make_shared<openapi::Schema>(p2);
   s.properties->insert({"array", p_arr});
 
+  openapi::Schema p_class;
+  p_class.type = "string";
+  s.properties->insert({"class", p_class});
+
   openapi::Schema p_arr2;
   p_arr2.type = "array";
   s.properties->insert({"array2", p_arr2});

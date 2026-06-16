@@ -408,9 +408,17 @@ int main_impl(int argc, char **argv, std::ostream &out,
           "// Server implementation placeholder\n";
       if (!no_installable_package) {
         std::string cmake_content =
-            "cmake_minimum_required(VERSION 3.15)\nproject(generated_project "
-            "LANGUAGES CXX)\nset(CMAKE_CXX_STANDARD "
-            "26)\nadd_subdirectory(src)\n";
+            "cmake_minimum_required(VERSION 3.15)\n"
+            "project(generated_project LANGUAGES CXX)\n"
+            "if(POLICY CMP0135)\n"
+            "  cmake_policy(SET CMP0135 NEW)\n"
+            "endif()\n"
+            "set(CMAKE_CXX_STANDARD 26)\n"
+            "if(CMAKE_CXX_COMPILER_ID MATCHES \"Clang|GNU\")\n"
+            "  add_compile_options(-Wno-deprecated-literal-operator "
+            "-Wno-character-conversion)\n"
+            "endif()\n"
+            "add_subdirectory(src)\n";
         if (tests) {
           cmake_content += "add_subdirectory(tests)\n";
         }
@@ -427,8 +435,9 @@ int main_impl(int argc, char **argv, std::ostream &out,
             "include(FetchContent)\n"
             "FetchContent_Declare(\n"
             "  googletest\n"
-            "  GIT_REPOSITORY https://github.com/google/googletest.git\n"
-            "  GIT_TAG release-1.12.1\n"
+            "  URL "
+            "https://github.com/google/googletest/archive/refs/tags/"
+            "v1.14.0.tar.gz\n"
             ")\n"
             "FetchContent_MakeAvailable(googletest)\n"
             "add_executable(server_test server_test.cpp)\n"

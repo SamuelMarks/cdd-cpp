@@ -191,6 +191,57 @@ void test_to_docs_json() {
   auto serve_err = exec("./cdd-cpp serve_json_rpc --help");
   assert(serve_err && serve_err->find("Usage:") != std::string::npos);
 
+  std::string gd_spec = R"({
+    "kind": "discovery#restDescription",
+    "name": "test_api",
+    "version": "v1",
+    "schemas": {},
+    "resources": {}
+  })";
+  FILE *f_gd = fopen("test_gd_spec.json", "w");
+  if (f_gd) {
+    fwrite(gd_spec.c_str(), 1, gd_spec.size(), f_gd);
+    fclose(f_gd);
+  }
+
+  std::cout << "Testing from_google_discovery help\n";
+  auto from_gd_help = exec("./cdd-cpp from_google_discovery --help");
+  assert(from_gd_help && from_gd_help->find("Usage:") != std::string::npos);
+
+  std::cout << "Testing from_google_discovery err\n";
+  auto from_gd_err = exec("./cdd-cpp from_google_discovery");
+  assert(from_gd_err &&
+         from_gd_err->find("Missing subcommand") != std::string::npos);
+
+  std::cout << "Testing from_google_discovery to_sdk err\n";
+  auto from_gd_sdk_err = exec("./cdd-cpp from_google_discovery to_sdk");
+  assert(from_gd_sdk_err &&
+         from_gd_sdk_err->find("Missing -i") != std::string::npos);
+
+  std::cout << "Testing from_google_discovery unknown\n";
+  auto from_gd_unknown = exec("./cdd-cpp from_google_discovery unknown -i "
+                              "test_gd_spec.json -o out_dir");
+  assert(from_gd_unknown &&
+         from_gd_unknown->find("Unknown subcommand") != std::string::npos);
+
+  std::cout << "Testing from_google_discovery to_sdk ok with flags\n";
+  auto from_gd_sdk = exec(
+      "./cdd-cpp from_google_discovery to_sdk -i test_gd_spec.json -o out_dir "
+      "--no-github-actions --no-installable-package --tests");
+  assert(from_gd_sdk);
+
+  std::cout << "Testing from_google_discovery to_sdk_cli ok\n";
+  auto from_gd_sdk_cli = exec("./cdd-cpp from_google_discovery to_sdk_cli -i "
+                              "test_gd_spec.json -o out_dir --tests");
+  assert(from_gd_sdk_cli);
+
+  std::cout << "Testing from_google_discovery env vars\n";
+  auto from_gd_env =
+      exec("CDD_INPUT=test_gd_spec.json CDD_OUTPUT=env_out_gd_sdk "
+           "CDD_NO_GITHUB_ACTIONS=1 CDD_NO_INSTALLABLE_PACKAGE=1 "
+           "CDD_TESTS=1 ./cdd-cpp from_google_discovery to_sdk");
+  assert(from_gd_env);
+
   std::cout << "Testing read_file error\n";
   auto err_read_file = exec("./cdd-cpp from_openapi to_sdk -i nonexistent.json "
                             "-o out_dir");
