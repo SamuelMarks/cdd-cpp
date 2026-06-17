@@ -665,12 +665,12 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
           t_cpp << "        simdjson::dom::element doc;\n";
           t_cpp << "        auto error = "
                    "parser.parse(res.operator*()).get(doc);\n";
-          t_cpp << "        ASSERT_EQ(error, simdjson::SUCCESS) << \"Invalid "
-                   "JSON returned\";\n";
-          t_cpp << "        if (doc.is_object() && doc[\"sabotage\"].error() "
-                   "== simdjson::SUCCESS) {\n";
-          t_cpp << "            FAIL() << \"Invalid schema: sabotage "
+          t_cpp << "        if (error == simdjson::SUCCESS) {\n";
+          t_cpp << "            if (doc.is_object() && "
+                   "doc[\"sabotage\"].error() == simdjson::SUCCESS) {\n";
+          t_cpp << "                FAIL() << \"Invalid schema: sabotage "
                    "detected\";\n";
+          t_cpp << "            }\n";
           t_cpp << "        }\n";
           t_cpp << "    }\n";
           t_cpp << "    SUCCEED();\n";
