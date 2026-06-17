@@ -151,13 +151,13 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Ems
 endif()
 
 # CLI
-add_executable(cdd-cpp src/cli/main.cpp src/cli/sync.cpp)
+add_executable(cdd-cpp src/cli/main.cpp src/cli/sync.cpp src/cli/exceptions_stub.cpp)
 target_link_libraries(cdd-cpp PRIVATE cdd_lib)
 enable_extreme_checks(cdd-cpp)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     # Tests
-    add_executable(cdd-tests src/tests/client_sdk_cli_test.cpp  src/tests/main.cpp src/tests/parse.cpp src/tests/openapi_parse.cpp src/tests/emit.cpp src/tests/upgrader_test.cpp src/tests/google_discovery.cpp src/tests/models.cpp src/tests/client_sdk_test.cpp src/tests/functions.cpp src/tests/docstrings.cpp src/tests/server.cpp src/tests/mocks.cpp src/tests/http.cpp src/tests/cli.cpp src/tests/orm.cpp src/tests/mcp.cpp)
+    add_executable(cdd-tests src/cli/exceptions_stub.cpp src/tests/client_sdk_cli_test.cpp  src/tests/main.cpp src/tests/parse.cpp src/tests/openapi_parse.cpp src/tests/emit.cpp src/tests/upgrader_test.cpp src/tests/google_discovery.cpp src/tests/models.cpp src/tests/client_sdk_test.cpp src/tests/functions.cpp src/tests/docstrings.cpp src/tests/server.cpp src/tests/mocks.cpp src/tests/http.cpp src/tests/cli.cpp src/tests/orm.cpp src/tests/mcp.cpp)
     target_link_libraries(cdd-tests PRIVATE cdd_lib)
     enable_extreme_checks(cdd-tests)
 
@@ -190,10 +190,14 @@ endif()
 
 set_source_files_properties(
     src/cli/main.cpp
-    src/cli/sync.cpp
+    src/cli/sync.cpp src/cli/exceptions_stub.cpp
     src/client_sdk/emit.cpp
     src/client_sdk/parse.cpp
     src/client_sdk_cli/emit.cpp
     src/client_sdk_cli/parse.cpp
     PROPERTIES COMPILE_OPTIONS -fno-exceptions
 )
+add_executable(test_simdjson_2 src/tests/test_simdjson_2.cpp src/cli/exceptions_stub.cpp)
+target_link_libraries(test_simdjson_2 PRIVATE cdd_lib)
+add_test(NAME TestSimdjson2 COMMAND test_simdjson_2)
+enable_extreme_checks(test_simdjson_2)

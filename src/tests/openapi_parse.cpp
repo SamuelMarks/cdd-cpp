@@ -333,7 +333,7 @@ void test_openapi_parse() {
 
   auto spec_res = parse(json);
   assert(spec_res.has_value());
-  auto spec = spec_res.value();
+  auto spec = *spec_res;
   assert(spec.info.title == "Test");
   assert(spec.info.contact->name == "API Support");
   assert(spec.info.license->name == "Apache 2.0");

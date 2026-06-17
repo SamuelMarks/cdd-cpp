@@ -177,7 +177,7 @@ public:
   void key_optional(const std::string &k, const std::optional<T> &v) noexcept {
     if (v.has_value()) {
       key(k);
-      value(v.value());
+      value(*v);
     }
   }
 

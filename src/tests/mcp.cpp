@@ -1312,34 +1312,34 @@ void test_mcp_remaining() {
     cdd_cpp::mcp::emit_list_tools_result(ltres2, jw);
 
     std::string json = "{}";
-    simdjson::arm64::ondemand::parser parser;
+    simdjson::ondemand::parser parser;
     auto doc = parser.iterate(json);
     auto val = doc.get_value();
-    cdd_cpp::mcp::parse_empty_result(val.value());
+    cdd_cpp::mcp::parse_empty_result(val.value_unsafe());
 
     auto doc2 = parser.iterate(json);
     auto val2 = doc2.get_value();
-    cdd_cpp::mcp::parse_sampling_message(val2.value());
+    cdd_cpp::mcp::parse_sampling_message(val2.value_unsafe());
 
     auto doc3 = parser.iterate(json);
     auto val3 = doc3.get_value();
-    cdd_cpp::mcp::parse_ping_request(val3.value());
+    cdd_cpp::mcp::parse_ping_request(val3.value_unsafe());
 
     auto doc4 = parser.iterate(json);
     auto val4 = doc4.get_value();
-    cdd_cpp::mcp::parse_subscribe_request(val4.value());
+    cdd_cpp::mcp::parse_subscribe_request(val4.value_unsafe());
 
     auto doc5 = parser.iterate(json);
     auto val5 = doc5.get_value();
-    cdd_cpp::mcp::parse_unsubscribe_request(val5.value());
+    cdd_cpp::mcp::parse_unsubscribe_request(val5.value_unsafe());
 
     auto doc6 = parser.iterate(json);
     auto val6 = doc6.get_value();
-    cdd_cpp::mcp::parse_list_tools_request(val6.value());
+    cdd_cpp::mcp::parse_list_tools_request(val6.value_unsafe());
 
     auto doc7 = parser.iterate(json);
     auto val7 = doc7.get_value();
-    cdd_cpp::mcp::parse_list_tools_result(val7.value());
+    cdd_cpp::mcp::parse_list_tools_result(val7.value_unsafe());
 
     cdd_cpp::mcp::Annotations a1, a2;
     a1 = a2;
