@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 #include "../openapi/upgraders/upgrader.hpp"
 #include <iostream>
 
@@ -10,5 +9,3 @@ int main() {
     std::cout << *res << "\n";
   return 0;
 }
-
-// GCOV_EXCL_BR_STOP

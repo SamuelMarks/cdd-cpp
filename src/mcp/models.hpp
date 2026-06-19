@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 #pragma once
 #include <optional>
 #include <string>
@@ -603,113 +602,67 @@ struct ProgressNotification {
 };
 
 /// @brief Auto-generated doc.
-// GCOV_EXCL_START
-// GCOV_EXCL_START
-// GCOV_EXCL_STOP
 struct EmptyResult {
-  // GCOV_EXCL_STOP
   std::optional<std::string> _meta; // raw json
 };
 
 typedef std::string Role; // "user" | "assistant"
-// GCOV_EXCL_START
 
-// GCOV_EXCL_STOP
 /// @brief Auto-generated doc.
-// GCOV_EXCL_START
 struct SamplingMessage {
-  // GCOV_EXCL_STOP
   Role role;
-  // GCOV_EXCL_START
   std::string content_json; // raw json
-  // GCOV_EXCL_STOP
 };
 
 /// @brief Auto-generated doc.
-// GCOV_EXCL_START
-// GCOV_EXCL_START
 struct PingRequestParams {
-  // GCOV_EXCL_STOP
-  // GCOV_EXCL_STOP
   std::optional<std::string> _meta; // raw json
 };
 
 /// @brief Auto-generated doc.
-// GCOV_EXCL_START
-// GCOV_EXCL_START
-// GCOV_EXCL_STOP
 struct PingRequest {
-  // GCOV_EXCL_STOP
   std::string method; // "ping"
   std::optional<PingRequestParams> params;
-  // GCOV_EXCL_START
 };
-// GCOV_EXCL_STOP
 
 /// @brief Auto-generated doc.
-// GCOV_EXCL_START
 struct SubscribeRequestParams {
-  // GCOV_EXCL_STOP
-  // GCOV_EXCL_START
   std::string uri;
-  // GCOV_EXCL_STOP
 };
 
 /// @brief Auto-generated doc.
-// GCOV_EXCL_START
-// GCOV_EXCL_START
 struct SubscribeRequest {
-  // GCOV_EXCL_STOP
-  // GCOV_EXCL_STOP
   std::string method; // "resources/subscribe"
   SubscribeRequestParams params;
 };
 
-// GCOV_EXCL_START
 /// @brief Auto-generated doc.
-// GCOV_EXCL_STOP
-// GCOV_EXCL_START
 struct UnsubscribeRequestParams {
-  // GCOV_EXCL_STOP
   std::string uri;
-  // GCOV_EXCL_START
 };
-// GCOV_EXCL_STOP
 
 /// @brief Auto-generated doc.
-// GCOV_EXCL_START
 struct UnsubscribeRequest {
-  // GCOV_EXCL_STOP
-  // GCOV_EXCL_START
   std::string method; // "resources/unsubscribe"
-                      // GCOV_EXCL_STOP
   UnsubscribeRequestParams params;
 };
 
 /// @brief Auto-generated doc.
-// GCOV_EXCL_START
 struct ListToolsRequestParams {
-  // GCOV_EXCL_STOP
   std::optional<Cursor> cursor;
 };
 
 /// @brief Auto-generated doc.
-// GCOV_EXCL_START
 struct ListToolsRequest {
-  // GCOV_EXCL_STOP
   std::string method; // "tools/list"
   std::optional<ListToolsRequestParams> params;
 };
 
 /// @brief Auto-generated doc.
-// GCOV_EXCL_START
 struct ListToolsResult {
-  // GCOV_EXCL_STOP
   std::optional<std::string> _meta; // raw json
   std::optional<Cursor> nextCursor;
   std::vector<Tool> tools;
 };
 
 } // namespace cdd_cpp::mcp
-
-// GCOV_EXCL_BR_STOP

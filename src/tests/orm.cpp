@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 //
 
 #include "../openapi/parse.hpp"
@@ -44,5 +43,3 @@ void test_emit() {
   std::cout << "orm::test_emit passed.\n";
 }
 } // namespace cdd_cpp::orm
-
-// GCOV_EXCL_BR_STOP

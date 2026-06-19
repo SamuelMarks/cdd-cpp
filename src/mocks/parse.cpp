@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 #include "parse.hpp"
 
 namespace cdd_cpp::mocks {
@@ -11,5 +10,3 @@ void parse(const std::string &input) noexcept {
   // TODO: implement parsing for mocks
 }
 } // namespace cdd_cpp::mocks
-
-// GCOV_EXCL_BR_STOP

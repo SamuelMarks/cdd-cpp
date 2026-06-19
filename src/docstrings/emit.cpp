@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 
 #include "emit.hpp"
 #include <sstream>
@@ -173,5 +172,3 @@ std::string emit_operation_docstrings(const openapi::Operation &op) noexcept {
 }
 
 } // namespace cdd_cpp::docstrings
-
-// GCOV_EXCL_BR_STOP

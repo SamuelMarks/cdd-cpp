@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 #include "http.hpp"
 #include <expected>
 
@@ -41,5 +40,3 @@ http_get(const std::string &url) noexcept {
 }
 } // namespace cdd_cpp::utils
 #endif
-
-// GCOV_EXCL_BR_STOP

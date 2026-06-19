@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 #pragma once
 #include "../utils/json_writer.hpp"
 #include "models.hpp"
@@ -205,5 +204,3 @@ void emit_progress_notification(const ProgressNotification &notif,
                                 utils::JsonWriter &jw) noexcept;
 
 } // namespace cdd_cpp::mcp
-
-// GCOV_EXCL_BR_STOP

@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 //
 #include "emit.hpp"
 #include "../utils/json_writer.hpp"
@@ -864,5 +863,3 @@ std::string emit(const OpenAPI &openapi) noexcept {
   return jw.str();
 }
 } // namespace cdd_cpp::openapi
-
-// GCOV_EXCL_BR_STOP

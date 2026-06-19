@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 
 #include "parse.hpp"
 #include "../utils/cpp_ast.hpp"
@@ -281,5 +280,3 @@ parse(const std::string &input) noexcept {
 }
 
 } // namespace cdd_cpp::client_sdk_cli
-
-// GCOV_EXCL_BR_STOP

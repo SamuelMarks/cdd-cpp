@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 #include "../docstrings/emit.hpp"
 #include "emit.hpp"
 #include <sstream>
@@ -116,5 +115,3 @@ std::string serve_json_rpc(const std::string & /*request*/) noexcept {
 }
 
 } // namespace cdd_cpp::server
-
-// GCOV_EXCL_BR_STOP

@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 
 #include "emit.hpp"
 #include "../docstrings/emit.hpp"
@@ -354,11 +353,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
         }
         if (op->requestBody) {
           if (!first_req)
-            // GCOV_EXCL_START
-            // GCOV_EXCL_START
-            // GCOV_EXCL_STOP
             c_cpp << "        res += \",\";\n";
-          // GCOV_EXCL_STOP
           first_req = false;
           c_cpp << "        res += \"\\\"body\\\"\";\n";
         }
@@ -726,5 +721,3 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
 }
 
 } // namespace cdd_cpp::client_sdk
-
-// GCOV_EXCL_BR_STOP

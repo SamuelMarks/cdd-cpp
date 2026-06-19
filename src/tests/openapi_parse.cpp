@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 #include "../openapi/parse.hpp"
 #include <cassert>
 #include <iostream>
@@ -383,8 +382,40 @@ void test_openapi_parse() {
 
   test_openapi_parse_details();
   test_openapi_parse_final_details();
+
+  std::string cb_json = R"({
+    "openapi": "3.1.0",
+    "info": {"title": "x", "version": "1"},
+    "paths": {
+      "/": {
+        "post": {
+          "callbacks": {
+            "myEvent": {
+              "{$request.body#/callbackUrl}": {
+                "post": {
+                  "requestBody": {
+                    "content": {
+                      "application/json": {}
+                    }
+                  },
+                  "responses": {
+                    "200": {
+                      "description": "ok"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  })";
+  auto cb_res = parse(cb_json);
+  assert(cb_res);
+  assert(cb_res->paths->at("/").post->callbacks);
+  assert(cb_res->paths->at("/").post->callbacks->contains("myEvent"));
+
   std::cout << "openapi::test_openapi_parse passed.\n";
 }
 } // namespace cdd_cpp::openapi
-
-// GCOV_EXCL_BR_STOP

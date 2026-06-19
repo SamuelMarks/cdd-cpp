@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 #include <expected>
 #pragma once
 #include "../openapi/models.hpp"
@@ -10,5 +9,3 @@ namespace cdd_cpp::google_discovery {
 std::expected<std::vector<openapi::OpenAPI>, std::string>
 parse(const std::string &input) noexcept;
 } // namespace cdd_cpp::google_discovery
-
-// GCOV_EXCL_BR_STOP

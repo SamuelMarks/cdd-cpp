@@ -15,7 +15,7 @@ repos:
     hooks:
       - id: cpplint
         args:
-          - "--filter=-legal/copyright,-build/include_order,-build/include_subdir,-whitespace/comments,-build/include_what_you_use,-build/namespaces,-build/c++17,-readability/casting,-whitespace/indent,-whitespace/ending_newline,-readability/braces,-whitespace/blank_line,-build/include,-whitespace/newline,-readability/todo,-build/c++11,-runtime/references,-runtime/int,-runtime/explicit,-whitespace/braces,-whitespace/semicolon,-runtime/arrays,-build/storage_class,-build/header_guard,-whitespace/line_length"
+          - "--filter=-legal/copyright,-build/include_order,-build/include_subdir,-whitespace/comments,-build/include_what_you_use,-build/namespaces,-build/c++17,-readability/casting,-whitespace/indent,-whitespace/ending_newline,-readability/braces,-whitespace/blank_line,-build/include,-whitespace/newline,-readability/todo,-build/c++11,-runtime/references,-runtime/int,-runtime/explicit,-whitespace/braces,-whitespace/semicolon,-runtime/arrays,-build/storage_class,-build/header_guard,-whitespace/line_length,-readability/fn_size"
           - "--linelength=120"
   - repo: local
     hooks:

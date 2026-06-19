@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 #pragma once
 #include <iostream>
 #include <string>
@@ -59,5 +58,3 @@ int serve_json_rpc(const ServeJsonRpcConfig &config,
                    std::ostream &err = std::cerr);
 
 } // namespace cdd_cpp::cli
-
-// GCOV_EXCL_BR_STOP

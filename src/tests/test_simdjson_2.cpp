@@ -1,5 +1,4 @@
-// GCOV_EXCL_BR_START
-
+// GCOV_EXCL_START
 #include "../openapi/parse.hpp"
 #include <iostream>
 
@@ -10,5 +9,4 @@ int main() {
   }
   return 0;
 }
-
-// GCOV_EXCL_BR_STOP
+// GCOV_EXCL_STOP

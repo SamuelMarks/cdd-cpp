@@ -1,4 +1,3 @@
-// GCOV_EXCL_START
 //
 //  httplib.h
 //
@@ -21409,5 +21408,3 @@ WebSocketClient::enable_server_certificate_verification(bool enabled) {
 } // namespace httplib
 
 #endif // CPPHTTPLIB_HTTPLIB_H
-
-// GCOV_EXCL_STOP

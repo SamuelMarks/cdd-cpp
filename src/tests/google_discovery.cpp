@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 
 #include "../google_discovery/parse.hpp"
 #include "../openapi/emit.hpp"
@@ -125,8 +124,11 @@ void test_parse() {
   assert((*rest_res)[0].components->schemas->contains("User"));
   assert((*rest_res)[0].paths->contains("/users/{id}"));
 
+  auto err_parse = parse("invalid_json");
+  assert(!err_parse);
+  auto err_parse2 = parse("[]");
+  assert(!err_parse2);
+
   std::cout << "google_discovery::test_parse passed.\n";
 }
 } // namespace cdd_cpp::google_discovery
-
-// GCOV_EXCL_BR_STOP

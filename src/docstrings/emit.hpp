@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 #pragma once
 #include "../openapi/parse.hpp"
 #include <sstream>
@@ -12,5 +11,3 @@ std::string emit_operation_docstrings(const openapi::Operation &op) noexcept;
 /// @brief Emit path docstrings
 std::string emit_path_docstrings(const openapi::PathItem &pi) noexcept;
 } // namespace cdd_cpp::docstrings
-
-// GCOV_EXCL_BR_STOP

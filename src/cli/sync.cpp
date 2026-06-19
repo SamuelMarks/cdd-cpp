@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 
 #include "../client_sdk/emit.hpp"
 #include "../mocks/emit.hpp"
@@ -56,5 +55,3 @@ void sync(const std::string &code_dir, const std::string &spec_file) noexcept {
 }
 
 } // namespace cdd_cpp::cli
-
-// GCOV_EXCL_BR_STOP

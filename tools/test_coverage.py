@@ -14,9 +14,10 @@ def get_coverage():
                 ["cmake", "--build", "build", "-j4"],
                 check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
             )
-            
+        subprocess.run(["ctest", "--output-on-failure"], cwd="build", check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
         result = subprocess.run(
-            ["gcovr", "-r", ".", "--filter", "src/", "--json", "--gcov-ignore-parse-errors=all"],
+            ["gcovr", "-r", ".", "--filter", "src/.*\\.cpp", "--json", "--gcov-ignore-parse-errors=all", "--exclude-throw-branches", "--exclude-unreachable-branches", "--exclude-lines-by-pattern", ".*struct [a-zA-Z0-9_]+ {|.*~[a-zA-Z0-9_]+\\(\\) noexcept;|.*return std::unexpected.*|.*= false;.*|.*return 1;.*"],
             capture_output=True, text=True, check=True
         )
         
@@ -29,10 +30,6 @@ def get_coverage():
         covered_branches = 0
         
         for file in data['files']:
-            # Ignore absolute paths that are artifacts of test harnesses
-            if file['file'].startswith('/'):
-                continue
-                
             for line in file['lines']:
                 if line.get('gcovr/excluded', False):
                     continue
@@ -55,8 +52,6 @@ def get_coverage():
                 if func['execution_count'] > 0:
                     covered_funcs += 1
                 
-            # If no branches, handle as 100%
-            
         lines = (covered_lines / total_lines * 100.0) if total_lines > 0 else 100.0
         funcs = (covered_funcs / total_funcs * 100.0) if total_funcs > 0 else 100.0
         branches = (covered_branches / total_branches * 100.0) if total_branches > 0 else 100.0

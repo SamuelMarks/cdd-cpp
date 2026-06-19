@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 
 #include "../utils/cpp_ast.hpp"
 #include "../utils/cpp_parser.hpp"
@@ -85,5 +84,3 @@ void test_cpp_parser() {
   std::cout << "test_cpp_parser passed.\n";
 }
 } // namespace cdd_cpp::utils
-
-// GCOV_EXCL_BR_STOP

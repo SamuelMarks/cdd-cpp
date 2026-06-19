@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 
 #include "emit.hpp"
 #include <functional>
@@ -227,5 +226,3 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
 }
 
 } // namespace cdd_cpp::models
-
-// GCOV_EXCL_BR_STOP

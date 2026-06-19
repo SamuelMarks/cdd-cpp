@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 #pragma once
 #include "../openapi/models.hpp"
 #include <map>
@@ -11,5 +10,3 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
                                             bool no_installable_package = false,
                                             bool tests = false) noexcept;
 } // namespace cdd_cpp::client_sdk_cli
-
-// GCOV_EXCL_BR_STOP

@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 
 #include "../utils/http.hpp"
 #include "../utils/json_writer.hpp"
@@ -57,21 +56,11 @@ void test_http() {
 
   // Test http_get
   auto res = http_get("http://example.com");
+  assert(res);
+
   // Assuming curl is present or it fails
-  if (res) {
-    assert(res->find("body") != std::string::npos ||
-           res->find("html") != std::string::npos || !res->empty());
-  } else {
-    // GCOV_EXCL_START
-
-    // GCOV_EXCL_STOP
-
-    // GCOV_EXCL_START
-    assert(res.error().find("curl") != std::string::npos ||
-
-           res.error().find("not implemented") != std::string::npos);
-    // GCOV_EXCL_STOP
-  }
+  assert(res->find("body") != std::string::npos ||
+         res->find("html") != std::string::npos || !res->empty());
 
   // Test invalid url
   auto res2 = http_get("invalid://url");
@@ -80,5 +69,3 @@ void test_http() {
   std::cout << "utils::test_http passed.\n";
 }
 } // namespace cdd_cpp::utils
-
-// GCOV_EXCL_BR_STOP

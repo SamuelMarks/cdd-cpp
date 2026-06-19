@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 
 #include "../mocks/emit.hpp"
 #include "../mocks/parse.hpp"
@@ -28,5 +27,3 @@ void test_emit() {
   std::cout << "mocks::test_emit passed.\n";
 }
 } // namespace cdd_cpp::mocks
-
-// GCOV_EXCL_BR_STOP

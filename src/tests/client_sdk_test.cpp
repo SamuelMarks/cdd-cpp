@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 
 #include "../client_sdk/emit.hpp"
 #include "../client_sdk/parse.hpp"
@@ -93,6 +92,8 @@ void test_emit_client() {
   openapi::Parameter path_param;
   path_param.name = "id";
   path_param.in = "path";
+  path_param.required = true;
+
   path_param.description = "The ID";
   path_param.schema = openapi::Schema{};
   path_param.schema->type = "integer";
@@ -100,12 +101,23 @@ void test_emit_client() {
   openapi::Parameter query_param;
   query_param.name = "filter";
   query_param.in = "query";
+  query_param.required = true;
+
   query_param.schema = openapi::Schema{};
   query_param.schema->type = "boolean";
+
+  openapi::Parameter string_param;
+  string_param.name = "str_val";
+  string_param.in = "query";
+  string_param.schema = openapi::Schema{};
+  string_param.schema->type = "string";
+  string_param.required = true;
 
   openapi::Parameter header_param;
   header_param.name = "X_Header";
   header_param.in = "header";
+  header_param.required = true;
+
   header_param.schema = openapi::Schema{};
   header_param.schema->type = "number";
 
@@ -122,7 +134,7 @@ void test_emit_client() {
   sec_req["Bearer"] = {"read", "write"};
   get_op.security->push_back(sec_req);
   get_op.parameters =
-      std::vector<openapi::Parameter>{query_param, header_param};
+      std::vector<openapi::Parameter>{query_param, header_param, string_param};
 
   openapi::RequestBody req_body;
   req_body.description = "Body Description";
@@ -267,9 +279,13 @@ void test_emit_client() {
       generated.find("content-type: multipart/form-data; boundary=boundary") !=
       std::string::npos);
 
-  assert(generated.find("getPet(int id, bool filter, double X_Header, const "
+  std::cout << generated.substr(generated.find("getPet("), 100) << "\n";
+
+  assert(generated.find("getPet(int id, bool filter, double X_Header, "
+                        "std::string str_val, const "
                         "std::string& body)") != std::string::npos);
-  assert(generated.find("patchPet(int id, bool filter, double X_Header, const "
+  assert(generated.find("patchPet(int id, bool filter, double X_Header, "
+                        "std::string str_val, const "
                         "std::string& body)") != std::string::npos);
 
   assert(generated.find("full_url += (full_url.find('?') == std::string::npos "
@@ -476,5 +492,3 @@ void test_parse() {
 }
 
 } // namespace cdd_cpp::client_sdk
-
-// GCOV_EXCL_BR_STOP

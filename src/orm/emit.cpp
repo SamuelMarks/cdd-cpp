@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 #include "emit.hpp"
 #include <sstream>
 
@@ -147,5 +146,3 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
 }
 
 } // namespace cdd_cpp::orm
-
-// GCOV_EXCL_BR_STOP

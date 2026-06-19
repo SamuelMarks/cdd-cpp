@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 
 #include "../functions/emit.hpp"
 #include "../functions/parse.hpp"
@@ -16,5 +15,3 @@ void test_emit() {
   std::cout << "functions::test_emit passed.\n";
 }
 } // namespace cdd_cpp::functions
-
-// GCOV_EXCL_BR_STOP

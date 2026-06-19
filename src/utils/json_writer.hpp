@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 #pragma once
 #include <iomanip>
 #include <map>
@@ -184,5 +183,3 @@ public:
   std::string str() const noexcept { return ss.str(); }
 };
 } // namespace cdd_cpp::utils
-
-// GCOV_EXCL_BR_STOP

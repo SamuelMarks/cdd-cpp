@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 
 #include "parse.hpp"
 
@@ -10,5 +9,3 @@ void parse(const std::string &input) noexcept {
   // TODO: implement parsing for functions
 }
 } // namespace cdd_cpp::functions
-
-// GCOV_EXCL_BR_STOP

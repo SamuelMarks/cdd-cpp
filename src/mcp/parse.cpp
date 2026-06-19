@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 #include "parse.hpp"
 #include <iostream>
 
@@ -10,11 +9,7 @@ parse_annotated(simdjson::ondemand::value &val) noexcept {
   simdjson::ondemand::object obj;
   auto error = val.get_object().get(obj);
   if (error) {
-    // GCOV_EXCL_START
-    // GCOV_EXCL_START
-    // GCOV_EXCL_STOP
     return std::unexpected("Expected object for Annotated");
-    // GCOV_EXCL_STOP
   }
 
   simdjson::ondemand::object annotations_obj;
@@ -108,14 +103,10 @@ std::optional<Annotations> parse_annotations(simdjson::ondemand::object &obj) {
     if (!annotations_obj["audience"].get_string().get(audience_sv)) {
       annotations.audience = std::string(audience_sv);
     }
-    // GCOV_EXCL_START
     double priority_val;
     if (!annotations_obj["priority"].get_double().get(priority_val)) {
-      // GCOV_EXCL_STOP
-      // GCOV_EXCL_START
       annotations.priority = priority_val;
     }
-    // GCOV_EXCL_STOP
     return annotations;
   }
   return std::nullopt;
@@ -382,53 +373,35 @@ parse_complete_result(simdjson::ondemand::value &val) noexcept {
 }
 
 std::expected<ModelHint, std::string>
-// GCOV_EXCL_START
 parse_model_hint(simdjson::ondemand::value &val) noexcept {
-  // GCOV_EXCL_STOP
   ModelHint result;
   simdjson::ondemand::object obj;
   if (val.get_object().get(obj))
-    // GCOV_EXCL_START
     return std::unexpected("Expected object");
-  // GCOV_EXCL_STOP
   std::string_view n_sv;
   if (!obj["name"].get_string().get(n_sv))
     result.name = std::string(n_sv);
   return result;
 }
-// GCOV_EXCL_START
 
-// GCOV_EXCL_STOP
 std::expected<ModelPreferences, std::string>
 parse_model_preferences(simdjson::ondemand::value &val) noexcept {
   ModelPreferences result;
   simdjson::ondemand::object obj;
   if (val.get_object().get(obj))
-    // GCOV_EXCL_START
     return std::unexpected("Expected object");
-  // GCOV_EXCL_START
-  // GCOV_EXCL_STOP
-  // GCOV_EXCL_STOP
 
   double cp;
   if (!obj["costPriority"].get_double().get(cp))
-    // GCOV_EXCL_START
     result.costPriority = cp;
-  // GCOV_EXCL_STOP
 
   double ip;
   if (!obj["intelligencePriority"].get_double().get(ip))
-    // GCOV_EXCL_START
     result.intelligencePriority = ip;
-  // GCOV_EXCL_STOP
 
   double sp;
   if (!obj["speedPriority"].get_double().get(sp))
-    // GCOV_EXCL_START
-    // GCOV_EXCL_START
     result.speedPriority = sp;
-  // GCOV_EXCL_STOP
-  // GCOV_EXCL_STOP
 
   simdjson::ondemand::array hints_arr;
   if (!obj["hints"].get_array().get(hints_arr)) {
@@ -439,9 +412,7 @@ parse_model_preferences(simdjson::ondemand::value &val) noexcept {
       if (ph.has_value())
         hints.push_back(ph.operator*());
       else
-        // GCOV_EXCL_START
         return std::unexpected(ph.error());
-      // GCOV_EXCL_STOP
     }
     result.hints = hints;
   }
@@ -465,12 +436,10 @@ parse_create_message_request(simdjson::ondemand::value &val) noexcept {
   if (obj["params"].get_object().get(p_obj))
     return std::unexpected("Missing params");
 
-  // GCOV_EXCL_START
   int64_t mt;
   if (p_obj["maxTokens"].get_int64().get(mt))
     return std::unexpected("Missing maxTokens");
   result.params.maxTokens = static_cast<int>(mt);
-  // GCOV_EXCL_STOP
 
   simdjson::ondemand::array msg_arr;
   if (p_obj["messages"].get_array().get(msg_arr))
@@ -479,24 +448,6 @@ parse_create_message_request(simdjson::ondemand::value &val) noexcept {
   if (!msg_arr.raw_json().get(msg_sv))
     result.params.messages_json = std::string(msg_sv);
 
-  simdjson::ondemand::object ic_obj;
-  if (!p_obj["includeContext"].get_object().get(ic_obj)) {
-    // GCOV_EXCL_START
-    std::string_view ic_sv;
-    if (!ic_obj.raw_json().get(ic_sv))
-      result.params.includeContext = std::string(ic_sv);
-  } else {
-    // GCOV_EXCL_STOP
-    std::string_view ic_str;
-    if (!p_obj["includeContext"].get_string().get(ic_str)) {
-      // includeContext is object in schema (string is not technically valid but
-      // could be raw JSON string?) Actually schema says 'string' for
-      // `includeContext`? No, wait. includeContext is "object" ? Actually, the
-      // schema says: includeContext is an object "none", "thisServer". Wait,
-      // I'll just use raw_json on the value!
-    }
-  }
-  // Better way to capture raw json for includeContext
   simdjson::ondemand::value ic_val;
   if (!p_obj["includeContext"].get(ic_val)) {
     std::string_view ic_sv;
@@ -540,9 +491,7 @@ parse_create_message_request(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
-// GCOV_EXCL_START
 std::expected<CreateMessageResult, std::string>
-// GCOV_EXCL_STOP
 parse_create_message_result(simdjson::ondemand::value &val) noexcept {
   CreateMessageResult result;
   simdjson::ondemand::object obj;
@@ -558,9 +507,7 @@ parse_create_message_result(simdjson::ondemand::value &val) noexcept {
 
   simdjson::ondemand::value c_val;
   if (obj["content"].get(c_val))
-    // GCOV_EXCL_START
     return std::unexpected("Missing content");
-  // GCOV_EXCL_STOP
   std::string_view c_sv;
   if (!c_val.raw_json().get(c_sv))
     result.content_json = std::string(c_sv);
@@ -688,15 +635,11 @@ parse_paginated_result(simdjson::ondemand::value &val) noexcept {
   if (!obj["_meta"].get(meta_val)) {
     std::string_view m_sv;
     if (!meta_val.raw_json().get(m_sv))
-      // GCOV_EXCL_START
       result._meta = std::string(m_sv);
-    // GCOV_EXCL_STOP
   }
 
   std::string_view nc_sv;
-  // GCOV_EXCL_START
   if (!obj["nextCursor"].get_string().get(nc_sv))
-    // GCOV_EXCL_STOP
     result.nextCursor = std::string(nc_sv);
 
   return result;
@@ -710,15 +653,11 @@ parse_implementation(simdjson::ondemand::value &val) noexcept {
     return std::unexpected("Expected object");
   std::string_view n_sv;
   if (obj["name"].get_string().get(n_sv))
-    // GCOV_EXCL_START
     return std::unexpected("Missing name");
-  // GCOV_EXCL_STOP
   result.name = std::string(n_sv);
   std::string_view v_sv;
   if (obj["version"].get_string().get(v_sv))
-    // GCOV_EXCL_START
     return std::unexpected("Missing version");
-  // GCOV_EXCL_STOP
   result.version = std::string(v_sv);
   return result;
 }
@@ -801,18 +740,14 @@ parse_server_capabilities(simdjson::ondemand::value &val) noexcept {
       resources.subscribe = sub;
     result.resources = resources;
   }
-  // GCOV_EXCL_START
 
   simdjson::ondemand::object tools_obj;
   if (!obj["tools"].get_object().get(tools_obj)) {
     ServerCapabilitiesTools tools;
-    // GCOV_EXCL_STOP
     bool lc;
     if (!tools_obj["listChanged"].get_bool().get(lc))
       tools.listChanged = lc;
-    // GCOV_EXCL_START
     result.tools = tools;
-    // GCOV_EXCL_STOP
   }
 
   return result;
@@ -827,18 +762,14 @@ parse_initialize_result(simdjson::ondemand::value &val) noexcept {
 
   simdjson::ondemand::value meta_val;
   if (!obj["_meta"].get(meta_val)) {
-    // GCOV_EXCL_START
     std::string_view m_sv;
     if (!meta_val.raw_json().get(m_sv))
       result._meta = std::string(m_sv);
   }
-  // GCOV_EXCL_STOP
 
   std::string_view pv_sv;
   if (obj["protocolVersion"].get_string().get(pv_sv))
-    // GCOV_EXCL_START
     return std::unexpected("Missing protocolVersion");
-  // GCOV_EXCL_STOP
   result.protocolVersion = std::string(pv_sv);
 
   std::string_view inst_sv;
@@ -1096,9 +1027,7 @@ parse_prompt_argument(simdjson::ondemand::value &val) noexcept {
 
   return result;
 }
-// GCOV_EXCL_START
 
-// GCOV_EXCL_STOP
 std::expected<Prompt, std::string>
 parse_prompt(simdjson::ondemand::value &val) noexcept {
   Prompt result;
@@ -1124,9 +1053,7 @@ parse_prompt(simdjson::ondemand::value &val) noexcept {
       if (pa.has_value())
         args.push_back(pa.operator*());
       else
-        // GCOV_EXCL_START
         return std::unexpected(pa.error());
-      // GCOV_EXCL_STOP
     }
     result.arguments = args;
   }
@@ -1134,9 +1061,7 @@ parse_prompt(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
-// GCOV_EXCL_START
 std::expected<ListPromptsResult, std::string>
-// GCOV_EXCL_STOP
 parse_list_prompts_result(simdjson::ondemand::value &val) noexcept {
   ListPromptsResult result;
   simdjson::ondemand::object obj;
@@ -1164,9 +1089,7 @@ parse_list_prompts_result(simdjson::ondemand::value &val) noexcept {
     if (pt.has_value())
       result.prompts.push_back(pt.operator*());
     else
-      // GCOV_EXCL_START
       return std::unexpected(pt.error());
-    // GCOV_EXCL_STOP
   }
 
   return result;
@@ -1198,31 +1121,23 @@ parse_get_prompt_request(simdjson::ondemand::value &val) noexcept {
     std::string_view a_sv;
     if (!arg_val.raw_json().get(a_sv))
       result.params.arguments = std::string(a_sv);
-    // GCOV_EXCL_START
   }
-  // GCOV_EXCL_STOP
 
   return result;
 }
 
-// GCOV_EXCL_START
 std::expected<GetPromptResult, std::string>
-// GCOV_EXCL_STOP
 parse_get_prompt_result(simdjson::ondemand::value &val) noexcept {
   GetPromptResult result;
   simdjson::ondemand::object obj;
   if (val.get_object().get(obj))
-    // GCOV_EXCL_START
     return std::unexpected("Expected object");
-  // GCOV_EXCL_STOP
 
   simdjson::ondemand::value meta_val;
   if (!obj["_meta"].get(meta_val)) {
     std::string_view m_sv;
     if (!meta_val.raw_json().get(m_sv))
-      // GCOV_EXCL_START
       result._meta = std::string(m_sv);
-    // GCOV_EXCL_STOP
   }
 
   std::string_view d_sv;
@@ -1236,31 +1151,23 @@ parse_get_prompt_result(simdjson::ondemand::value &val) noexcept {
   for (auto m : msg_arr) {
     simdjson::ondemand::object m_obj;
     if (m.get_object().get(m_obj))
-      // GCOV_EXCL_START
       return std::unexpected("Expected object in messages array");
-    // GCOV_EXCL_STOP
 
     PromptMessage pm;
     std::string_view mr_sv;
     if (m_obj["role"].get_string().get(mr_sv))
-      // GCOV_EXCL_START
       return std::unexpected("Missing role in PromptMessage");
-    // GCOV_EXCL_STOP
     pm.role = std::string(mr_sv);
 
     simdjson::ondemand::value c_val;
     if (m_obj["content"].get(c_val))
-      // GCOV_EXCL_START
       return std::unexpected("Missing content in PromptMessage");
-    // GCOV_EXCL_STOP
 
     std::string_view c_sv;
     if (!c_val.raw_json().get(c_sv))
       pm.content_json = std::string(c_sv);
     else
-      // GCOV_EXCL_START
       return std::unexpected("Failed to get raw JSON for content");
-    // GCOV_EXCL_STOP
 
     result.messages.push_back(pm);
   }
@@ -1644,9 +1551,7 @@ parse_list_roots_request(simdjson::ondemand::value &val) noexcept {
         params._meta = std::string(meta_sv);
     }
     result.params = params;
-    // GCOV_EXCL_START
   }
-  // GCOV_EXCL_STOP
   return result;
 }
 
@@ -1666,9 +1571,7 @@ parse_list_roots_result(simdjson::ondemand::value &val) noexcept {
   if (obj["roots"].get_array().get(r_arr))
     return std::unexpected("Missing roots");
   for (auto r : r_arr) {
-    // GCOV_EXCL_START
     auto r_val = r.value_unsafe();
-    // GCOV_EXCL_STOP
     auto pt = parse_root(r_val);
     if (pt.has_value())
       result.roots.push_back(pt.operator*());
@@ -1686,9 +1589,7 @@ parse_set_level_request(simdjson::ondemand::value &val) noexcept {
     return std::unexpected("Expected object");
   std::string_view m_sv;
   if (obj["method"].get_string().get(m_sv))
-    // GCOV_EXCL_START
     return std::unexpected("Missing method");
-  // GCOV_EXCL_STOP
   result.method = std::string(m_sv);
   simdjson::ondemand::object p_obj;
   if (obj["params"].get_object().get(p_obj))
@@ -1697,9 +1598,7 @@ parse_set_level_request(simdjson::ondemand::value &val) noexcept {
   if (p_obj["level"].get_string().get(l_sv))
     return std::unexpected("Missing level");
   result.params.level = std::string(l_sv);
-  // GCOV_EXCL_START
   return result;
-  // GCOV_EXCL_STOP
 }
 
 std::expected<LoggingMessageNotification, std::string>
@@ -1710,11 +1609,7 @@ parse_logging_message_notification(simdjson::ondemand::value &val) noexcept {
     return std::unexpected("Expected object");
   std::string_view m_sv;
   if (obj["method"].get_string().get(m_sv))
-    // GCOV_EXCL_START
     return std::unexpected("Missing method");
-  // GCOV_EXCL_START
-  // GCOV_EXCL_STOP
-  // GCOV_EXCL_STOP
   result.method = std::string(m_sv);
   simdjson::ondemand::object p_obj;
   if (obj["params"].get_object().get(p_obj))
@@ -1729,7 +1624,6 @@ parse_logging_message_notification(simdjson::ondemand::value &val) noexcept {
   simdjson::ondemand::value d_val;
   if (p_obj["data"].get(d_val))
     return std::unexpected("Missing data");
-  // GCOV_EXCL_START
   std::string_view d_sv;
   if (!d_val.raw_json().get(d_sv))
     result.params.data = std::string(d_sv);
@@ -1743,12 +1637,8 @@ parse_progress_notification(simdjson::ondemand::value &val) noexcept {
   if (val.get_object().get(obj))
     return std::unexpected("Expected object");
   std::string_view m_sv;
-  // GCOV_EXCL_STOP
   if (obj["method"].get_string().get(m_sv))
-    // GCOV_EXCL_START
-    // GCOV_EXCL_START
     return std::unexpected("Missing method");
-  // GCOV_EXCL_STOP
   result.method = std::string(m_sv);
   simdjson::ondemand::object p_obj;
   if (obj["params"].get_object().get(p_obj))
@@ -1761,13 +1651,9 @@ parse_progress_notification(simdjson::ondemand::value &val) noexcept {
       parse_request_id(pt_val); // reusing parse_request_id as it perfectly
                                 // extracts string or number
   if (result.params.progressToken == "null")
-    // GCOV_EXCL_START
     return std::unexpected("Invalid progressToken");
-  // GCOV_EXCL_STOP
-  // GCOV_EXCL_STOP
 
   double prg;
-  // GCOV_EXCL_START
   if (p_obj["progress"].get_double().get(prg))
     return std::unexpected("Missing progress");
   result.params.progress = prg;
@@ -1780,7 +1666,6 @@ parse_progress_notification(simdjson::ondemand::value &val) noexcept {
 }
 
 std::expected<EmptyResult, std::string>
-// GCOV_EXCL_START
 parse_empty_result(simdjson::ondemand::value &val) noexcept {
   EmptyResult result;
   simdjson::ondemand::object obj;
@@ -1790,16 +1675,12 @@ parse_empty_result(simdjson::ondemand::value &val) noexcept {
   if (!obj["_meta"].get(meta_val)) {
     std::string_view m_sv;
     if (!meta_val.raw_json().get(m_sv))
-      // GCOV_EXCL_STOP
       result._meta = std::string(m_sv);
   }
-  // GCOV_EXCL_START
   return result;
 }
-// GCOV_EXCL_STOP
 
 std::expected<SamplingMessage, std::string>
-// GCOV_EXCL_START
 parse_sampling_message(simdjson::ondemand::value &val) noexcept {
   SamplingMessage result;
   simdjson::ondemand::object obj;
@@ -1812,17 +1693,13 @@ parse_sampling_message(simdjson::ondemand::value &val) noexcept {
   simdjson::ondemand::value c_val;
   if (obj["content"].get(c_val))
     return std::unexpected("Missing content");
-  // GCOV_EXCL_STOP
   std::string_view c_sv;
   if (!c_val.raw_json().get(c_sv))
-    // GCOV_EXCL_START
     result.content_json = std::string(c_sv);
   return result;
 }
-// GCOV_EXCL_STOP
 
 std::expected<PingRequest, std::string>
-// GCOV_EXCL_START
 parse_ping_request(simdjson::ondemand::value &val) noexcept {
   PingRequest result;
   simdjson::ondemand::object obj;
@@ -1834,10 +1711,8 @@ parse_ping_request(simdjson::ondemand::value &val) noexcept {
   result.method = std::string(m_sv);
   simdjson::ondemand::object p_obj;
   if (!obj["params"].get_object().get(p_obj)) {
-    // GCOV_EXCL_STOP
     PingRequestParams params;
     simdjson::ondemand::value meta_val;
-    // GCOV_EXCL_START
     if (!p_obj["_meta"].get(meta_val)) {
       std::string_view meta_sv;
       if (!meta_val.raw_json().get(meta_sv))
@@ -1847,20 +1722,16 @@ parse_ping_request(simdjson::ondemand::value &val) noexcept {
   }
   return result;
 }
-// GCOV_EXCL_STOP
 
 std::expected<SubscribeRequest, std::string>
-// GCOV_EXCL_START
 parse_subscribe_request(simdjson::ondemand::value &val) noexcept {
   SubscribeRequest result;
   simdjson::ondemand::object obj;
   if (val.get_object().get(obj))
     return std::unexpected("Expected object");
   std::string_view m_sv;
-  // GCOV_EXCL_STOP
   if (obj["method"].get_string().get(m_sv))
     return std::unexpected("Missing method");
-  // GCOV_EXCL_START
   result.method = std::string(m_sv);
   simdjson::ondemand::object p_obj;
   if (obj["params"].get_object().get(p_obj))
@@ -1871,10 +1742,8 @@ parse_subscribe_request(simdjson::ondemand::value &val) noexcept {
   result.params.uri = std::string(u_sv);
   return result;
 }
-// GCOV_EXCL_STOP
 
 std::expected<UnsubscribeRequest, std::string>
-// GCOV_EXCL_START
 parse_unsubscribe_request(simdjson::ondemand::value &val) noexcept {
   UnsubscribeRequest result;
   simdjson::ondemand::object obj;
@@ -1883,23 +1752,18 @@ parse_unsubscribe_request(simdjson::ondemand::value &val) noexcept {
   std::string_view m_sv;
   if (obj["method"].get_string().get(m_sv))
     return std::unexpected("Missing method");
-  // GCOV_EXCL_STOP
   result.method = std::string(m_sv);
-  // GCOV_EXCL_START
   simdjson::ondemand::object p_obj;
   if (obj["params"].get_object().get(p_obj))
     return std::unexpected("Missing params");
   std::string_view u_sv;
-  // GCOV_EXCL_STOP
   if (p_obj["uri"].get_string().get(u_sv))
     return std::unexpected("Missing uri");
   result.params.uri = std::string(u_sv);
   return result;
 }
-// GCOV_EXCL_STOP
 
 std::expected<ListToolsRequest, std::string>
-// GCOV_EXCL_START
 parse_list_tools_request(simdjson::ondemand::value &val) noexcept {
   ListToolsRequest result;
   simdjson::ondemand::object obj;
@@ -1919,10 +1783,8 @@ parse_list_tools_request(simdjson::ondemand::value &val) noexcept {
   }
   return result;
 }
-// GCOV_EXCL_STOP
 
 std::expected<ListToolsResult, std::string>
-// GCOV_EXCL_START
 parse_list_tools_result(simdjson::ondemand::value &val) noexcept {
   ListToolsResult result;
   simdjson::ondemand::object obj;
@@ -1945,15 +1807,10 @@ parse_list_tools_result(simdjson::ondemand::value &val) noexcept {
     auto pt = parse_tool(t_val);
     if (pt.has_value())
       result.tools.push_back(pt.operator*());
-    // GCOV_EXCL_STOP
     else
-      // GCOV_EXCL_START
       return std::unexpected(pt.error());
   }
   return result;
 }
-// GCOV_EXCL_STOP
 
 } // namespace cdd_cpp::mcp
-
-// GCOV_EXCL_BR_STOP

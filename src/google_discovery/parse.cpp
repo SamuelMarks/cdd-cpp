@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 
 #include "parse.hpp"
 #include <expected>
@@ -9,7 +8,7 @@ namespace cdd_cpp::google_discovery {
 openapi::Schema convert_schema(simdjson::dom::element el) noexcept {
   openapi::Schema out;
   if (el.is_object()) {
-    auto obj = el.get_object();
+    auto obj = el.get_object().value_unsafe();
     simdjson::dom::element type_el;
     if (obj["type"].get(type_el) == simdjson::SUCCESS && type_el.is_string()) {
       out.type = std::string(type_el.get_string().value_unsafe());
@@ -39,7 +38,7 @@ openapi::Schema convert_schema(simdjson::dom::element el) noexcept {
         props_el.is_object()) {
       out.properties =
           std::make_shared<std::map<std::string, openapi::Schema>>();
-      for (auto prop : props_el.get_object()) {
+      for (auto prop : props_el.get_object().value_unsafe()) {
         out.properties->insert(
             {std::string(prop.key), convert_schema(prop.value)});
       }
@@ -53,7 +52,7 @@ void process_methods(simdjson::dom::object methods,
   for (auto m : methods) {
     if (!m.value.is_object())
       continue;
-    auto method_obj = m.value.get_object();
+    auto method_obj = m.value.get_object().value_unsafe();
 
     std::string httpMethod = "GET";
     simdjson::dom::element hm_el;
@@ -93,11 +92,11 @@ void process_methods(simdjson::dom::object methods,
     if (method_obj["parameters"].get(params_el) == simdjson::SUCCESS &&
         params_el.is_object()) {
       op.parameters = std::vector<openapi::Parameter>{};
-      for (auto p : params_el.get_object()) {
+      for (auto p : params_el.get_object().value_unsafe()) {
         openapi::Parameter param;
         param.name = std::string(p.key);
         if (p.value.is_object()) {
-          auto p_obj = p.value.get_object();
+          auto p_obj = p.value.get_object().value_unsafe();
           simdjson::dom::element loc_el;
           if (p_obj["location"].get(loc_el) == simdjson::SUCCESS &&
               loc_el.is_string()) {
@@ -120,7 +119,8 @@ void process_methods(simdjson::dom::object methods,
     if (method_obj["request"].get(req_el) == simdjson::SUCCESS &&
         req_el.is_object()) {
       simdjson::dom::element ref_el;
-      if (req_el.get_object()["$ref"].get(ref_el) == simdjson::SUCCESS &&
+      if (req_el.get_object().value_unsafe()["$ref"].get(ref_el) ==
+              simdjson::SUCCESS &&
           ref_el.is_string()) {
         openapi::RequestBody reqBody;
         reqBody.content = std::map<std::string, openapi::MediaType>{};
@@ -142,7 +142,8 @@ void process_methods(simdjson::dom::object methods,
     if (method_obj["response"].get(resp_el) == simdjson::SUCCESS &&
         resp_el.is_object()) {
       simdjson::dom::element ref_el;
-      if (resp_el.get_object()["$ref"].get(ref_el) == simdjson::SUCCESS &&
+      if (resp_el.get_object().value_unsafe()["$ref"].get(ref_el) ==
+              simdjson::SUCCESS &&
           ref_el.is_string()) {
         r200.content = std::map<std::string, openapi::MediaType>{};
         openapi::MediaType mt;
@@ -178,16 +179,16 @@ void process_resources(
     std::map<std::string, openapi::PathItem> &paths) noexcept {
   for (auto r : resources) {
     if (r.value.is_object()) {
-      auto res_obj = r.value.get_object();
+      auto res_obj = r.value.get_object().value_unsafe();
       simdjson::dom::element methods_el;
       if (res_obj["methods"].get(methods_el) == simdjson::SUCCESS &&
           methods_el.is_object()) {
-        process_methods(methods_el.get_object(), paths);
+        process_methods(methods_el.get_object().value_unsafe(), paths);
       }
       simdjson::dom::element sub_res_el;
       if (res_obj["resources"].get(sub_res_el) == simdjson::SUCCESS &&
           sub_res_el.is_object()) {
-        process_resources(sub_res_el.get_object(), paths);
+        process_resources(sub_res_el.get_object().value_unsafe(), paths);
       }
     }
   }
@@ -196,8 +197,16 @@ void process_resources(
 std::expected<std::vector<openapi::OpenAPI>, std::string>
 parse(const std::string &input) noexcept {
   simdjson::dom::parser parser;
-  auto doc = parser.parse(input);
-  auto root = doc.get_object();
+  simdjson::dom::element doc;
+  auto error = parser.parse(input).get(doc);
+  if (error) {
+    return std::unexpected(simdjson::error_message(error));
+  }
+  simdjson::dom::object root;
+  error = doc.get_object().get(root);
+  if (error) {
+    return std::unexpected(simdjson::error_message(error));
+  }
 
   std::vector<openapi::OpenAPI> results;
 
@@ -209,9 +218,9 @@ parse(const std::string &input) noexcept {
       simdjson::dom::element items_el;
       if (root["items"].get(items_el) == simdjson::SUCCESS &&
           items_el.is_array()) {
-        for (auto item : items_el.get_array()) {
+        for (auto item : items_el.get_array().value_unsafe()) {
           if (item.is_object()) {
-            auto item_obj = item.get_object();
+            auto item_obj = item.get_object().value_unsafe();
             openapi::OpenAPI spec;
             spec.openapi = "3.2.0";
 
@@ -277,7 +286,7 @@ parse(const std::string &input) noexcept {
           schemas_el.is_object()) {
         spec.components = openapi::Components{};
         spec.components->schemas = std::map<std::string, openapi::Schema>{};
-        for (auto s : schemas_el.get_object()) {
+        for (auto s : schemas_el.get_object().value_unsafe()) {
           spec.components->schemas->insert(
               {std::string(s.key), convert_schema(s.value)});
         }
@@ -288,13 +297,15 @@ parse(const std::string &input) noexcept {
       simdjson::dom::element methods_el;
       if (root["methods"].get(methods_el) == simdjson::SUCCESS &&
           methods_el.is_object()) {
-        process_methods(methods_el.get_object(), spec.paths.operator*());
+        process_methods(methods_el.get_object().value_unsafe(),
+                        spec.paths.operator*());
       }
 
       simdjson::dom::element resources_el;
       if (root["resources"].get(resources_el) == simdjson::SUCCESS &&
           resources_el.is_object()) {
-        process_resources(resources_el.get_object(), spec.paths.operator*());
+        process_resources(resources_el.get_object().value_unsafe(),
+                          spec.paths.operator*());
       }
 
       results.push_back(spec);
@@ -303,5 +314,3 @@ parse(const std::string &input) noexcept {
   return results;
 }
 } // namespace cdd_cpp::google_discovery
-
-// GCOV_EXCL_BR_STOP

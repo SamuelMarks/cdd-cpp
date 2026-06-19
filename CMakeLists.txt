@@ -10,6 +10,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 add_definitions(-DCPPHTTPLIB_NO_EXCEPTIONS)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+add_compile_options(-fno-exceptions -fno-rtti)
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI")
+    add_definitions(-DSIMDJSON_EXCEPTIONS=0)
+endif()
+
 
 option(CDD_EXTREME_CHECKS "Enable extreme checks (sanitizers)" ON)
 
@@ -117,7 +122,7 @@ endif()
 # Define Library
 set(CDD_LIB_SRCS
     src/functions/parse.cpp src/functions/emit.cpp
-    src/client_sdk/parse.cpp src/models/emit.cpp src/models/parse.cpp src/client_sdk/emit.cpp src/client_sdk_cli/emit.cpp src/client_sdk_cli/parse.cpp
+    src/client_sdk/parse.cpp src/models/emit.cpp src/models/parse.cpp  src/client_sdk/emit.cpp src/client_sdk_cli/emit.cpp src/client_sdk_cli/parse.cpp
     src/docstrings/parse.cpp src/docstrings/emit.cpp
     src/server/parse.cpp src/server/emit.cpp
     src/mocks/parse.cpp src/mocks/emit.cpp
@@ -157,7 +162,7 @@ enable_extreme_checks(cdd-cpp)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     # Tests
-    add_executable(cdd-tests src/cli/exceptions_stub.cpp src/tests/client_sdk_cli_test.cpp  src/tests/main.cpp src/tests/parse.cpp src/tests/openapi_parse.cpp src/tests/emit.cpp src/tests/upgrader_test.cpp src/tests/google_discovery.cpp src/tests/models.cpp src/tests/client_sdk_test.cpp src/tests/functions.cpp src/tests/docstrings.cpp src/tests/server.cpp src/tests/mocks.cpp src/tests/http.cpp src/tests/cli.cpp src/tests/orm.cpp src/tests/mcp.cpp)
+    add_executable(cdd-tests src/cli/exceptions_stub.cpp src/tests/client_sdk_cli_test.cpp  src/tests/main.cpp src/tests/parse.cpp src/tests/openapi_parse.cpp src/tests/emit.cpp src/tests/upgrader_test.cpp src/tests/google_discovery.cpp src/tests/models.cpp src/tests/client_sdk_test.cpp src/tests/functions.cpp src/tests/docstrings.cpp src/tests/server.cpp src/tests/mocks.cpp src/tests/http.cpp src/tests/cli.cpp src/tests/orm.cpp src/tests/mcp.cpp src/tests/mcp_meta_tests.cpp src/tests/mcp_parse_fail_tests.cpp src/tests/struct_test.cpp)
     target_link_libraries(cdd-tests PRIVATE cdd_lib)
     enable_extreme_checks(cdd-tests)
 

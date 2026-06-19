@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 
 #include "parse.hpp"
 #include "../models/parse.hpp"
@@ -416,5 +415,3 @@ parse(const std::string &input) noexcept {
   return spec;
 }
 } // namespace cdd_cpp::server
-
-// GCOV_EXCL_BR_STOP

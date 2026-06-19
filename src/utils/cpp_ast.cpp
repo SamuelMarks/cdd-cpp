@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 #include "cpp_ast.hpp"
 #include <regex>
 #include <sstream>
@@ -128,5 +127,3 @@ std::string emit_cpp(const CppAST &ast) noexcept {
 }
 
 } // namespace cdd_cpp::utils
-
-// GCOV_EXCL_BR_STOP

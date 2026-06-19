@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 
 namespace cdd_cpp::orm {
 void test_emit() noexcept;
@@ -8,6 +7,8 @@ void test_parse() noexcept;
 void test_openapi_parse();
 } // namespace cdd_cpp::google_discovery
 namespace cdd_cpp::openapi {
+void test_exhaustive();
+
 void test_parse() noexcept;
 void test_openapi_parse();
 void test_emit() noexcept;
@@ -51,7 +52,20 @@ namespace cdd_cpp::utils {
 void test_http() noexcept;
 void test_cpp_parser() noexcept;
 } // namespace cdd_cpp::utils
+namespace cdd_cpp::struct_tests {
+void test_structs_openapi();
+void test_structs_mcp();
+} // namespace cdd_cpp::struct_tests
+namespace cdd_cpp::mcp {
+void test_mcp_meta_coverage();
+void test_mcp_parse_failures();
+} // namespace cdd_cpp::mcp
+
 namespace cdd_cpp::cli {
+void test_mcp_cli();
+void test_main_cli_coverage();
+void test_popen_fail();
+
 void test_to_docs_json() noexcept;
 void test_sync() noexcept;
 } // namespace cdd_cpp::cli
@@ -62,7 +76,20 @@ void test_upgraders() noexcept;
 #include <iostream>
 
 int main() {
+  rename("../spec.json", "../spec.json.tmp");
+  rename("../../spec.json", "../../spec.json.tmp");
+  std::cerr << "Calling test_exhaustive\n";
+
+  cdd_cpp::openapi::test_exhaustive();
+  rename("../spec.json.tmp", "../spec.json");
+  rename("../../spec.json.tmp", "../../spec.json");
+  std::cerr << "Calling test_exhaustive\n";
+
+  cdd_cpp::openapi::test_exhaustive();
+
   std::cout << "Running full test suite...\n";
+  std::cerr << "Calling test_parse\n";
+
   cdd_cpp::openapi::test_parse();
   cdd_cpp::openapi::test_openapi_parse();
   cdd_cpp::openapi::test_emit();
@@ -82,8 +109,18 @@ int main() {
   cdd_cpp::mocks::test_emit();
   cdd_cpp::utils::test_http();
   cdd_cpp::cli::test_to_docs_json();
+  cdd_cpp::cli::test_mcp_cli();
+  cdd_cpp::cli::test_main_cli_coverage();
+  cdd_cpp::cli::test_popen_fail();
+
   cdd_cpp::cli::test_sync();
   cdd_cpp::utils::test_cpp_parser();
+  cdd_cpp::struct_tests::test_structs_openapi();
+  cdd_cpp::struct_tests::test_structs_mcp();
+  cdd_cpp::mcp::test_mcp_meta_coverage();
+  std::cerr << "Calling test_mcp_parse_failures from main\n";
+  cdd_cpp::mcp::test_mcp_parse_failures();
+
   cdd_cpp::openapi::upgraders::test_upgraders();
   cdd_cpp::google_discovery::test_parse();
   cdd_cpp::orm::test_emit();
@@ -119,5 +156,3 @@ int main() {
   std::cout << "All tests passed with 100% simulated coverage.\n";
   return 0;
 }
-
-// GCOV_EXCL_BR_STOP

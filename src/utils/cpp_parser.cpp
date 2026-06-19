@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 #include "cpp_parser.hpp"
 #include "cpp_ast.hpp"
 #include <filesystem>
@@ -91,5 +90,3 @@ openapi::OpenAPI parse_cpp_project(const std::string &folder_path) noexcept {
 }
 
 } // namespace cdd_cpp::utils
-
-// GCOV_EXCL_BR_STOP

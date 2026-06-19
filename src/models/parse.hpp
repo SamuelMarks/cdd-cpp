@@ -1,4 +1,3 @@
-// GCOV_EXCL_BR_START
 #pragma once
 #include "../openapi/models.hpp"
 #include "../utils/cpp_ast.hpp"
@@ -9,5 +8,3 @@ namespace cdd_cpp::utils {
 /// @param spec The OpenAPI specification object to mutate.
 void parse_schemas(const CppAST &ast, openapi::OpenAPI &spec) noexcept;
 } // namespace cdd_cpp::utils
-
-// GCOV_EXCL_BR_STOP

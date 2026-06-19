@@ -11,10 +11,10 @@ void test_mcp_annotated() {
       R"({"annotations": {"audience": "users", "priority": 1.5}})";
   simdjson::ondemand::parser parser;
   simdjson::padded_string padded(json);
-  simdjson::ondemand::document doc = parser.iterate(padded);
-  simdjson::ondemand::value val = doc.get_value();
+  auto doc = parser.iterate(padded);
+  auto val = doc.get_value();
 
-  auto result = mcp::parse_annotated(val);
+  auto result = mcp::parse_annotated(val.value_unsafe());
   assert(result.has_value());
   assert(result->annotations.has_value());
   assert(result->annotations->audience == "users");
@@ -32,10 +32,10 @@ void test_mcp_blob_resource_contents() {
       R"({"blob": "base64data", "mimeType": "image/png", "uri": "file:///test.png"})";
   simdjson::ondemand::parser parser;
   simdjson::padded_string padded(json);
-  simdjson::ondemand::document doc = parser.iterate(padded);
-  simdjson::ondemand::value val = doc.get_value();
+  auto doc = parser.iterate(padded);
+  auto val = doc.get_value();
 
-  auto result = mcp::parse_blob_resource_contents(val);
+  auto result = mcp::parse_blob_resource_contents(val.value_unsafe());
   assert(result.has_value());
   assert(result->blob == "base64data");
   assert(result->mimeType == "image/png");
@@ -52,7 +52,7 @@ void test_mcp_blob_resource_contents() {
   simdjson::padded_string padded_no_blob(json_no_blob);
   doc = parser.iterate(padded_no_blob);
   val = doc.get_value();
-  auto result_no_blob = mcp::parse_blob_resource_contents(val);
+  auto result_no_blob = mcp::parse_blob_resource_contents(val.value_unsafe());
   assert(!result_no_blob.has_value());
   assert(result_no_blob.error() == "Missing required field: blob");
 
@@ -60,7 +60,7 @@ void test_mcp_blob_resource_contents() {
   simdjson::padded_string padded_no_uri(json_no_uri);
   doc = parser.iterate(padded_no_uri);
   val = doc.get_value();
-  auto result_no_uri = mcp::parse_blob_resource_contents(val);
+  auto result_no_uri = mcp::parse_blob_resource_contents(val.value_unsafe());
   assert(!result_no_uri.has_value());
   assert(result_no_uri.error() == "Missing required field: uri");
 
@@ -68,7 +68,7 @@ void test_mcp_blob_resource_contents() {
   simdjson::padded_string padded_not_obj(json_not_obj);
   doc = parser.iterate(padded_not_obj);
   val = doc.get_value();
-  auto result_not_obj = mcp::parse_blob_resource_contents(val);
+  auto result_not_obj = mcp::parse_blob_resource_contents(val.value_unsafe());
   assert(!result_not_obj.has_value());
   assert(result_not_obj.error() == "Expected object for BlobResourceContents");
 
@@ -80,10 +80,10 @@ void test_mcp_call_tool_request() {
       R"({"method": "tools/call", "params": {"name": "my_tool", "arguments": {"arg1": "val1"}}})";
   simdjson::ondemand::parser parser;
   simdjson::padded_string padded(json);
-  simdjson::ondemand::document doc = parser.iterate(padded);
-  simdjson::ondemand::value val = doc.get_value();
+  auto doc = parser.iterate(padded);
+  auto val = doc.get_value();
 
-  auto result = mcp::parse_call_tool_request(val);
+  auto result = mcp::parse_call_tool_request(val.value_unsafe());
   assert(result.has_value());
   assert(result->method == "tools/call");
   assert(result->params.name == "my_tool");
@@ -103,7 +103,7 @@ void test_mcp_call_tool_request() {
   simdjson::padded_string padded_no_method(json_no_method);
   doc = parser.iterate(padded_no_method);
   val = doc.get_value();
-  auto result_no_method = mcp::parse_call_tool_request(val);
+  auto result_no_method = mcp::parse_call_tool_request(val.value_unsafe());
   assert(!result_no_method.has_value());
   assert(result_no_method.error() == "Missing required field: method");
 
@@ -111,7 +111,7 @@ void test_mcp_call_tool_request() {
   simdjson::padded_string padded_no_params(json_no_params);
   doc = parser.iterate(padded_no_params);
   val = doc.get_value();
-  auto result_no_params = mcp::parse_call_tool_request(val);
+  auto result_no_params = mcp::parse_call_tool_request(val.value_unsafe());
   assert(!result_no_params.has_value());
   assert(result_no_params.error() == "Missing required field: params");
 
@@ -119,7 +119,7 @@ void test_mcp_call_tool_request() {
   simdjson::padded_string padded_no_name(json_no_name);
   doc = parser.iterate(padded_no_name);
   val = doc.get_value();
-  auto result_no_name = mcp::parse_call_tool_request(val);
+  auto result_no_name = mcp::parse_call_tool_request(val.value_unsafe());
   assert(!result_no_name.has_value());
   assert(result_no_name.error() == "Missing required field: params.name");
 
@@ -127,7 +127,7 @@ void test_mcp_call_tool_request() {
   simdjson::padded_string padded_not_obj(json_not_obj);
   doc = parser.iterate(padded_not_obj);
   val = doc.get_value();
-  auto result_not_obj = mcp::parse_call_tool_request(val);
+  auto result_not_obj = mcp::parse_call_tool_request(val.value_unsafe());
   assert(!result_not_obj.has_value());
   assert(result_not_obj.error() == "Expected object for CallToolRequest");
 
@@ -140,17 +140,17 @@ void test_mcp_content_and_results() {
   // TextContent
   {
     std::string json =
-        R"({"type":"text","text":"hello","annotations":{"audience":"user"}})";
+        R"({"type":"text","text":"hello","annotations":{"audience":"user","priority":1.5}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_text_content(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_text_content(val.value_unsafe());
     assert(res.has_value() && res->text == "hello");
     utils::JsonWriter jw;
     mcp::emit_text_content(res.operator*(), jw);
     assert(
         jw.str() ==
-        R"({"type":"text","text":"hello","annotations":{"audience":"user"}})");
+        R"({"type":"text","text":"hello","annotations":{"audience":"user","priority":1.5}})");
   }
 
   // ImageContent
@@ -158,9 +158,9 @@ void test_mcp_content_and_results() {
     std::string json =
         R"({"type":"image","data":"b64","mimeType":"image/png"})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_image_content(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_image_content(val.value_unsafe());
     assert(res.has_value() && res->data == "b64");
     utils::JsonWriter jw;
     mcp::emit_image_content(res.operator*(), jw);
@@ -173,9 +173,9 @@ void test_mcp_content_and_results() {
     std::string json =
         R"({"uri":"file:///a.txt","mimeType":"text/plain","text":"file content"})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_text_resource_contents(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_text_resource_contents(val.value_unsafe());
     assert(res.has_value() && res->text == "file content");
     utils::JsonWriter jw;
     mcp::emit_text_resource_contents(res.operator*(), jw);
@@ -189,9 +189,9 @@ void test_mcp_content_and_results() {
     std::string json =
         R"({"type":"resource","resource":{"uri":"file:///a.txt","text":"hi"}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_embedded_resource(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_embedded_resource(val.value_unsafe());
     assert(res.has_value() && res->type == "resource");
     utils::JsonWriter jw;
     mcp::emit_embedded_resource(res.operator*(), jw);
@@ -203,9 +203,9 @@ void test_mcp_content_and_results() {
     std::string json =
         R"({"_meta":{"progressToken":"123"},"content":[{"type":"text","text":"hi"}],"isError":true})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_call_tool_result(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_call_tool_result(val.value_unsafe());
     assert(res.has_value() && res->isError.operator*() == true);
     utils::JsonWriter jw;
     mcp::emit_call_tool_result(res.operator*(), jw);
@@ -216,17 +216,19 @@ void test_mcp_content_and_results() {
   {
     std::string json_no_content = R"({"isError":true})";
     simdjson::padded_string padded(json_no_content);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_call_tool_result(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_call_tool_result(val.value_unsafe());
     assert(!res.has_value());
   }
 
   // Test parsing error paths
   auto test_err = [&](auto func, const std::string &j) {
     simdjson::padded_string p(j);
-    simdjson::ondemand::document d = parser.iterate(p);
-    simdjson::ondemand::value v = d.get_value();
+    simdjson::ondemand::document d;
+    parser.iterate(p).get(d);
+    simdjson::ondemand::value v;
+    d.get_value().get(v);
     auto res = func(v);
     assert(!res.has_value());
     (void)res;
@@ -255,9 +257,9 @@ void test_mcp_content_and_results() {
     std::string json =
         R"({"method":"notifications/cancelled","params":{"requestId":123,"reason":"timeout"}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_cancelled_notification(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_cancelled_notification(val.value_unsafe());
     assert(res.has_value() && res->params.requestId == "123");
     utils::JsonWriter jw;
     mcp::emit_cancelled_notification(res.operator*(), jw);
@@ -268,9 +270,9 @@ void test_mcp_content_and_results() {
     std::string json =
         R"({"method":"notifications/cancelled","params":{"requestId":"abc"}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_cancelled_notification(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_cancelled_notification(val.value_unsafe());
     assert(res.has_value() && res->params.requestId == "abc");
     utils::JsonWriter jw;
     mcp::emit_cancelled_notification(res.operator*(), jw);
@@ -287,9 +289,9 @@ void test_mcp_content_and_results() {
     std::string json =
         R"({"experimental":{"feature":true},"roots":{"listChanged":true},"sampling":{}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_client_capabilities(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_client_capabilities(val.value_unsafe());
     assert(res.has_value());
     assert(res->experimental.has_value() &&
            res->experimental.operator*().find("feature") != std::string::npos);
@@ -311,8 +313,10 @@ void test_mcp_completion() {
   simdjson::ondemand::parser parser;
   auto test_err = [&](auto func, const std::string &j) {
     simdjson::padded_string p(j);
-    simdjson::ondemand::document d = parser.iterate(p);
-    simdjson::ondemand::value v = d.get_value();
+    simdjson::ondemand::document d;
+    parser.iterate(p).get(d);
+    simdjson::ondemand::value v;
+    d.get_value().get(v);
     auto res = func(v);
     assert(!res.has_value());
     (void)res;
@@ -323,9 +327,9 @@ void test_mcp_completion() {
     std::string json =
         R"({"method":"completion/complete","params":{"argument":{"name":"arg1","value":"val1"},"ref":{"type":"ref"}}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_complete_request(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_complete_request(val.value_unsafe());
     assert(res.has_value());
     assert(res->method == "completion/complete");
     assert(res->params.argument.name == "arg1");
@@ -353,9 +357,9 @@ void test_mcp_completion() {
     std::string json =
         R"({"_meta":{"progressToken":"1"},"completion":{"values":["a","b"],"total":2,"hasMore":false}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_complete_result(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_complete_result(val.value_unsafe());
     assert(res.has_value());
     assert(res->completion.values.size() == 2);
     assert(res->completion.total.operator*() == 2);
@@ -376,8 +380,10 @@ void test_mcp_messaging() {
   simdjson::ondemand::parser parser;
   auto test_err = [&](auto func, const std::string &j) {
     simdjson::padded_string p(j);
-    simdjson::ondemand::document d = parser.iterate(p);
-    simdjson::ondemand::value v = d.get_value();
+    simdjson::ondemand::document d;
+    parser.iterate(p).get(d);
+    simdjson::ondemand::value v;
+    d.get_value().get(v);
     auto res = func(v);
     assert(!res.has_value());
     (void)res;
@@ -386,11 +392,11 @@ void test_mcp_messaging() {
   // CreateMessageRequest
   {
     std::string json =
-        R"({"method":"sampling/createMessage","params":{"maxTokens":100,"messages":[{"role":"user","content":{"type":"text","text":"hi"}}],"includeContext":"none","metadata":{},"modelPreferences":{"costPriority":0.5,"hints":[{"name":"claude"}]},"stopSequences":["stop"],"systemPrompt":"sys","temperature":0.8}})";
+        R"({"method":"sampling/createMessage","params":{"maxTokens":100,"messages":[{"role":"user","content":{"type":"text","text":"hi"}}],"includeContext":"none","metadata":{},"modelPreferences":{"costPriority":0.5,"intelligencePriority":0.8,"speedPriority":0.9,"hints":[{"name":"claude"}]},"stopSequences":["stop"],"systemPrompt":"sys","temperature":0.8}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_create_message_request(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_create_message_request(val.value_unsafe());
     assert(res.has_value());
     assert(res->params.maxTokens == 100);
     assert(res->params.messages_json.find("role") != std::string::npos);
@@ -415,9 +421,9 @@ void test_mcp_messaging() {
     std::string json =
         R"({"_meta":{"progressToken":"1"},"content":{"type":"text","text":"hi"},"model":"claude","role":"assistant","stopReason":"end"})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_create_message_result(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_create_message_result(val.value_unsafe());
     assert(res.has_value());
     assert(res->model == "claude");
     assert(res->role == "assistant");
@@ -437,8 +443,10 @@ void test_mcp_tools() {
   simdjson::ondemand::parser parser;
   auto test_err = [&](auto func, const std::string &j) {
     simdjson::padded_string p(j);
-    simdjson::ondemand::document d = parser.iterate(p);
-    simdjson::ondemand::value v = d.get_value();
+    simdjson::ondemand::document d;
+    parser.iterate(p).get(d);
+    simdjson::ondemand::value v;
+    d.get_value().get(v);
     auto res = func(v);
     assert(!res.has_value());
     (void)res;
@@ -449,9 +457,9 @@ void test_mcp_tools() {
     std::string json =
         R"({"name":"test_tool","description":"desc","inputSchema":{"type":"object","properties":{"a":{}},"required":["a"]}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_tool(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_tool(val.value_unsafe());
     assert(res.has_value());
     assert(res->name == "test_tool");
     assert(res->inputSchema.type == "object");
@@ -474,9 +482,9 @@ void test_mcp_tools() {
     std::string json =
         R"({"method":"notifications/tools/list_changed","params":{"_meta":{"key":"val"}}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_tool_list_changed_notification(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_tool_list_changed_notification(val.value_unsafe());
     assert(res.has_value());
     assert(res->method == "notifications/tools/list_changed");
     assert(res->params.has_value() && res->params->_meta.has_value());
@@ -488,9 +496,9 @@ void test_mcp_tools() {
   {
     std::string json = R"({"method":"notifications/tools/list_changed"})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_tool_list_changed_notification(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_tool_list_changed_notification(val.value_unsafe());
     assert(res.has_value());
     assert(!res->params.has_value());
 
@@ -508,8 +516,10 @@ void test_mcp_pagination() {
   simdjson::ondemand::parser parser;
   auto test_err = [&](auto func, const std::string &j) {
     simdjson::padded_string p(j);
-    simdjson::ondemand::document d = parser.iterate(p);
-    simdjson::ondemand::value v = d.get_value();
+    simdjson::ondemand::document d;
+    parser.iterate(p).get(d);
+    simdjson::ondemand::value v;
+    d.get_value().get(v);
     auto res = func(v);
     assert(!res.has_value());
     (void)res;
@@ -520,9 +530,9 @@ void test_mcp_pagination() {
     std::string json =
         R"({"method":"test/paginated","params":{"cursor":"abc"}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_paginated_request(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_paginated_request(val.value_unsafe());
     assert(res.has_value() && res->method == "test/paginated");
     assert(res->params.cursor.has_value() &&
            res->params.cursor.operator*() == "abc");
@@ -534,9 +544,9 @@ void test_mcp_pagination() {
   {
     std::string json = R"({"method":"test/paginated"})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_paginated_request(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_paginated_request(val.value_unsafe());
     assert(res.has_value() && res->method == "test/paginated");
     assert(!res->params.cursor.has_value());
 
@@ -551,9 +561,9 @@ void test_mcp_pagination() {
   {
     std::string json = R"({"_meta":{"key":"val"},"nextCursor":"c1"})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_paginated_result(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_paginated_result(val.value_unsafe());
     assert(res.has_value() && res->nextCursor.has_value() &&
            res->nextCursor.operator*() == "c1");
     assert(res->_meta.has_value() &&
@@ -566,9 +576,9 @@ void test_mcp_pagination() {
   {
     std::string json = R"({})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_paginated_result(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_paginated_result(val.value_unsafe());
     assert(res.has_value() && !res->nextCursor.has_value() &&
            !res->_meta.has_value());
 
@@ -585,8 +595,10 @@ void test_mcp_init() {
   simdjson::ondemand::parser parser;
   auto test_err = [&](auto func, const std::string &j) {
     simdjson::padded_string p(j);
-    simdjson::ondemand::document d = parser.iterate(p);
-    simdjson::ondemand::value v = d.get_value();
+    simdjson::ondemand::document d;
+    parser.iterate(p).get(d);
+    simdjson::ondemand::value v;
+    d.get_value().get(v);
     auto res = func(v);
     assert(!res.has_value());
     (void)res;
@@ -597,9 +609,9 @@ void test_mcp_init() {
     std::string json =
         R"({"method":"initialize","params":{"protocolVersion":"1","capabilities":{"roots":{}},"clientInfo":{"name":"c","version":"1.0"}}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_initialize_request(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_initialize_request(val.value_unsafe());
     assert(res.has_value());
     assert(res->params.protocolVersion == "1");
     assert(res->params.clientInfo.name == "c");
@@ -624,9 +636,9 @@ void test_mcp_init() {
     std::string json =
         R"({"protocolVersion":"1","capabilities":{"experimental":{},"logging":{},"prompts":{"listChanged":true},"resources":{"subscribe":false,"listChanged":true},"tools":{"listChanged":false}},"serverInfo":{"name":"s","version":"2"},"instructions":"hi"})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_initialize_result(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_initialize_result(val.value_unsafe());
     assert(res.has_value());
     assert(res->capabilities.prompts->listChanged == true);
     assert(res->capabilities.resources->subscribe == false);
@@ -650,9 +662,9 @@ void test_mcp_init() {
     std::string json =
         R"({"method":"notifications/initialized","params":{"_meta":{"x":1}}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_initialized_notification(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_initialized_notification(val.value_unsafe());
     assert(res.has_value());
 
     utils::JsonWriter jw;
@@ -662,9 +674,9 @@ void test_mcp_init() {
   {
     std::string json = R"({"method":"notifications/initialized"})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_initialized_notification(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_initialized_notification(val.value_unsafe());
     assert(res.has_value());
   }
   test_err(mcp::parse_initialized_notification, R"([])");
@@ -677,8 +689,10 @@ void test_mcp_jsonrpc() {
   simdjson::ondemand::parser parser;
   auto test_err = [&](auto func, const std::string &j) {
     simdjson::padded_string p(j);
-    simdjson::ondemand::document d = parser.iterate(p);
-    simdjson::ondemand::value v = d.get_value();
+    simdjson::ondemand::document d;
+    parser.iterate(p).get(d);
+    simdjson::ondemand::value v;
+    d.get_value().get(v);
     auto res = func(v);
     assert(!res.has_value());
     (void)res;
@@ -689,9 +703,9 @@ void test_mcp_jsonrpc() {
     std::string json =
         R"({"jsonrpc":"2.0","id":1,"error":{"code":-32600,"message":"Invalid","data":{"x":1}}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_jsonrpc_error(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_jsonrpc_error(val.value_unsafe());
     assert(res.has_value());
     assert(res->id == "1");
     assert(res->error.code == -32600);
@@ -713,9 +727,9 @@ void test_mcp_jsonrpc() {
     std::string json =
         R"({"jsonrpc":"2.0","method":"n","params":{"_meta":{"a":1},"b":2}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_jsonrpc_notification(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_jsonrpc_notification(val.value_unsafe());
     assert(res.has_value());
     assert(res->method == "n");
     assert(res->params.has_value() && res->params->_raw.has_value());
@@ -728,9 +742,9 @@ void test_mcp_jsonrpc() {
     std::string json =
         R"({"jsonrpc":"2.0","method":"n","params":{"_meta":{}}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_jsonrpc_notification(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_jsonrpc_notification(val.value_unsafe());
     res->params->_raw = std::nullopt; // Force emit branch
     utils::JsonWriter jw;
     mcp::emit_jsonrpc_notification(res.operator*(), jw);
@@ -745,9 +759,9 @@ void test_mcp_jsonrpc() {
     std::string json =
         R"({"jsonrpc":"2.0","id":"abc","method":"m","params":{"_meta":{}}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_jsonrpc_request(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_jsonrpc_request(val.value_unsafe());
     assert(res.has_value());
     assert(res->id == "\"abc\"");
 
@@ -759,9 +773,9 @@ void test_mcp_jsonrpc() {
     std::string json =
         R"({"jsonrpc":"2.0","id":1,"method":"m","params":{"_meta":{}}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_jsonrpc_request(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_jsonrpc_request(val.value_unsafe());
     res->params->_raw = std::nullopt; // Force emit branch
     utils::JsonWriter jw;
     mcp::emit_jsonrpc_request(res.operator*(), jw);
@@ -776,9 +790,9 @@ void test_mcp_jsonrpc() {
   {
     std::string json = R"({"jsonrpc":"2.0","id":null,"result":{"a":1}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_jsonrpc_response(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_jsonrpc_response(val.value_unsafe());
     assert(res.has_value());
     assert(res->id == "null");
 
@@ -798,8 +812,10 @@ void test_mcp_prompts() {
   simdjson::ondemand::parser parser;
   auto test_err = [&](auto func, const std::string &j) {
     simdjson::padded_string p(j);
-    simdjson::ondemand::document d = parser.iterate(p);
-    simdjson::ondemand::value v = d.get_value();
+    simdjson::ondemand::document d;
+    parser.iterate(p).get(d);
+    simdjson::ondemand::value v;
+    d.get_value().get(v);
     auto res = func(v);
     assert(!res.has_value());
     (void)res;
@@ -809,9 +825,9 @@ void test_mcp_prompts() {
   {
     std::string json = R"({"method":"prompts/list","params":{"cursor":"a"}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_list_prompts_request(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_list_prompts_request(val.value_unsafe());
     assert(res.has_value());
     assert(res->params.has_value() && res->params->cursor == "a");
 
@@ -822,9 +838,9 @@ void test_mcp_prompts() {
   {
     std::string json = R"({"method":"prompts/list"})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_list_prompts_request(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_list_prompts_request(val.value_unsafe());
     assert(res.has_value());
     assert(!res->params.has_value());
     utils::JsonWriter jw;
@@ -838,9 +854,9 @@ void test_mcp_prompts() {
     std::string json =
         R"({"_meta":{"k":"v"},"nextCursor":"n","prompts":[{"name":"p1","description":"d","arguments":[{"name":"arg1","description":"ad","required":true}]}]})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_list_prompts_result(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_list_prompts_result(val.value_unsafe());
     assert(res.has_value());
     assert(res->prompts.size() == 1);
     assert(res->prompts[0].name == "p1");
@@ -858,9 +874,9 @@ void test_mcp_prompts() {
     std::string json =
         R"({"method":"prompts/get","params":{"name":"p1","arguments":{"arg1":"val"}}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_get_prompt_request(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_get_prompt_request(val.value_unsafe());
     assert(res.has_value());
     assert(res->params.name == "p1");
 
@@ -878,9 +894,9 @@ void test_mcp_prompts() {
     std::string json =
         R"({"_meta":{},"description":"d","messages":[{"role":"user","content":{"type":"text","text":"hi"}}]})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_get_prompt_result(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_get_prompt_result(val.value_unsafe());
     assert(res.has_value());
     assert(res->messages.size() == 1);
     assert(res->messages[0].role == "user");
@@ -903,9 +919,9 @@ void test_mcp_prompts() {
     std::string json =
         R"({"method":"notifications/prompts/list_changed","params":{"_meta":{"k":1}}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_prompt_list_changed_notification(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_prompt_list_changed_notification(val.value_unsafe());
     assert(res.has_value());
     assert(res->method == "notifications/prompts/list_changed");
     assert(res->params.has_value() && res->params->_meta.has_value());
@@ -917,9 +933,9 @@ void test_mcp_prompts() {
   {
     std::string json = R"({"method":"notifications/prompts/list_changed"})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_prompt_list_changed_notification(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_prompt_list_changed_notification(val.value_unsafe());
     assert(res.has_value());
     assert(!res->params.has_value());
 
@@ -934,9 +950,9 @@ void test_mcp_prompts() {
   {
     std::string json = R"({"type":"ref/prompt","name":"p1"})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_prompt_reference(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_prompt_reference(val.value_unsafe());
     assert(res.has_value());
     assert(res->type == "ref/prompt" && res->name == "p1");
 
@@ -955,8 +971,10 @@ void test_mcp_resources() {
   simdjson::ondemand::parser parser;
   auto test_err = [&](auto func, const std::string &j) {
     simdjson::padded_string p(j);
-    simdjson::ondemand::document d = parser.iterate(p);
-    simdjson::ondemand::value v = d.get_value();
+    simdjson::ondemand::document d;
+    parser.iterate(p).get(d);
+    simdjson::ondemand::value v;
+    d.get_value().get(v);
     auto res = func(v);
     assert(!res.has_value());
     (void)res;
@@ -967,9 +985,9 @@ void test_mcp_resources() {
     std::string json =
         R"({"method":"resources/list","params":{"cursor":"abc"}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_list_resources_request(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_list_resources_request(val.value_unsafe());
     assert(res.has_value() && res->params->cursor == "abc");
     utils::JsonWriter jw;
     mcp::emit_list_resources_request(res.operator*(), jw);
@@ -978,9 +996,9 @@ void test_mcp_resources() {
   {
     std::string json = R"({"method":"resources/list"})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_list_resources_request(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_list_resources_request(val.value_unsafe());
     assert(res.has_value());
     utils::JsonWriter jw;
     mcp::emit_list_resources_request(res.operator*(), jw);
@@ -993,9 +1011,9 @@ void test_mcp_resources() {
     std::string json =
         R"({"_meta":{"k":1},"nextCursor":"n","resources":[{"uri":"file:///a.txt","name":"a","description":"d","mimeType":"text/plain"}]})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_list_resources_result(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_list_resources_result(val.value_unsafe());
     assert(res.has_value());
     assert(res->resources.size() == 1);
     utils::JsonWriter jw;
@@ -1014,9 +1032,9 @@ void test_mcp_resources() {
     std::string json =
         R"({"method":"resources/templates/list","params":{"cursor":"c"}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_list_resource_templates_request(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_list_resource_templates_request(val.value_unsafe());
     assert(res.has_value());
     utils::JsonWriter jw;
     mcp::emit_list_resource_templates_request(res.operator*(), jw);
@@ -1025,9 +1043,9 @@ void test_mcp_resources() {
   {
     std::string json = R"({"method":"resources/templates/list"})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_list_resource_templates_request(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_list_resource_templates_request(val.value_unsafe());
     assert(res.has_value());
     utils::JsonWriter jw;
     mcp::emit_list_resource_templates_request(res.operator*(), jw);
@@ -1040,9 +1058,9 @@ void test_mcp_resources() {
     std::string json =
         R"({"_meta":{},"nextCursor":"c","resourceTemplates":[{"uriTemplate":"file:///{file}","name":"n","description":"d","mimeType":"m"}]})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_list_resource_templates_result(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_list_resource_templates_result(val.value_unsafe());
     assert(res.has_value());
     assert(res->resourceTemplates.size() == 1);
     utils::JsonWriter jw;
@@ -1062,9 +1080,9 @@ void test_mcp_resources() {
     std::string json =
         R"({"method":"resources/read","params":{"uri":"file:///a.txt"}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_read_resource_request(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_read_resource_request(val.value_unsafe());
     assert(res.has_value());
     utils::JsonWriter jw;
     mcp::emit_read_resource_request(res.operator*(), jw);
@@ -1080,9 +1098,9 @@ void test_mcp_resources() {
     std::string json =
         R"({"_meta":{},"contents":[{"uri":"f","mimeType":"t","text":"hello"}]})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_read_resource_result(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_read_resource_result(val.value_unsafe());
     assert(res.has_value());
     assert(res->contents_json.size() == 1);
     utils::JsonWriter jw;
@@ -1097,9 +1115,9 @@ void test_mcp_resources() {
     std::string json =
         R"({"method":"notifications/resources/updated","params":{"uri":"file:///a.txt"}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_resource_updated_notification(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_resource_updated_notification(val.value_unsafe());
     assert(res.has_value());
     utils::JsonWriter jw;
     mcp::emit_resource_updated_notification(res.operator*(), jw);
@@ -1116,9 +1134,10 @@ void test_mcp_resources() {
     std::string json =
         R"({"method":"notifications/resources/list_changed","params":{"_meta":{}}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_resource_list_changed_notification(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res =
+        mcp::parse_resource_list_changed_notification(val.value_unsafe());
     assert(res.has_value());
     utils::JsonWriter jw;
     mcp::emit_resource_list_changed_notification(res.operator*(), jw);
@@ -1127,9 +1146,10 @@ void test_mcp_resources() {
   {
     std::string json = R"({"method":"notifications/resources/list_changed"})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_resource_list_changed_notification(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res =
+        mcp::parse_resource_list_changed_notification(val.value_unsafe());
     assert(res.has_value());
     utils::JsonWriter jw;
     mcp::emit_resource_list_changed_notification(res.operator*(), jw);
@@ -1141,9 +1161,9 @@ void test_mcp_resources() {
   {
     std::string json = R"({"type":"ref/resource","uri":"file:///a.txt"})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_resource_reference(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_resource_reference(val.value_unsafe());
     assert(res.has_value());
     utils::JsonWriter jw;
     mcp::emit_resource_reference(res.operator*(), jw);
@@ -1160,8 +1180,10 @@ void test_mcp_remaining() {
   simdjson::ondemand::parser parser;
   auto test_err = [&](auto func, const std::string &j) {
     simdjson::padded_string p(j);
-    simdjson::ondemand::document d = parser.iterate(p);
-    simdjson::ondemand::value v = d.get_value();
+    simdjson::ondemand::document d;
+    parser.iterate(p).get(d);
+    simdjson::ondemand::value v;
+    d.get_value().get(v);
     auto res = func(v);
     assert(!res.has_value());
     (void)res;
@@ -1171,9 +1193,9 @@ void test_mcp_remaining() {
   {
     std::string json = R"({"_meta":{"k":1}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_result(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_result(val.value_unsafe());
     assert(res.has_value());
     utils::JsonWriter jw;
     mcp::emit_result(res.operator*(), jw);
@@ -1182,9 +1204,9 @@ void test_mcp_remaining() {
   {
     std::string json = R"({})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_result(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_result(val.value_unsafe());
     assert(res.has_value());
     utils::JsonWriter jw;
     mcp::emit_result(res.operator*(), jw);
@@ -1196,9 +1218,9 @@ void test_mcp_remaining() {
   {
     std::string json = R"({"uri":"file:///","name":"root"})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_root(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_root(val.value_unsafe());
     assert(res.has_value() && res->name == "root");
     utils::JsonWriter jw;
     mcp::emit_root(res.operator*(), jw);
@@ -1212,9 +1234,9 @@ void test_mcp_remaining() {
     std::string json =
         R"({"method":"notifications/roots/list_changed","params":{"_meta":{}}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_roots_list_changed_notification(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_roots_list_changed_notification(val.value_unsafe());
     assert(res.has_value());
     utils::JsonWriter jw;
     mcp::emit_roots_list_changed_notification(res.operator*(), jw);
@@ -1223,9 +1245,9 @@ void test_mcp_remaining() {
   {
     std::string json = R"({"method":"notifications/roots/list_changed"})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_roots_list_changed_notification(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_roots_list_changed_notification(val.value_unsafe());
     assert(res.has_value());
     utils::JsonWriter jw;
     mcp::emit_roots_list_changed_notification(res.operator*(), jw);
@@ -1237,9 +1259,9 @@ void test_mcp_remaining() {
   {
     std::string json = R"({"method":"roots/list","params":{"_meta":{}}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_list_roots_request(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_list_roots_request(val.value_unsafe());
     assert(res.has_value());
     utils::JsonWriter jw;
     mcp::emit_list_roots_request(res.operator*(), jw);
@@ -1248,9 +1270,9 @@ void test_mcp_remaining() {
   {
     std::string json = R"({"method":"roots/list"})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_list_roots_request(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_list_roots_request(val.value_unsafe());
     assert(res.has_value());
     utils::JsonWriter jw;
     mcp::emit_list_roots_request(res.operator*(), jw);
@@ -1262,9 +1284,9 @@ void test_mcp_remaining() {
   {
     std::string json = R"({"_meta":{},"roots":[{"uri":"file:///"}]})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_list_roots_result(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_list_roots_result(val.value_unsafe());
     assert(res.has_value());
     assert(res->roots.size() == 1);
     utils::JsonWriter jw;
@@ -1303,12 +1325,24 @@ void test_mcp_remaining() {
     cdd_cpp::mcp::ListToolsResult ltres2 = std::move(ltres);
 
     cdd_cpp::utils::JsonWriter jw;
+    er2._meta = "{}";
+
     cdd_cpp::mcp::emit_empty_result(er2, jw);
     cdd_cpp::mcp::emit_sampling_message(sm2, jw);
+    pr2.params = cdd_cpp::mcp::PingRequestParams{};
+    pr2.params->_meta = "{}";
+
     cdd_cpp::mcp::emit_ping_request(pr2, jw);
     cdd_cpp::mcp::emit_subscribe_request(sr2, jw);
     cdd_cpp::mcp::emit_unsubscribe_request(ur2, jw);
+    ltr2.params = cdd_cpp::mcp::ListToolsRequestParams{};
+    ltr2.params->cursor = "c";
+
     cdd_cpp::mcp::emit_list_tools_request(ltr2, jw);
+    ltres2._meta = "{}";
+    ltres2.nextCursor = "n";
+    ltres2.tools.push_back(cdd_cpp::mcp::Tool{});
+
     cdd_cpp::mcp::emit_list_tools_result(ltres2, jw);
 
     std::string json = "{}";
@@ -1392,8 +1426,10 @@ void test_mcp_logging_progress() {
   simdjson::ondemand::parser parser;
   auto test_err = [&](auto func, const std::string &j) {
     simdjson::padded_string p(j);
-    simdjson::ondemand::document d = parser.iterate(p);
-    simdjson::ondemand::value v = d.get_value();
+    simdjson::ondemand::document d;
+    parser.iterate(p).get(d);
+    simdjson::ondemand::value v;
+    d.get_value().get(v);
     auto res = func(v);
     assert(!res.has_value());
     (void)res;
@@ -1404,9 +1440,9 @@ void test_mcp_logging_progress() {
     std::string json =
         R"({"method":"logging/setLevel","params":{"level":"debug"}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_set_level_request(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_set_level_request(val.value_unsafe());
     assert(res.has_value() && res->params.level == "debug");
     utils::JsonWriter jw;
     mcp::emit_set_level_request(res.operator*(), jw);
@@ -1421,9 +1457,9 @@ void test_mcp_logging_progress() {
     std::string json =
         R"({"method":"notifications/message","params":{"level":"info","logger":"main","data":{"a":1}}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_logging_message_notification(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_logging_message_notification(val.value_unsafe());
     assert(res.has_value() && res->params.level == "info" &&
            res->params.logger == "main");
     utils::JsonWriter jw;
@@ -1442,9 +1478,9 @@ void test_mcp_logging_progress() {
     std::string json =
         R"({"method":"notifications/progress","params":{"progressToken":"t1","progress":10,"total":100}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_progress_notification(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_progress_notification(val.value_unsafe());
     assert(res.has_value() && res->params.progressToken == "\"t1\"");
     assert(res->params.progress == 10);
     assert(res->params.total.operator*() == 100);
@@ -1456,9 +1492,9 @@ void test_mcp_logging_progress() {
     std::string json =
         R"({"method":"notifications/progress","params":{"progressToken":2,"progress":10}})";
     simdjson::padded_string padded(json);
-    simdjson::ondemand::document doc = parser.iterate(padded);
-    simdjson::ondemand::value val = doc.get_value();
-    auto res = mcp::parse_progress_notification(val);
+    auto doc = parser.iterate(padded);
+    auto val = doc.get_value();
+    auto res = mcp::parse_progress_notification(val.value_unsafe());
     assert(res.has_value() && res->params.progressToken == "2");
     utils::JsonWriter jw;
     mcp::emit_progress_notification(res.operator*(), jw);
