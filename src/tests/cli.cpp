@@ -59,21 +59,18 @@ void test_to_docs_json() {
   std::cout << "Done to_docs_json\n";
   std::string res = res_exp ? *res_exp : "";
 
-  if (!res.empty()) {
-    assert(res.find("\"imports\"") != std::string::npos);
-    assert(res.find("\"wrapper_start\"") != std::string::npos);
-    assert(res.find("\"wrapper_end\"") != std::string::npos);
-    assert(res.find("\"snippet\"") != std::string::npos);
-  } else { // GCOV_EXCL_LINE
-    std::cout << "Skipping to_docs_json assertions because cdd-cpp execution "
-                 "failed.\n"; // GCOV_EXCL_LINE
-  } // GCOV_EXCL_LINE
+  assert(!res.empty());
+  assert(res.find("\"imports\"") != std::string::npos);
+  assert(res.find("\"wrapper_start\"") != std::string::npos);
+  assert(res.find("\"wrapper_end\"") != std::string::npos);
+  assert(res.find("\"snippet\"") != std::string::npos);
 
   std::cout << "Starting to_docs_json no options\n";
   auto res_no_exp = exec(
       "./cdd-cpp to_docs_json --no-imports --no-wrapping -i test_spec.json");
   std::cout << "Done to_docs_json no options\n";
-  std::string res_no = res_no_exp ? *res_no_exp : "";
+  assert(res_no_exp);
+  std::string res_no = *res_no_exp;
 
   assert(res_no.find("\"imports\"") == std::string::npos);
   assert(res_no.find("\"wrapper_start\"") == std::string::npos);
