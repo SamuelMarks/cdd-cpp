@@ -30,7 +30,7 @@ parse_vector_string(simdjson::dom::object obj, std::string_view key) {
   if (obj[key].get(el) == simdjson::SUCCESS &&
       el.type() == simdjson::dom::element_type::ARRAY) {
     std::vector<std::string> vec;
-    for (auto item : el.get_array().value_unsafe()) {
+    for (auto item : auto(el.get_array().value_unsafe())) {
       if (item.type() == simdjson::dom::element_type::STRING)
         vec.push_back(std::string(item.get_string().value_unsafe()));
     }
@@ -46,7 +46,7 @@ parse_map_string(simdjson::dom::object obj, std::string_view key) {
       el.type() == simdjson::dom::element_type::OBJECT) {
     //
     std::map<std::string, std::string> m;
-    for (auto field : el.get_object().value_unsafe()) {
+    for (auto field : auto(el.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::STRING)
         m[std::string(field.key)] =
             std::string(field.value.get_string().value_unsafe());
@@ -62,13 +62,13 @@ parse_security(simdjson::dom::object obj, std::string_view key) {
   if (obj[key].get(sec_req_el) == simdjson::SUCCESS &&
       sec_req_el.type() == simdjson::dom::element_type::ARRAY) {
     std::vector<SecurityRequirement> security;
-    for (auto item : sec_req_el.get_array().value_unsafe()) {
+    for (auto item : auto(sec_req_el.get_array().value_unsafe())) {
       if (item.type() == simdjson::dom::element_type::OBJECT) {
         SecurityRequirement req;
-        for (auto field : item.get_object().value_unsafe()) {
+        for (auto field : auto(item.get_object().value_unsafe())) {
           std::vector<std::string> scopes;
           if (field.value.type() == simdjson::dom::element_type::ARRAY) {
-            for (auto scope : field.value.get_array().value_unsafe()) {
+            for (auto scope : auto(field.value.get_array().value_unsafe())) {
               if (scope.type() == simdjson::dom::element_type::STRING)
                 scopes.push_back(
                     std::string(scope.get_string().value_unsafe()));
@@ -173,7 +173,7 @@ static Server parse_Server(simdjson::dom::object obj) noexcept {
   if (obj["variables"].get(el_variables) == simdjson::SUCCESS &&
       el_variables.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, ServerVariable> m;
-    for (auto field : el_variables.get_object().value_unsafe()) {
+    for (auto field : auto(el_variables.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_ServerVariable(field.value.get_object().value_unsafe());
@@ -249,7 +249,7 @@ static Schema parse_Schema(simdjson::dom::object obj) noexcept {
   if (obj["properties"].get(el_properties) == simdjson::SUCCESS &&
       el_properties.type() == simdjson::dom::element_type::OBJECT) {
     auto m = std::make_shared<std::map<std::string, Schema>>();
-    for (auto field : el_properties.get_object().value_unsafe()) {
+    for (auto field : auto(el_properties.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         (*m)[std::string(field.key)] =
             parse_Schema(field.value.get_object().value_unsafe());
@@ -277,7 +277,7 @@ static Schema parse_Schema(simdjson::dom::object obj) noexcept {
   if (obj["$defs"].get(el_defs) == simdjson::SUCCESS &&
       el_defs.type() == simdjson::dom::element_type::OBJECT) {
     auto m = std::make_shared<std::map<std::string, Schema>>();
-    for (auto field : el_defs.get_object().value_unsafe()) {
+    for (auto field : auto(el_defs.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         (*m)[std::string(field.key)] =
             parse_Schema(field.value.get_object().value_unsafe());
@@ -372,7 +372,7 @@ static Encoding parse_Encoding(simdjson::dom::object obj) noexcept {
   if (obj["headers"].get(el_headers) == simdjson::SUCCESS &&
       el_headers.type() == simdjson::dom::element_type::OBJECT) {
     auto m = std::make_shared<std::map<std::string, Header>>();
-    for (auto field : el_headers.get_object().value_unsafe()) {
+    for (auto field : auto(el_headers.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         (*m)[std::string(field.key)] =
             parse_Header(field.value.get_object().value_unsafe());
@@ -384,7 +384,7 @@ static Encoding parse_Encoding(simdjson::dom::object obj) noexcept {
   if (obj["encoding"].get(el_encoding) == simdjson::SUCCESS &&
       el_encoding.type() == simdjson::dom::element_type::OBJECT) {
     auto m = std::make_shared<std::map<std::string, Encoding>>();
-    for (auto field : el_encoding.get_object().value_unsafe()) {
+    for (auto field : auto(el_encoding.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         (*m)[std::string(field.key)] =
             parse_Encoding(field.value.get_object().value_unsafe());
@@ -408,7 +408,7 @@ static Encoding parse_Encoding(simdjson::dom::object obj) noexcept {
   if (obj["prefixEncoding"].get(el_prefixEncoding) == simdjson::SUCCESS &&
       el_prefixEncoding.type() == simdjson::dom::element_type::ARRAY) {
     auto v = std::make_shared<std::vector<Encoding>>();
-    for (auto item : el_prefixEncoding.get_array().value_unsafe()) {
+    for (auto item : auto(el_prefixEncoding.get_array().value_unsafe())) {
       if (item.type() == simdjson::dom::element_type::OBJECT)
         v->push_back(parse_Encoding(item.get_object().value_unsafe()));
     }
@@ -428,7 +428,7 @@ static MediaType parse_MediaType(simdjson::dom::object obj) noexcept {
   if (obj["examples"].get(el_examples) == simdjson::SUCCESS &&
       el_examples.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, Example> m;
-    for (auto field : el_examples.get_object().value_unsafe()) {
+    for (auto field : auto(el_examples.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_Example(field.value.get_object().value_unsafe());
@@ -439,7 +439,7 @@ static MediaType parse_MediaType(simdjson::dom::object obj) noexcept {
   if (obj["encoding"].get(el_encoding) == simdjson::SUCCESS &&
       el_encoding.type() == simdjson::dom::element_type::OBJECT) {
     auto m = std::make_shared<std::map<std::string, Encoding>>();
-    for (auto field : el_encoding.get_object().value_unsafe()) {
+    for (auto field : auto(el_encoding.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         (*m)[std::string(field.key)] =
             parse_Encoding(field.value.get_object().value_unsafe());
@@ -463,7 +463,7 @@ static MediaType parse_MediaType(simdjson::dom::object obj) noexcept {
   if (obj["prefixEncoding"].get(el_prefixEncoding) == simdjson::SUCCESS &&
       el_prefixEncoding.type() == simdjson::dom::element_type::ARRAY) {
     auto v = std::make_shared<std::vector<Encoding>>();
-    for (auto item : el_prefixEncoding.get_array().value_unsafe()) {
+    for (auto item : auto(el_prefixEncoding.get_array().value_unsafe())) {
       if (item.type() == simdjson::dom::element_type::OBJECT)
         v->push_back(parse_Encoding(item.get_object().value_unsafe()));
     }
@@ -491,7 +491,7 @@ static Header parse_Header(simdjson::dom::object obj) noexcept {
   if (obj["examples"].get(el_examples) == simdjson::SUCCESS &&
       el_examples.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, Example> m;
-    for (auto field : el_examples.get_object().value_unsafe()) {
+    for (auto field : auto(el_examples.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_Example(field.value.get_object().value_unsafe());
@@ -502,7 +502,7 @@ static Header parse_Header(simdjson::dom::object obj) noexcept {
   if (obj["content"].get(el_content) == simdjson::SUCCESS &&
       el_content.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, MediaType> m;
-    for (auto field : el_content.get_object().value_unsafe()) {
+    for (auto field : auto(el_content.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_MediaType(field.value.get_object().value_unsafe());
@@ -522,7 +522,7 @@ static RequestBody parse_RequestBody(simdjson::dom::object obj) noexcept {
   if (obj["content"].get(el_content) == simdjson::SUCCESS &&
       el_content.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, MediaType> m;
-    for (auto field : el_content.get_object().value_unsafe()) {
+    for (auto field : auto(el_content.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_MediaType(field.value.get_object().value_unsafe());
@@ -561,7 +561,7 @@ static Response parse_Response(simdjson::dom::object obj) noexcept {
   if (obj["headers"].get(el_headers) == simdjson::SUCCESS &&
       el_headers.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, Header> m;
-    for (auto field : el_headers.get_object().value_unsafe()) {
+    for (auto field : auto(el_headers.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_Header(field.value.get_object().value_unsafe());
@@ -572,7 +572,7 @@ static Response parse_Response(simdjson::dom::object obj) noexcept {
   if (obj["content"].get(el_content) == simdjson::SUCCESS &&
       el_content.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, MediaType> m;
-    for (auto field : el_content.get_object().value_unsafe()) {
+    for (auto field : auto(el_content.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_MediaType(field.value.get_object().value_unsafe());
@@ -583,7 +583,7 @@ static Response parse_Response(simdjson::dom::object obj) noexcept {
   if (obj["links"].get(el_links) == simdjson::SUCCESS &&
       el_links.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, Link> m;
-    for (auto field : el_links.get_object().value_unsafe()) {
+    for (auto field : auto(el_links.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_Link(field.value.get_object().value_unsafe());
@@ -618,7 +618,7 @@ static Parameter parse_Parameter(simdjson::dom::object obj) noexcept {
   if (obj["examples"].get(el_examples) == simdjson::SUCCESS &&
       el_examples.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, Example> m;
-    for (auto field : el_examples.get_object().value_unsafe()) {
+    for (auto field : auto(el_examples.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_Example(field.value.get_object().value_unsafe());
@@ -629,7 +629,7 @@ static Parameter parse_Parameter(simdjson::dom::object obj) noexcept {
   if (obj["content"].get(el_content) == simdjson::SUCCESS &&
       el_content.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, MediaType> m;
-    for (auto field : el_content.get_object().value_unsafe()) {
+    for (auto field : auto(el_content.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_MediaType(field.value.get_object().value_unsafe());
@@ -724,7 +724,7 @@ static Operation parse_Operation(simdjson::dom::object obj) noexcept {
   if (obj["parameters"].get(el_parameters) == simdjson::SUCCESS &&
       el_parameters.type() == simdjson::dom::element_type::ARRAY) {
     std::vector<Parameter> vec;
-    for (auto item : el_parameters.get_array().value_unsafe()) {
+    for (auto item : auto(el_parameters.get_array().value_unsafe())) {
       if (item.type() == simdjson::dom::element_type::OBJECT)
         vec.push_back(parse_Parameter(item.get_object().value_unsafe()));
     }
@@ -740,7 +740,7 @@ static Operation parse_Operation(simdjson::dom::object obj) noexcept {
   if (obj["responses"].get(el_responses) == simdjson::SUCCESS &&
       el_responses.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, Response> m;
-    for (auto field : el_responses.get_object().value_unsafe()) {
+    for (auto field : auto(el_responses.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_Response(field.value.get_object().value_unsafe());
@@ -752,10 +752,10 @@ static Operation parse_Operation(simdjson::dom::object obj) noexcept {
       el_callbacks.type() == simdjson::dom::element_type::OBJECT) {
     auto m = std::make_shared<
         std::map<std::string, std::map<std::string, PathItem>>>();
-    for (auto field : el_callbacks.get_object().value_unsafe()) {
+    for (auto field : auto(el_callbacks.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT) {
         std::map<std::string, PathItem> inner_m;
-        for (auto inner_field : field.value.get_object().value_unsafe()) {
+        for (auto inner_field : auto(field.value.get_object().value_unsafe())) {
           if (inner_field.value.type() == simdjson::dom::element_type::OBJECT)
             inner_m[std::string(inner_field.key)] =
                 parse_PathItem(inner_field.value.get_object().value_unsafe());
@@ -771,7 +771,7 @@ static Operation parse_Operation(simdjson::dom::object obj) noexcept {
   if (obj["servers"].get(el_servers) == simdjson::SUCCESS &&
       el_servers.type() == simdjson::dom::element_type::ARRAY) {
     std::vector<Server> vec;
-    for (auto item : el_servers.get_array().value_unsafe()) {
+    for (auto item : auto(el_servers.get_array().value_unsafe())) {
       if (item.type() == simdjson::dom::element_type::OBJECT)
         vec.push_back(parse_Server(item.get_object().value_unsafe()));
     }
@@ -833,7 +833,7 @@ static PathItem parse_PathItem(simdjson::dom::object obj) noexcept {
   if (obj["servers"].get(el_servers) == simdjson::SUCCESS &&
       el_servers.type() == simdjson::dom::element_type::ARRAY) {
     std::vector<Server> vec;
-    for (auto item : el_servers.get_array().value_unsafe()) {
+    for (auto item : auto(el_servers.get_array().value_unsafe())) {
       if (item.type() == simdjson::dom::element_type::OBJECT)
         vec.push_back(parse_Server(item.get_object().value_unsafe()));
     }
@@ -843,7 +843,7 @@ static PathItem parse_PathItem(simdjson::dom::object obj) noexcept {
   if (obj["parameters"].get(el_parameters) == simdjson::SUCCESS &&
       el_parameters.type() == simdjson::dom::element_type::ARRAY) {
     std::vector<Parameter> vec;
-    for (auto item : el_parameters.get_array().value_unsafe()) {
+    for (auto item : auto(el_parameters.get_array().value_unsafe())) {
       if (item.type() == simdjson::dom::element_type::OBJECT)
         vec.push_back(parse_Parameter(item.get_object().value_unsafe()));
     }
@@ -853,7 +853,7 @@ static PathItem parse_PathItem(simdjson::dom::object obj) noexcept {
   if (obj["additionalOperations"].get(el_addOps) == simdjson::SUCCESS &&
       el_addOps.type() == simdjson::dom::element_type::OBJECT) {
     auto m = std::make_shared<std::map<std::string, Operation>>();
-    for (auto field : el_addOps.get_object().value_unsafe()) {
+    for (auto field : auto(el_addOps.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         (*m)[std::string(field.key)] =
             parse_Operation(field.value.get_object().value_unsafe());
@@ -868,7 +868,7 @@ static Components parse_Components(simdjson::dom::object obj) noexcept {
   if (obj["schemas"].get(el_schemas) == simdjson::SUCCESS &&
       el_schemas.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, Schema> m;
-    for (auto field : el_schemas.get_object().value_unsafe()) {
+    for (auto field : auto(el_schemas.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_Schema(field.value.get_object().value_unsafe());
@@ -879,7 +879,7 @@ static Components parse_Components(simdjson::dom::object obj) noexcept {
   if (obj["responses"].get(el_responses) == simdjson::SUCCESS &&
       el_responses.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, Response> m;
-    for (auto field : el_responses.get_object().value_unsafe()) {
+    for (auto field : auto(el_responses.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_Response(field.value.get_object().value_unsafe());
@@ -890,7 +890,7 @@ static Components parse_Components(simdjson::dom::object obj) noexcept {
   if (obj["parameters"].get(el_parameters) == simdjson::SUCCESS &&
       el_parameters.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, Parameter> m;
-    for (auto field : el_parameters.get_object().value_unsafe()) {
+    for (auto field : auto(el_parameters.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_Parameter(field.value.get_object().value_unsafe());
@@ -901,7 +901,7 @@ static Components parse_Components(simdjson::dom::object obj) noexcept {
   if (obj["examples"].get(el_examples) == simdjson::SUCCESS &&
       el_examples.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, Example> m;
-    for (auto field : el_examples.get_object().value_unsafe()) {
+    for (auto field : auto(el_examples.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_Example(field.value.get_object().value_unsafe());
@@ -912,7 +912,7 @@ static Components parse_Components(simdjson::dom::object obj) noexcept {
   if (obj["requestBodies"].get(el_requestBodies) == simdjson::SUCCESS &&
       el_requestBodies.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, RequestBody> m;
-    for (auto field : el_requestBodies.get_object().value_unsafe()) {
+    for (auto field : auto(el_requestBodies.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_RequestBody(field.value.get_object().value_unsafe());
@@ -923,7 +923,7 @@ static Components parse_Components(simdjson::dom::object obj) noexcept {
   if (obj["headers"].get(el_headers) == simdjson::SUCCESS &&
       el_headers.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, Header> m;
-    for (auto field : el_headers.get_object().value_unsafe()) {
+    for (auto field : auto(el_headers.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_Header(field.value.get_object().value_unsafe());
@@ -934,7 +934,7 @@ static Components parse_Components(simdjson::dom::object obj) noexcept {
   if (obj["securitySchemes"].get(el_securitySchemes) == simdjson::SUCCESS &&
       el_securitySchemes.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, SecurityScheme> m;
-    for (auto field : el_securitySchemes.get_object().value_unsafe()) {
+    for (auto field : auto(el_securitySchemes.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_SecurityScheme(field.value.get_object().value_unsafe());
@@ -945,7 +945,7 @@ static Components parse_Components(simdjson::dom::object obj) noexcept {
   if (obj["links"].get(el_links) == simdjson::SUCCESS &&
       el_links.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, Link> m;
-    for (auto field : el_links.get_object().value_unsafe()) {
+    for (auto field : auto(el_links.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_Link(field.value.get_object().value_unsafe());
@@ -957,10 +957,10 @@ static Components parse_Components(simdjson::dom::object obj) noexcept {
       el_callbacks.type() == simdjson::dom::element_type::OBJECT) {
     auto m = std::make_shared<
         std::map<std::string, std::map<std::string, PathItem>>>();
-    for (auto field : el_callbacks.get_object().value_unsafe()) {
+    for (auto field : auto(el_callbacks.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT) {
         std::map<std::string, PathItem> inner_m;
-        for (auto inner_field : field.value.get_object().value_unsafe()) {
+        for (auto inner_field : auto(field.value.get_object().value_unsafe())) {
           if (inner_field.value.type() == simdjson::dom::element_type::OBJECT)
             inner_m[std::string(inner_field.key)] =
                 parse_PathItem(inner_field.value.get_object().value_unsafe());
@@ -974,7 +974,7 @@ static Components parse_Components(simdjson::dom::object obj) noexcept {
   if (obj["pathItems"].get(el_pathItems) == simdjson::SUCCESS &&
       el_pathItems.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, PathItem> m;
-    for (auto field : el_pathItems.get_object().value_unsafe()) {
+    for (auto field : auto(el_pathItems.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_PathItem(field.value.get_object().value_unsafe());
@@ -985,7 +985,7 @@ static Components parse_Components(simdjson::dom::object obj) noexcept {
   if (obj["mediaTypes"].get(el_mediaTypes) == simdjson::SUCCESS &&
       el_mediaTypes.type() == simdjson::dom::element_type::OBJECT) {
     auto m = std::make_shared<std::map<std::string, MediaType>>();
-    for (auto field : el_mediaTypes.get_object().value_unsafe()) {
+    for (auto field : auto(el_mediaTypes.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         (*m)[std::string(field.key)] =
             parse_MediaType(field.value.get_object().value_unsafe());
@@ -1008,7 +1008,7 @@ static OpenAPI parse_OpenAPI(simdjson::dom::object obj) noexcept {
   if (obj["servers"].get(el_servers) == simdjson::SUCCESS &&
       el_servers.type() == simdjson::dom::element_type::ARRAY) {
     std::vector<Server> vec;
-    for (auto item : el_servers.get_array().value_unsafe()) {
+    for (auto item : auto(el_servers.get_array().value_unsafe())) {
       if (item.type() == simdjson::dom::element_type::OBJECT)
         vec.push_back(parse_Server(item.get_object().value_unsafe()));
     }
@@ -1018,7 +1018,7 @@ static OpenAPI parse_OpenAPI(simdjson::dom::object obj) noexcept {
   if (obj["paths"].get(el_paths) == simdjson::SUCCESS &&
       el_paths.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, PathItem> m;
-    for (auto field : el_paths.get_object().value_unsafe()) {
+    for (auto field : auto(el_paths.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_PathItem(field.value.get_object().value_unsafe());
@@ -1029,7 +1029,7 @@ static OpenAPI parse_OpenAPI(simdjson::dom::object obj) noexcept {
   if (obj["webhooks"].get(el_webhooks) == simdjson::SUCCESS &&
       el_webhooks.type() == simdjson::dom::element_type::OBJECT) {
     std::map<std::string, PathItem> m;
-    for (auto field : el_webhooks.get_object().value_unsafe()) {
+    for (auto field : auto(el_webhooks.get_object().value_unsafe())) {
       if (field.value.type() == simdjson::dom::element_type::OBJECT)
         m[std::string(field.key)] =
             parse_PathItem(field.value.get_object().value_unsafe());
@@ -1047,7 +1047,7 @@ static OpenAPI parse_OpenAPI(simdjson::dom::object obj) noexcept {
   if (obj["tags"].get(el_tags) == simdjson::SUCCESS &&
       el_tags.type() == simdjson::dom::element_type::ARRAY) {
     std::vector<Tag> vec;
-    for (auto item : el_tags.get_array().value_unsafe()) {
+    for (auto item : auto(el_tags.get_array().value_unsafe())) {
       if (item.type() == simdjson::dom::element_type::OBJECT)
         vec.push_back(parse_Tag(item.get_object().value_unsafe()));
     }

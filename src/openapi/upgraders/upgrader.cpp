@@ -90,7 +90,7 @@ void process_element_3_0(simdjson::dom::element el,
   switch (el.type()) {
   case simdjson::dom::element_type::ARRAY: {
     jw.start_array();
-    for (auto item : el.get_array().value_unsafe()) {
+    for (auto item : auto(el.get_array().value_unsafe())) {
       process_element_3_0(item, jw);
     }
     jw.end_array();
@@ -189,7 +189,7 @@ std::string upgrade_swagger_1_2(simdjson::dom::object root) noexcept {
   simdjson::dom::element apis_el;
   if (root["apis"].get(apis_el) == simdjson::SUCCESS &&
       apis_el.type() == simdjson::dom::element_type::ARRAY) {
-    for (auto api : apis_el.get_array().value_unsafe()) {
+    for (auto api : auto(apis_el.get_array().value_unsafe())) {
       if (api.type() == simdjson::dom::element_type::OBJECT) {
         auto api_obj = api.get_object().value_unsafe();
         simdjson::dom::element path_el;
@@ -201,7 +201,7 @@ std::string upgrade_swagger_1_2(simdjson::dom::object root) noexcept {
           simdjson::dom::element ops_el;
           if (api_obj["operations"].get(ops_el) == simdjson::SUCCESS &&
               ops_el.type() == simdjson::dom::element_type::ARRAY) {
-            for (auto op : ops_el.get_array().value_unsafe()) {
+            for (auto op : auto(ops_el.get_array().value_unsafe())) {
               if (op.type() == simdjson::dom::element_type::OBJECT) {
                 auto op_obj = op.get_object().value_unsafe();
                 simdjson::dom::element method_el;
@@ -278,7 +278,7 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
   std::vector<std::string> schemes;
   if (root["schemes"].get(schemes_el) == simdjson::SUCCESS &&
       schemes_el.type() == simdjson::dom::element_type::ARRAY) {
-    for (auto s : schemes_el.get_array().value_unsafe())
+    for (auto s : auto(schemes_el.get_array().value_unsafe()))
       schemes.push_back(std::string(s.get_string().value_unsafe()));
   }
   if (schemes.empty() && host != "")
@@ -300,12 +300,12 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
   simdjson::dom::element g_cons_el, g_prod_el;
   if (root["consumes"].get(g_cons_el) == simdjson::SUCCESS &&
       g_cons_el.is_array()) {
-    for (auto c : g_cons_el.get_array().value_unsafe())
+    for (auto c : auto(g_cons_el.get_array().value_unsafe()))
       global_consumes.push_back(std::string(c.get_string().value_unsafe()));
   }
   if (root["produces"].get(g_prod_el) == simdjson::SUCCESS &&
       g_prod_el.is_array()) {
-    for (auto p : g_prod_el.get_array().value_unsafe())
+    for (auto p : auto(g_prod_el.get_array().value_unsafe()))
       global_produces.push_back(std::string(p.get_string().value_unsafe()));
   }
   if (global_consumes.empty())
@@ -320,7 +320,7 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
     jw.key("parameters");
     jw.start_array();
     if (params_el.is_array()) {
-      for (auto p : params_el.get_array().value_unsafe()) {
+      for (auto p : auto(params_el.get_array().value_unsafe())) {
         if (p.is_object()) {
           auto p_obj = p.get_object().value_unsafe();
           simdjson::dom::element in_el;
@@ -382,11 +382,12 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
     jw.key("paths");
     jw.start_object();
 
-    for (auto path_field : paths_el.get_object().value_unsafe()) {
+    for (auto path_field : auto(paths_el.get_object().value_unsafe())) {
       jw.key(std::string(path_field.key));
       jw.start_object(); // path item
       if (path_field.value.is_object()) {
-        for (auto op_field : path_field.value.get_object().value_unsafe()) {
+        for (auto op_field :
+             auto(path_field.value.get_object().value_unsafe())) {
           std::string op_method(op_field.key);
           if (op_method == "parameters") {
             // Path level parameters
@@ -411,14 +412,14 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
             if (op_obj["consumes"].get(l_cons_el) == simdjson::SUCCESS &&
                 l_cons_el.is_array()) {
               local_consumes.clear();
-              for (auto c : l_cons_el.get_array().value_unsafe())
+              for (auto c : auto(l_cons_el.get_array().value_unsafe()))
                 local_consumes.push_back(
                     std::string(c.get_string().value_unsafe()));
             }
             if (op_obj["produces"].get(l_prod_el) == simdjson::SUCCESS &&
                 l_prod_el.is_array()) {
               local_produces.clear();
-              for (auto p : l_prod_el.get_array().value_unsafe())
+              for (auto p : auto(l_prod_el.get_array().value_unsafe()))
                 local_produces.push_back(
                     std::string(p.get_string().value_unsafe()));
             }
@@ -441,11 +442,13 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
                 jw.key("responses");
                 jw.start_object();
                 if (op_prop.value.is_object()) {
-                  for (auto r : op_prop.value.get_object().value_unsafe()) {
+                  for (auto r :
+                       auto(op_prop.value.get_object().value_unsafe())) {
                     jw.key(std::string(r.key));
                     jw.start_object();
                     if (r.value.is_object()) {
-                      for (auto rp : r.value.get_object().value_unsafe()) {
+                      for (auto rp :
+                           auto(r.value.get_object().value_unsafe())) {
                         std::string rk(rp.key);
                         if (rk == "schema") {
                           jw.key("content");
@@ -557,7 +560,7 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
   if (root["parameters"].get(p_el) == simdjson::SUCCESS && p_el.is_object()) {
     jw.key("parameters");
     jw.start_object();
-    for (auto p : p_el.get_object().value_unsafe()) {
+    for (auto p : auto(p_el.get_object().value_unsafe())) {
       jw.key(std::string(p.key));
       jw.start_object();
       if (p.value.is_object()) {
@@ -587,11 +590,11 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
   if (root["responses"].get(r_el) == simdjson::SUCCESS && r_el.is_object()) {
     jw.key("responses");
     jw.start_object();
-    for (auto r : r_el.get_object().value_unsafe()) {
+    for (auto r : auto(r_el.get_object().value_unsafe())) {
       jw.key(std::string(r.key));
       jw.start_object();
       if (r.value.is_object()) {
-        for (auto rp : r.value.get_object().value_unsafe()) {
+        for (auto rp : auto(r.value.get_object().value_unsafe())) {
           std::string rk(rp.key);
           if (rk == "schema") {
             jw.key("content");
@@ -620,7 +623,7 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
     jw.key("securitySchemes");
     jw.start_object();
     if (sec_el.is_object()) {
-      for (auto sf : sec_el.get_object().value_unsafe()) {
+      for (auto sf : auto(sec_el.get_object().value_unsafe())) {
         jw.key(std::string(sf.key));
         jw.start_object();
         if (sf.value.is_object()) {

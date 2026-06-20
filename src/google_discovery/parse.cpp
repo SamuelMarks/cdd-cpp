@@ -38,7 +38,7 @@ openapi::Schema convert_schema(simdjson::dom::element el) noexcept {
         props_el.is_object()) {
       out.properties =
           std::make_shared<std::map<std::string, openapi::Schema>>();
-      for (auto prop : props_el.get_object().value_unsafe()) {
+      for (auto prop : auto(props_el.get_object().value_unsafe())) {
         out.properties->insert(
             {std::string(prop.key), convert_schema(prop.value)});
       }
@@ -92,7 +92,7 @@ void process_methods(simdjson::dom::object methods,
     if (method_obj["parameters"].get(params_el) == simdjson::SUCCESS &&
         params_el.is_object()) {
       op.parameters = std::vector<openapi::Parameter>{};
-      for (auto p : params_el.get_object().value_unsafe()) {
+      for (auto p : auto(params_el.get_object().value_unsafe())) {
         openapi::Parameter param;
         param.name = std::string(p.key);
         if (p.value.is_object()) {
@@ -218,7 +218,7 @@ parse(const std::string &input) noexcept {
       simdjson::dom::element items_el;
       if (root["items"].get(items_el) == simdjson::SUCCESS &&
           items_el.is_array()) {
-        for (auto item : items_el.get_array().value_unsafe()) {
+        for (auto item : auto(items_el.get_array().value_unsafe())) {
           if (item.is_object()) {
             auto item_obj = item.get_object().value_unsafe();
             openapi::OpenAPI spec;
@@ -286,7 +286,7 @@ parse(const std::string &input) noexcept {
           schemas_el.is_object()) {
         spec.components = openapi::Components{};
         spec.components->schemas = std::map<std::string, openapi::Schema>{};
-        for (auto s : schemas_el.get_object().value_unsafe()) {
+        for (auto s : auto(schemas_el.get_object().value_unsafe())) {
           spec.components->schemas->insert(
               {std::string(s.key), convert_schema(s.value)});
         }
