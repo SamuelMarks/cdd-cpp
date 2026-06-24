@@ -93,6 +93,15 @@ jobs:
         if: always()
         run: docker rm -f petstore_server_v3 || true
 
+      - name: Test OpenAPI 3.2.0 Server Generation and Execution
+        run: |
+          rm -rf ../cdd-cpp-server-v3
+          ./build/cdd-cpp from_openapi to_server -i ../petstore_oas3.json -o ../cdd-cpp-server-v3 --tests
+          cd ../cdd-cpp-server-v3
+          cmake . -DFETCHCONTENT_UPDATES_DISCONNECTED=ON
+          cmake --build .
+          ctest --output-on-failure
+
       - name: Build WASM
         run: python3 -c "import sys; sys.path.append('scripts'); import run_pre_commit_checks as r; r.build_wasm()"
 

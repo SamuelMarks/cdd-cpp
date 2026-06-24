@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(cdd_cpp VERSION 0.0.2)
+project(cdd_cpp VERSION 0.0.3)
 
 if(POLICY CMP0135)
   cmake_policy(SET CMP0135 NEW)

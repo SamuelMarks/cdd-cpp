@@ -34,7 +34,7 @@ def run_cmd(cmd, cwd=None, env=None, capture_output=False, check=True):
 def build_project():
     print("Building project...")
     run_cmd(["cmake", "-B", "build", "-S", ".", "-DCMAKE_BUILD_TYPE=Release", "-DCOVERAGE=ON"])
-    run_cmd(["cmake", "--build", "build", "--config", "Release"])
+    run_cmd(["cmake", "--build", "build", "--config", "Release", "-j4"])
 
 def run_tests():
     print("Running tests...")
@@ -99,7 +99,7 @@ def build_wasm():
     
     toolchain_file = os.path.abspath(os.path.join(wasi_dir, "share", "cmake", "wasi-sdk.cmake"))
     cmake_args = [
-        "cmake", "..",
+        "cmake", "-B", ".", "-S", "..",
         f"-DCMAKE_TOOLCHAIN_FILE={toolchain_file}",
         "-DCDD_EXTREME_CHECKS=OFF",
         "-DSIMDJSON_ENABLE_THREADS=OFF",
@@ -136,7 +136,7 @@ for root, _, files in os.walk("_deps"):
 """)
     run_cmd([sys.executable, "patch_simdjson.py"], cwd=build_dir)
     
-    run_cmd(["cmake", "--build", ".", "--target", "cdd-cpp"], cwd=build_dir)
+    run_cmd(["cmake", "--build", ".", "--target", "cdd-cpp", "-j4"], cwd=build_dir)
     
     if not os.path.exists("bin"):
         os.makedirs("bin")
@@ -178,65 +178,95 @@ def is_java_available():
 
 def start_local_petstore(base_path, port=8080):
     if is_java_available():
-        print(f"JVM found locally. Starting native JVM petstore for port {port}...")
-        v2_dir = os.path.abspath(os.path.join("..", "swagger-petstore-v2"))
-        jetty_jar = os.path.join(v2_dir, "target", "lib", "jetty-runner.jar")
-        
-        if not os.path.exists(v2_dir):
-            print(f"Cloning swagger-petstore-v2 to {v2_dir}...")
-            run_cmd(["git", "clone", "https://github.com/swagger-api/swagger-petstore.git", v2_dir])
+        print(f"JVM found locally. Trying native JVM petstore for port {port}...")
+        jvm_ok = True
+        proc = None
+        try:
+            v2_dir = os.path.abspath(os.path.join("..", "swagger-petstore-v2"))
+            jetty_jar = os.path.join(v2_dir, "target", "lib", "jetty-runner.jar")
             
-        if not os.path.exists(jetty_jar):
-            print("Building local swagger-petstore-v2...")
-            run_cmd(["mvn", "package", "-DskipTests"], cwd=v2_dir)
+            if not os.path.exists(v2_dir):
+                print(f"Cloning swagger-petstore-v2 to {v2_dir}...")
+                res = subprocess.run(["git", "clone", "https://github.com/swagger-api/swagger-petstore.git", v2_dir])
+                if res.returncode != 0: jvm_ok = False
+                
+            if jvm_ok and not os.path.exists(jetty_jar):
+                print("Building local swagger-petstore-v2...")
+                res = subprocess.run(["mvn", "package", "-DskipTests"], cwd=v2_dir)
+                if res.returncode != 0: jvm_ok = False
 
-        war_path = None
-        for f in os.listdir(os.path.join(v2_dir, "target")):
-            if f.startswith("swagger-petstore-") and f.endswith(".war"):
-                war_path = os.path.join(v2_dir, "target", f)
-                break
+            if jvm_ok:
+                war_path = None
+                if os.path.exists(os.path.join(v2_dir, "target")):
+                    for f in os.listdir(os.path.join(v2_dir, "target")):
+                        if f.startswith("swagger-petstore-") and f.endswith(".war"):
+                            war_path = os.path.join(v2_dir, "target", f)
+                            break
+                    
+                if not war_path:
+                    jvm_ok = False
+                    
+            if jvm_ok:
+                webapp_dir = os.path.abspath(os.path.join("build", f"petstore_webapp_{port}"))
+                if os.path.exists(webapp_dir):
+                    shutil.rmtree(webapp_dir)
+                os.makedirs(webapp_dir)
                 
-        if not war_path:
-            raise Exception("Could not find swagger-petstore war file.")
-            
-        webapp_dir = os.path.abspath(os.path.join("build", f"petstore_webapp_{port}"))
-        if os.path.exists(webapp_dir):
-            shutil.rmtree(webapp_dir)
-        os.makedirs(webapp_dir)
-        
-        with zipfile.ZipFile(war_path, 'r') as zip_ref:
-            zip_ref.extractall(webapp_dir)
-            
-        web_xml = os.path.join(webapp_dir, "WEB-INF", "web.xml")
-        with open(web_xml, "r") as f:
-            xml_content = f.read()
-            
-        url = f"http://127.0.0.1:{port}"
-        full_path = f"{url}{base_path}"
-        
-        xml_content = xml_content.replace("SWAGGER_HOST", url)
-        xml_content = xml_content.replace("BASE_PATH", base_path)
-        xml_content = xml_content.replace("FULL_SWAGGER_PATH", full_path)
-        
-        with open(web_xml, "w") as f:
-            f.write(xml_content)
-            
-        index_html = os.path.join(webapp_dir, "index.html")
-        if os.path.exists(index_html):
-            with open(index_html, "r") as f:
-                idx_content = f.read()
-            idx_content = idx_content.replace("SWAGGER_HOST", url)
-            idx_content = idx_content.replace("FULL_SWAGGER_PATH", full_path)
-            with open(index_html, "w") as f:
-                f.write(idx_content)
+                with zipfile.ZipFile(war_path, 'r') as zip_ref:
+                    zip_ref.extractall(webapp_dir)
+                    
+                web_xml = os.path.join(webapp_dir, "WEB-INF", "web.xml")
+                with open(web_xml, "r") as f:
+                    xml_content = f.read()
+                    
+                url = f"http://127.0.0.1:{port}"
+                full_path = f"{url}{base_path}"
                 
-        print(f"Starting local petstore server on port {port} with base path {base_path}...")
-        log_file = open(os.path.abspath(os.path.join("build", f"petstore_{port}.log")), "w")
-        proc = subprocess.Popen(["java", "-jar", jetty_jar, "--port", str(port), webapp_dir], stdout=log_file, stderr=subprocess.STDOUT)
-        return {"type": "jvm", "proc": proc}
-    elif is_docker_running():
-        print(f"JVM not found. Starting petstore with Docker on port {port}...")
-        return run_docker_petstore(base_path, port)
+                xml_content = xml_content.replace("SWAGGER_HOST", url)
+                xml_content = xml_content.replace("BASE_PATH", base_path)
+                xml_content = xml_content.replace("FULL_SWAGGER_PATH", full_path)
+                
+                with open(web_xml, "w") as f:
+                    f.write(xml_content)
+                    
+                index_html = os.path.join(webapp_dir, "index.html")
+                if os.path.exists(index_html):
+                    with open(index_html, "r") as f:
+                        idx_content = f.read()
+                    idx_content = idx_content.replace("SWAGGER_HOST", url)
+                    idx_content = idx_content.replace("FULL_SWAGGER_PATH", full_path)
+                    with open(index_html, "w") as f:
+                        f.write(idx_content)
+                        
+                print(f"Starting local petstore server on port {port} with base path {base_path}...")
+                log_file = open(os.path.abspath(os.path.join("build", f"petstore_{port}.log")), "w")
+                proc = subprocess.Popen(["java", "-jar", jetty_jar, "--port", str(port), webapp_dir], stdout=log_file, stderr=subprocess.STDOUT)
+                
+                # Check if it starts correctly within a reasonable time
+                test_url = f"http://127.0.0.1:{port}{base_path}/swagger.json"
+                if wait_for_url(test_url, timeout=45):
+                    return {"type": "jvm", "proc": proc}
+                else:
+                    print(f"JVM petstore failed to respond at {test_url} in time.")
+                    jvm_ok = False
+        except Exception as e:
+            print(f"Error during JVM setup: {e}")
+            jvm_ok = False
+            
+        if not jvm_ok:
+            if proc:
+                cleanup_petstore({"type": "jvm", "proc": proc})
+            print("JVM attempt failed. Falling back to Docker...")
+
+    if is_docker_running():
+        print(f"Starting petstore with Docker on port {port}...")
+        proc_info = run_docker_petstore(base_path, port)
+        test_url = f"http://127.0.0.1:{port}{base_path}/swagger.json"
+        if wait_for_url(test_url, timeout=60):
+            return proc_info
+        else:
+            cleanup_petstore(proc_info)
+            raise Exception("Docker petstore failed to start in time.")
     else:
         print("Error: Neither JVM nor Docker is available to start the petstore server.")
         import sys
@@ -354,7 +384,7 @@ def main():
                 v3_env = os.environ.copy()
                 v3_env["PETSTORE_URL"] = "http://127.0.0.1:8085/api/v3"
                 run_cmd(["cmake", "."], cwd=v3_out_dir)
-                run_cmd(["cmake", "--build", "."], cwd=v3_out_dir)
+                run_cmd(["cmake", "--build", ".", "-j4"], cwd=v3_out_dir)
                 client_test_bin = None
                 if sys.platform == "win32":
                     if os.path.exists(os.path.join(v3_out_dir, "tests", "Release", "client_test.exe")):
@@ -368,6 +398,19 @@ def main():
                 raise Exception("OpenAPI 3.2.0 tests failed because Java server did not start in time.")
         finally:
             cleanup_petstore(petstore_proc)
+
+        # OpenAPI 3.2.0 Petstore Server generation test
+        print("Running OpenAPI 3.2.0 Petstore Server generation test...")
+        v3_server_out_dir = os.path.abspath(os.path.join("..", "cdd-cpp-server-v3"))
+        if os.path.exists(v3_server_out_dir):
+            shutil.rmtree(v3_server_out_dir)
+            
+        petstore_oas3_json = os.path.abspath(os.path.join("..", "petstore_oas3.json"))
+        run_cmd([cdd_cpp_bin, "from_openapi", "to_server", "-i", petstore_oas3_json, "-o", v3_server_out_dir, "--tests"])
+        
+        run_cmd(["cmake", ".", "-DFETCHCONTENT_UPDATES_DISCONNECTED=ON"], cwd=v3_server_out_dir)
+        run_cmd(["cmake", "--build", "."], cwd=v3_server_out_dir)
+        run_cmd(["ctest", "--output-on-failure"], cwd=v3_server_out_dir)
             
         build_wasm()
         

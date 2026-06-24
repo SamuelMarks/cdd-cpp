@@ -225,4 +225,65 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   return ss.str();
 }
 
+std::map<std::string, std::string>
+emit_modular(const openapi::OpenAPI &spec) noexcept {
+  std::map<std::string, std::string> files;
+  if (!spec.components || !spec.components->schemas)
+    return files;
+
+  for (const auto &[name, schema] : *spec.components->schemas) {
+    if (schema.type.value_or("") != "object" || !schema.properties)
+      continue;
+    std::stringstream ss;
+    ss << "#pragma once\n#include <string>\n#include <vector>\n#include "
+          "<optional>\n#include <memory>\n\n";
+    std::set<std::string> deps;
+    for (const auto &[_, prop_schema] : *schema.properties) {
+      if (prop_schema.ref) {
+        std::string ref = prop_schema.ref->ref;
+        deps.insert(ref.substr(ref.find_last_of('/') + 1));
+      } else if (prop_schema.items && prop_schema.items->ref) {
+        std::string ref = prop_schema.items->ref->ref;
+        deps.insert(ref.substr(ref.find_last_of('/') + 1));
+      }
+    }
+    for (const auto &dep : deps) {
+      if (dep != name)
+        ss << "#include \"" << dep << ".hpp\"\n";
+    }
+    ss << "\nnamespace cdd_models {\n\n";
+    ss << "    /// " << name << " Domain Model\n";
+    emit_docstrings(ss, schema, "    ");
+    ss << "    struct " << name << " {\n";
+    for (const auto &[prop_name, prop_schema] : *schema.properties) {
+      std::string safe_prop = prop_name;
+      if (safe_prop == "default" || safe_prop == "enum" ||
+          safe_prop == "class" || safe_prop == "struct" ||
+          safe_prop == "union" || safe_prop == "namespace" ||
+          safe_prop == "template" || safe_prop == "typename" ||
+          safe_prop == "auto") {
+        safe_prop += "_";
+      }
+      ss << "        /// @property " << safe_prop << "\n";
+      emit_docstrings(ss, prop_schema, "        ");
+      bool is_required = false;
+      if (schema.required) {
+        for (const auto &req : *schema.required)
+          if (req == prop_name)
+            is_required = true;
+      }
+
+      std::string t = map_type(prop_schema);
+      if (is_required) {
+        ss << "        " << t << " " << safe_prop << ";\n";
+      } else {
+        ss << "        std::optional<" << t << "> " << safe_prop << ";\n";
+      }
+    }
+    ss << "    };\n}\n";
+    files["src/models/" + name + ".hpp"] = ss.str();
+  }
+  return files;
+}
+
 } // namespace cdd_cpp::models

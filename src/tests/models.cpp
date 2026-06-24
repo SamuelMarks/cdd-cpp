@@ -142,6 +142,13 @@ void test_emit() {
   p_arr2.type = "array";
   s.properties->insert({"array2", p_arr2});
 
+  openapi::Schema p_arr3;
+  p_arr3.type = "array";
+  openapi::Schema items_ref;
+  items_ref.ref = openapi::Reference{"#/components/schemas/Circ1"};
+  p_arr3.items = std::make_shared<openapi::Schema>(items_ref);
+  s.properties->insert({"array3", p_arr3});
+
   openapi::Schema p_none;
   s.properties->insert({"none", p_none});
 
@@ -368,6 +375,38 @@ void test_emit() {
     oas1 = std::move(oas2);
     assert(oas1.openapi == "test");
   }
+
+  auto model_files = emit_modular(spec);
+  assert(model_files.count("src/models/TestStruct.hpp"));
+  assert(model_files.count("src/models/Circ1.hpp"));
+  assert(model_files.count("src/models/Circ2.hpp"));
+
+  openapi::OpenAPI empty_spec;
+  auto empty_files = emit_modular(empty_spec);
+  assert(empty_files.empty());
+
+  openapi::OpenAPI non_obj_spec;
+  non_obj_spec.components = openapi::Components{};
+  non_obj_spec.components->schemas = std::map<std::string, openapi::Schema>{};
+  openapi::Schema non_obj;
+  non_obj.type = "string";
+  non_obj_spec.components->schemas->insert({"NonObj", non_obj});
+
+  openapi::Schema kw_schema;
+  kw_schema.type = "object";
+  kw_schema.properties =
+      std::make_shared<std::map<std::string, openapi::Schema>>();
+  openapi::Schema p_class_kw;
+  p_class_kw.type = "string";
+  kw_schema.properties->insert({"class", p_class_kw});
+  kw_schema.required = std::vector<std::string>{"class"};
+  non_obj_spec.components->schemas->insert({"KwSchema", kw_schema});
+
+  auto non_obj_files = emit_modular(non_obj_spec);
+  assert(non_obj_files.size() == 1);
+  assert(non_obj_files.count("src/models/KwSchema.hpp"));
+  assert(non_obj_files["src/models/KwSchema.hpp"].find("class_") !=
+         std::string::npos);
 
   std::cout << "models::test_emit passed.\n";
 }

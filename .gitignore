@@ -189,3 +189,32 @@ build_cov_test/
 .DS_Store
 build*/
 bin/
+
+# Adding generated scratch files
+bad_gd.json
+branch_cov_details.py
+cdd-cpp
+cdd-tests
+empty_spec.json
+fix_test_spec.json
+get_missed_lines.py
+rewrite_integration.py
+test_emit_logic.cpp
+test_faker.cmake
+test_gd_spec.json
+mock-server-spec/
+out/
+out_dir_flags/
+out_empty/
+out_gd_flags/
+env_out_gd_sdk/
+
+
+# Catch more test outputs
+env_out*
+out*
+test_*_dir/
+test_server*/
+test_simdjson*
+test*.json
+*gd.json

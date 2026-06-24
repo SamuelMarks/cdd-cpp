@@ -32,6 +32,87 @@ std::expected<std::string, std::string> exec(const char *cmd) {
 void test_to_docs_json() {
   std::filesystem::create_directories("test_tmp_dir");
 
+  FILE *f_routes = fopen("test_tmp_dir/routes.hpp", "w");
+  if (f_routes) {
+    std::string cpp_routes = R"(
+      void setup(httplib::Server& svr) {
+        svr.Get("/r", [&](const httplib::Request& req, httplib::Response& res) {
+            auto id = req.path_params.at("id");
+            auto q = req.get_param_value("q");
+            auto auth = req.get_header_value("Auth");
+            auto u = body.get<User>();
+        });
+        svr.Post("/r", [&](const httplib::Request& req, httplib::Response& res) {});
+        svr.Put("/r", [&](const httplib::Request& req, httplib::Response& res) {});
+        svr.Delete("/r", [&](const httplib::Request& req, httplib::Response& res) {});
+        svr.Patch("/r", [&](const httplib::Request& req, httplib::Response& res) {});
+        svr.Options("/r", [&](const httplib::Request& req, httplib::Response& res) {});
+        svr.Head("/r", [&](const httplib::Request& req, httplib::Response& res) {});
+      }
+    )";
+    fwrite(cpp_routes.c_str(), 1, cpp_routes.size(), f_routes);
+    fclose(f_routes);
+  }
+
+  FILE *f_client = fopen("test_tmp_dir/client.cpp", "w");
+  if (f_client) {
+    std::string cpp_client = R"(
+    std::expected<std::string, std::string> Client::getTest(int id, double score, const std::string& body) noexcept {
+        std::string full_url = base_url + "/c/{id}";
+        CURLOPT_CUSTOMREQUEST, "GET"
+    }
+    std::expected<std::string, std::string> Client::postTest() noexcept {
+        std::string full_url = base_url + "/c";
+        CURLOPT_CUSTOMREQUEST, "POST"
+    }
+    std::expected<std::string, std::string> Client::putTest() noexcept {
+        std::string full_url = base_url + "/c";
+        CURLOPT_CUSTOMREQUEST, "PUT"
+    }
+    std::expected<std::string, std::string> Client::deleteTest() noexcept {
+        std::string full_url = base_url + "/c";
+        CURLOPT_CUSTOMREQUEST, "DELETE"
+    }
+    std::expected<std::string, std::string> Client::patchTest() noexcept {
+        std::string full_url = base_url + "/c";
+        CURLOPT_CUSTOMREQUEST, "PATCH"
+    }
+    std::expected<std::string, std::string> Client::optionsTest() noexcept {
+        std::string full_url = base_url + "/c";
+        CURLOPT_CUSTOMREQUEST, "OPTIONS"
+    }
+    std::expected<std::string, std::string> Client::headTest() noexcept {
+        std::string full_url = base_url + "/c";
+        CURLOPT_CUSTOMREQUEST, "HEAD"
+    }
+    )";
+    fwrite(cpp_client.c_str(), 1, cpp_client.size(), f_client);
+    fclose(f_client);
+  }
+
+  FILE *f_cli = fopen("test_tmp_dir/cli.cpp", "w");
+  if (f_cli) {
+    std::string cpp_cli = R"(
+    switch (current_node) {
+        case 5: {
+            auto res = handle_myOp(client, path_params["pid"], query_params["q"], body);
+            if (!res) {
+                std::cerr << "Request failed: " << res.error() << "\n";
+                return 1;
+            }
+            std::cout << *res << "\n";
+            break;
+        }
+        case 6: {
+            auto res = handle_emptyOp(client);
+            break;
+        }
+    }
+    )";
+    fwrite(cpp_cli.c_str(), 1, cpp_cli.size(), f_cli);
+    fclose(f_cli);
+  }
+
   std::string json_spec = R"({
     "openapi": "3.2.0",
     "paths": {
@@ -385,6 +466,27 @@ void test_main_cli_coverage() {
       exec("./cdd-cpp from_google_discovery to_sdk -i nonexistent.json -o out");
   assert(err_read_gd &&
          err_read_gd->find("Could not open input file") != std::string::npos);
+
+  auto from_server_flags = exec(
+      "./cdd-cpp from_openapi to_server -i test_spec.json -o out_dir_flags "
+      "--with-postgres --with-faker --no-installable-package");
+  assert(from_server_flags);
+
+  FILE *empty_s = fopen("empty_spec.json", "w");
+  if (empty_s) {
+    std::string s = "{\"openapi\":\"3.2.0\"}";
+    fwrite(s.c_str(), 1, s.size(), empty_s);
+    fclose(empty_s);
+  }
+  auto from_server_empty =
+      exec("./cdd-cpp from_openapi to_server -i empty_spec.json -o out_empty "
+           "--no-installable-package --no-github-actions");
+  assert(from_server_empty);
+
+  auto gd_flags = exec("./cdd-cpp from_google_discovery to_sdk -i "
+                       "test_gd_spec.json -o out_gd_flags "
+                       "--with-postgres --with-faker");
+  assert(gd_flags);
 
   FILE *f_bad = fopen("bad_gd.json", "w");
   if (f_bad) {

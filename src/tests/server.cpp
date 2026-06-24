@@ -199,6 +199,31 @@ void test_emit() {
   spec.components = openapi::Components{};
   spec.components->securitySchemes =
       std::map<std::string, openapi::SecurityScheme>{{"BasicAuth", scheme}};
+
+  openapi::Schema mock_schema;
+  mock_schema.type = "object";
+  mock_schema.properties =
+      std::make_shared<std::map<std::string, openapi::Schema>>();
+  openapi::Schema p_mock;
+  p_mock.type = "string";
+  mock_schema.properties->insert({"name", p_mock});
+  openapi::Schema p_mock2;
+  p_mock2.type = "integer";
+  mock_schema.properties->insert({"age", p_mock2});
+  openapi::Schema p_mock3;
+  p_mock3.type = "number";
+  mock_schema.properties->insert({"score", p_mock3});
+  openapi::Schema p_mock4;
+  p_mock4.type = "boolean";
+  mock_schema.properties->insert({"active", p_mock4});
+  openapi::Schema p_mock5;
+  p_mock5.type = "unknown";
+  mock_schema.properties->insert({"unknown", p_mock5});
+  openapi::Schema non_object_schema;
+  non_object_schema.type = "string";
+  spec.components->schemas = std::map<std::string, openapi::Schema>{
+      {"TestStruct", mock_schema}, {"NonObject", non_object_schema}};
+
   openapi::Server srv2;
   srv2.url = "http://remote";
   spec.servers = std::vector<openapi::Server>{srv, srv2};
@@ -255,6 +280,34 @@ void test_emit() {
   openapi::PathItem item3;
   item3.get = op2;
   spec.paths->insert({"/really_empty", item3});
+
+  auto files = emit_modular(spec, false, false, false, false);
+
+  // Test map_type_to_cpp default via unknown type
+  openapi::Parameter p_unk;
+  p_unk.name = "unk";
+  p_unk.schema = openapi::Schema{};
+  p_unk.schema->type = "unknown_type";
+  op.parameters->push_back(p_unk);
+  item.get = op;
+  spec.paths->at("/api/v1/test") = item;
+
+  // Test full emit_modular paths
+  auto full_files = emit_modular(spec, false, true, true, true);
+  assert(full_files.count("src/mocks/TestStructMock.hpp"));
+  assert(full_files.count("src/routes/TestStructRoutes.hpp"));
+  assert(full_files.count("tests/TestStructTest.cpp"));
+  assert(full_files.count("src/generated_server.cpp"));
+  assert(full_files.count("CMakeLists.txt"));
+  assert(full_files.count("src/CMakeLists.txt"));
+  assert(full_files.count("tests/CMakeLists.txt"));
+  assert(full_files["src/generated_server.cpp"].find(
+             "cdd_orm::DatabaseConfig::from_env()") != std::string::npos);
+
+  auto no_pg_files = emit_modular(spec, true, false, false, false);
+  assert(no_pg_files.count("src/generated_server.cpp"));
+  assert(no_pg_files["src/generated_server.cpp"].find(
+             "cdd_orm::RepositoryFactory factory;") != std::string::npos);
 
   std::string code = emit(spec);
   assert(code.find("on_GET_testRoute") != std::string::npos);

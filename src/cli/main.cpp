@@ -2,9 +2,11 @@
 #include "../client_sdk/emit.hpp"
 #include "../client_sdk_cli/emit.hpp"
 #include "../mocks/emit.hpp"
+#include "../models/emit.hpp"
 #include "../openapi/emit.hpp"
 #include "../openapi/parse.hpp"
 #include "../openapi/upgraders/upgrader.hpp"
+#include "../orm/emit.hpp"
 #include "../server/emit.hpp"
 #include <charconv>
 #include <cstdlib>
@@ -63,7 +65,7 @@ std::string handle_mcp_cli_message(const std::string &request_json) {
     return "{\"jsonrpc\":\"2.0\",\"id\":" + id_str +
            ",\"result\":{\"protocolVersion\":\"2024-11-05\",\"capabilities\":{"
            "\"tools\":{}},\"serverInfo\":{\"name\":\"cdd-cli-mcp\",\"version\":"
-           "\"0.0.2\"}}}";
+           "\"0.0.3\"}}}";
   } else if (method == "tools/list") {
     return "{\"jsonrpc\":\"2.0\",\"id\":" + id_str +
            ",\"result\":{\"tools\":[{\"name\":\"cdd_generate\",\"description\":"
@@ -175,7 +177,7 @@ void print_help(std::ostream &out) noexcept {
 }
 
 void print_version(std::ostream &out) noexcept {
-  out << "cdd-cpp version 0.0.2\n";
+  out << "cdd-cpp version 0.0.3\n";
 }
 
 std::expected<std::string, std::string>
@@ -283,6 +285,10 @@ int main_impl(int argc, char **argv, std::ostream &out,
     bool no_github_actions = false;
     bool no_installable_package = false;
     bool tests = false;
+    bool with_postgres = false;
+    bool with_faker = false;
+    (void)with_postgres;
+    (void)with_faker;
 
     for (int i = 3; i < argc; ++i) {
       std::string arg = argv[i];
@@ -298,6 +304,10 @@ int main_impl(int argc, char **argv, std::ostream &out,
         no_installable_package = true;
       } else if (arg == "--tests") {
         tests = true;
+      } else if (arg == "--with-postgres") {
+        with_postgres = true;
+      } else if (arg == "--with-faker") {
+        with_faker = true;
       }
     }
 
@@ -343,61 +353,24 @@ int main_impl(int argc, char **argv, std::ostream &out,
       multiple_files = client_sdk::emit_client(spec, no_github_actions,
                                                no_installable_package, tests);
     } else if (subcommand == "to_server") {
-      multiple_files["src/generated_server.cpp"] =
-          "// Server implementation placeholder\n";
-      if (!no_installable_package) {
-        std::string cmake_content =
-            "cmake_minimum_required(VERSION 3.15)\n"
-            "project(generated_project LANGUAGES CXX)\n"
-            "if(POLICY CMP0135)\n"
-            "  cmake_policy(SET CMP0135 NEW)\n"
-            "endif()\n"
-            "set(CMAKE_CXX_STANDARD 26)\n"
-            "if(CMAKE_CXX_COMPILER_ID MATCHES \"Clang|GNU\")\n"
-            "  add_compile_options(-Wno-deprecated-literal-operator "
-            "-Wno-character-conversion)\n"
-            "endif()\n"
-            "add_subdirectory(src)\n";
-        if (tests) {
-          cmake_content += "add_subdirectory(tests)\n";
-        }
-        multiple_files["CMakeLists.txt"] = cmake_content;
-        multiple_files["src/CMakeLists.txt"] =
-            "set(HEADERS )\n"
-            "set(SOURCES generated_server.cpp)\n"
-            "add_executable(generated_bin ${SOURCES} ${HEADERS})\n"
-            "install(TARGETS generated_bin)\n";
-      }
+      auto model_files = cdd_cpp::models::emit_modular(spec);
+      multiple_files.insert(model_files.begin(), model_files.end());
 
-      if (tests) {
-        multiple_files["tests/CMakeLists.txt"] =
-            "include(FetchContent)\n"
-            "FetchContent_Declare(\n"
-            "  googletest\n"
-            "  URL "
-            "https://github.com/google/googletest/archive/refs/tags/"
-            "v1.14.0.tar.gz\n"
-            ")\n"
-            "FetchContent_MakeAvailable(googletest)\n"
-            "add_executable(server_test server_test.cpp)\n"
-            "target_link_libraries(server_test gtest_main gmock)\n"
-            "include(GoogleTest)\n"
-            "gtest_discover_tests(server_test)\n";
-        multiple_files["tests/server_test.cpp"] =
-            "#include <gtest/gtest.h>\n\n"
-            "TEST(ServerTest, BasicTest) {\n"
-            "    EXPECT_TRUE(true);\n"
-            "}\n";
-      }
+      auto orm_files =
+          cdd_cpp::orm::emit_modular(spec, with_postgres, with_faker);
+      multiple_files.insert(orm_files.begin(), orm_files.end());
+
+      auto server_files = cdd_cpp::server::emit_modular(
+          spec, no_installable_package, tests, with_postgres, with_faker);
+      multiple_files.insert(server_files.begin(), server_files.end());
 
       if (!no_github_actions) {
         std::string ci_content =
             "name: CI\non: [push]\njobs:\n  build:\n    runs-on: "
             "ubuntu-latest\n    steps:\n      - uses: actions/checkout@v6\n    "
             "  - run: cmake . && cmake --build .\n";
-        if (tests) {
-          ci_content += "      - run: cd tests && ./server_test\n";
-        }
+        if (tests)
+          ci_content += "      - run: cd tests && ctest\n";
         multiple_files[".github/workflows/ci.yml"] = ci_content;
       }
     } else {
@@ -448,6 +421,10 @@ int main_impl(int argc, char **argv, std::ostream &out,
     bool no_github_actions = false;
     bool no_installable_package = false;
     bool tests = false;
+    bool with_postgres = false;
+    bool with_faker = false;
+    (void)with_postgres;
+    (void)with_faker;
 
     for (int i = 3; i < argc; ++i) {
       std::string arg = argv[i];
@@ -461,6 +438,10 @@ int main_impl(int argc, char **argv, std::ostream &out,
         no_installable_package = true;
       } else if (arg == "--tests") {
         tests = true;
+      } else if (arg == "--with-postgres") {
+        with_postgres = true;
+      } else if (arg == "--with-faker") {
+        with_faker = true;
       }
     }
 
