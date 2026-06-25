@@ -391,19 +391,16 @@ void test_to_docs_json() {
   auto err_port = exec("./cdd-cpp serve_json_rpc --port abc");
   std::cout << "Testing serve_json_rpc execution and graceful stop\n";
   auto serve_res =
-      exec("./cdd-cpp serve_json_rpc --port 8085 --listen "
-           "127.0.0.1 > "
-           "/dev/null 2>&1 & "
+      exec("./cdd-cpp serve_json_rpc --port 18085 --listen "
+           "127.0.0.1 & "
            "PID=$!; "
-           "sleep 0.5 && "
-           "curl -s -X POST -H 'Content-Type: application/json' -d "
+           "sleep 2 && "
+           "curl -v -X POST -H 'Content-Type: application/json' -d "
            "'{\"jsonrpc\":\"2.0\",\"method\":\"ping\",\"id\":1}' "
-           "http://127.0.0.1:8085 > /dev/null && "
-           "curl -s -X OPTIONS http://127.0.0.1:8085 > /dev/null "
-           "&& "
-           "curl -s -X GET http://127.0.0.1:8085/stop > /dev/null "
-           "&& "
-           "wait $PID || true");
+           "http://127.0.0.1:18085 && "
+           "curl -v -X OPTIONS http://127.0.0.1:18085 && "
+           "curl -v -X GET http://127.0.0.1:18085/stop && "
+           "wait $PID");
   assert(serve_res);
   assert(serve_res);
 

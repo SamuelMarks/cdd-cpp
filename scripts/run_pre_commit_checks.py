@@ -177,6 +177,17 @@ def is_java_available():
         return False
 
 def start_local_petstore(base_path, port=8080):
+    print(f"Starting Python mock petstore on port {port}...")
+    mock_script = os.path.abspath(os.path.join("scripts", "mock_petstore.py"))
+
+    proc = subprocess.Popen([sys.executable, mock_script, str(port)])
+    test_url = f"http://127.0.0.1:{port}{base_path}/swagger.json"
+    if wait_for_url(test_url, timeout=10):
+        return {"type": "python", "proc": proc}
+    else:
+        print("Python mock failed, falling back to JVM/Docker...")
+        proc.terminate()
+        
     if is_java_available():
         print(f"JVM found locally. Trying native JVM petstore for port {port}...")
         jvm_ok = True
@@ -268,8 +279,7 @@ def start_local_petstore(base_path, port=8080):
             cleanup_petstore(proc_info)
             raise Exception("Docker petstore failed to start in time.")
     else:
-        print("Error: Neither JVM nor Docker is available to start the petstore server.")
-        import sys
+        print("Error: Neither Python, JVM nor Docker is available to start the petstore server.")
         sys.exit(1)
 
 
@@ -279,6 +289,15 @@ def cleanup_petstore(proc_info):
     if isinstance(proc_info, dict) and proc_info.get("type") == "docker":
         print(f"Stopping docker container {proc_info['name']}...")
         subprocess.run(["docker", "rm", "-f", proc_info["name"]], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    elif isinstance(proc_info, dict) and proc_info.get("type") == "python":
+        print("Stopping Python mock petstore...")
+        proc = proc_info.get("proc")
+        if proc:
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
     else:
         proc = proc_info.get("proc") if isinstance(proc_info, dict) else proc_info
         if proc:
@@ -348,11 +367,11 @@ def main():
         petstore_json = os.path.abspath(os.path.join("..", "petstore.json"))
         run_cmd([cdd_cpp_bin, "from_openapi", "to_sdk", "-i", petstore_json, "-o", v2_out_dir, "--tests"])
         
-        petstore_proc = start_local_petstore("/v2", 8084)
+        petstore_proc = start_local_petstore("/v2", 38084)
         try:
-            if wait_for_url("http://127.0.0.1:8084/v2/swagger.json"):
+            if wait_for_url("http://127.0.0.1:38084/v2/swagger.json"):
                 v2_env = os.environ.copy()
-                v2_env["PETSTORE_URL"] = "http://127.0.0.1:8084/v2"
+                v2_env["PETSTORE_URL"] = "http://127.0.0.1:38084/v2"
                 run_cmd(["cmake", ".", "-DFETCHCONTENT_UPDATES_DISCONNECTED=ON"], cwd=v2_out_dir)
                 run_cmd(["cmake", "--build", "."], cwd=v2_out_dir)
                 client_test_bin = None
@@ -378,11 +397,11 @@ def main():
         petstore_oas3_json = os.path.abspath(os.path.join("..", "petstore_oas3.json"))
         run_cmd([cdd_cpp_bin, "from_openapi", "to_sdk", "-i", petstore_oas3_json, "-o", v3_out_dir, "--tests"])
         
-        petstore_proc = start_local_petstore("/api/v3", 8085)
+        petstore_proc = start_local_petstore("/api/v3", 38085)
         try:
-            if wait_for_url("http://127.0.0.1:8085/api/v3/swagger.json"):
+            if wait_for_url("http://127.0.0.1:38085/api/v3/swagger.json"):
                 v3_env = os.environ.copy()
-                v3_env["PETSTORE_URL"] = "http://127.0.0.1:8085/api/v3"
+                v3_env["PETSTORE_URL"] = "http://127.0.0.1:38085/api/v3"
                 run_cmd(["cmake", "."], cwd=v3_out_dir)
                 run_cmd(["cmake", "--build", ".", "-j4"], cwd=v3_out_dir)
                 client_test_bin = None
