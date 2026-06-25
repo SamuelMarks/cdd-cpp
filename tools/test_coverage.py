@@ -27,6 +27,12 @@ def get_coverage():
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
+        # Delete previous .gcda files to prevent corruption on multiple runs
+        for root, dirs, files in os.walk("build"):
+            for file in files:
+                if file.endswith(".gcda"):
+                    os.remove(os.path.join(root, file))
+                    
         subprocess.run(
             ["ctest", "--output-on-failure"],
             cwd="build",
