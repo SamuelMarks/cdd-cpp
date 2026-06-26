@@ -41,20 +41,26 @@ def get_coverage():
             stderr=subprocess.DEVNULL,
         )
 
+        gcovr_cmd = [
+            "gcovr",
+            "-r",
+            ".",
+            "--filter",
+            "src/.*\\.cpp",
+            "--exclude",
+            "src/tests/.*\\.cpp",
+            "--json",
+            "--gcov-ignore-parse-errors=all",
+            "--exclude-throw-branches",
+            "--exclude-unreachable-branches",
+            "--exclude-lines-by-pattern",
+            ".*struct [a-zA-Z0-9_]+ {|.*~[a-zA-Z0-9_]+\\(\\) noexcept;|.*return std::unexpected.*|.*= false;.*|.*return 1;.*",
+        ]
+        if sys.platform.startswith("linux"):
+            gcovr_cmd.extend(["--gcov-executable", "llvm-cov gcov"])
+        
         result = subprocess.run(
-            [
-                "gcovr",
-                "-r",
-                ".",
-                "--filter",
-                "src/.*\\.cpp",
-                "--json",
-                "--gcov-ignore-parse-errors=all",
-                "--exclude-throw-branches",
-                "--exclude-unreachable-branches",
-                "--exclude-lines-by-pattern",
-                ".*struct [a-zA-Z0-9_]+ {|.*~[a-zA-Z0-9_]+\\(\\) noexcept;|.*return std::unexpected.*|.*= false;.*|.*return 1;.*",
-            ],
+            gcovr_cmd,
             capture_output=True,
             text=True,
             check=True,

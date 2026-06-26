@@ -4,7 +4,7 @@ cdd-cpp
 [![License](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![interactive WASM web demo](https://img.shields.io/badge/interactive-WASM_web_demo-blue.svg)](https://offscale.io/wasm_web_demo)
 [![CI](https://github.com/SamuelMarks/cdd-cpp/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/cdd-cpp/actions)
-[![Test Coverage](https://img.shields.io/badge/coverage-Lines: 100.00%, Functions: 100.00%, Branches: 52.65%%25-brightgreen.svg)](#)
+[![Test Coverage](https://img.shields.io/badge/coverage-0%25-brightgreen.svg)](#)
 [![Doc Coverage](https://img.shields.io/badge/docs-100.00%25-brightgreen.svg)](#)
 
 **Compiler Driven Development (CDD)** is a development approach designed to eradicate the disconnect between: API specifications; server implementations; client SDKs; and command-line tooling.

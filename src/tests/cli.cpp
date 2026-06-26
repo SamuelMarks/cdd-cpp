@@ -394,13 +394,14 @@ void test_to_docs_json() {
       exec("./cdd-cpp serve_json_rpc --port 18085 --listen "
            "127.0.0.1 & "
            "PID=$!; "
-           "sleep 2 && "
+           "sleep 2; "
            "curl -v -X POST -H 'Content-Type: application/json' -d "
            "'{\"jsonrpc\":\"2.0\",\"method\":\"ping\",\"id\":1}' "
-           "http://127.0.0.1:18085 && "
-           "curl -v -X OPTIONS http://127.0.0.1:18085 && "
-           "curl -v -X GET http://127.0.0.1:18085/stop && "
-           "wait $PID");
+           "http://127.0.0.1:18085; "
+           "curl -v -X OPTIONS http://127.0.0.1:18085; "
+           "curl -v -X GET http://127.0.0.1:18085/stop; "
+           "kill $PID 2>/dev/null; "
+           "wait $PID 2>/dev/null");
   assert(serve_res);
   assert(serve_res);
 
