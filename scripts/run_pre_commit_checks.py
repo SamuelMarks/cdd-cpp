@@ -10,6 +10,9 @@ import zipfile
 import atexit
 
 def run_cmd(cmd, cwd=None, env=None, capture_output=False, check=True):
+    with open("pre_commit_debug.log", "a") as dbg:
+        dbg.write(f"Running: {cmd if isinstance(cmd, str) else ' '.join(cmd)}\n")
+
     print(f"Running: {cmd if isinstance(cmd, str) else ' '.join(cmd)}", flush=True)
     
     if env is None:
