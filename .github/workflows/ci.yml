@@ -79,11 +79,11 @@ jobs:
 
       - name: Setup OpenAPI 3.2.0 Petstore
         run: |
-          docker run -d -p 8080:8080 -e SWAGGER_HOST="http://127.0.0.1:8080" -e SWAGGER_BASE_PATH="/api/v3" --name petstore_server_v3 swaggerapi/petstore
+          docker run -d -p 8080:8080 -e OPENAPI_BASE_PATH="/api/v3" --name petstore_server_v3 openapitools/openapi-petstore
           echo "Waiting for OpenAPI 3.2.0 Petstore to start..."
           started=0
           for i in {1..30}; do
-            if curl -s -f -o /dev/null http://127.0.0.1:8080/api/v3/swagger.json; then
+            if curl -s -f -o /dev/null http://127.0.0.1:8080/api/v3/openapi.json || curl -s -f -o /dev/null http://127.0.0.1:8080/v3/openapi.json || curl -s -f -o /dev/null http://127.0.0.1:8080/api/v3/swagger.json; then
               echo "OpenAPI 3.2.0 Petstore is up!"
               started=1
               break

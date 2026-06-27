@@ -161,13 +161,22 @@ def is_docker_running():
 def run_docker_petstore(base_path, port):
     container_name = f"petstore_server_{port}"
     subprocess.run(["docker", "rm", "-f", container_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    cmd = [
-        "docker", "run", "-d", "-p", f"{port}:8080",
-        "-e", f"SWAGGER_HOST=http://127.0.0.1:{port}",
-        "-e", f"SWAGGER_BASE_PATH={base_path}",
-        "--name", container_name,
-        "swaggerapi/petstore"
-    ]
+    
+    if base_path == "/api/v3":
+        cmd = [
+            "docker", "run", "-d", "-p", f"{port}:8080",
+            "-e", f"OPENAPI_BASE_PATH={base_path}",
+            "--name", container_name,
+            "openapitools/openapi-petstore"
+        ]
+    else:
+        cmd = [
+            "docker", "run", "-d", "-p", f"{port}:8080",
+            "-e", f"SWAGGER_HOST=http://127.0.0.1:{port}",
+            "-e", f"SWAGGER_BASE_PATH={base_path}",
+            "--name", container_name,
+            "swaggerapi/petstore"
+        ]
     run_cmd(cmd)
     return {"type": "docker", "name": container_name}
 
@@ -276,11 +285,22 @@ def start_local_petstore(base_path, port=8080):
         print(f"Starting petstore with Docker on port {port}...")
         proc_info = run_docker_petstore(base_path, port)
         test_url = f"http://127.0.0.1:{port}{base_path}/swagger.json"
+        if base_path == "/api/v3":
+             test_url = f"http://127.0.0.1:{port}/api/v3/openapi.json"
         if wait_for_url(test_url, timeout=60):
             return proc_info
-        else:
-            cleanup_petstore(proc_info)
-            raise Exception("Docker petstore failed to start in time.")
+        
+        if base_path == "/api/v3":
+             # fallback for openapi 3
+             test_url = f"http://127.0.0.1:{port}/v3/openapi.json"
+             if wait_for_url(test_url, timeout=10):
+                 return proc_info
+             test_url = f"http://127.0.0.1:{port}/api/v3/swagger.json"
+             if wait_for_url(test_url, timeout=10):
+                 return proc_info
+
+        cleanup_petstore(proc_info)
+        raise Exception("Docker petstore failed to start in time.")
     else:
         print("Error: Neither Python, JVM nor Docker is available to start the petstore server.")
         sys.exit(1)
@@ -402,7 +422,7 @@ def main():
         
         petstore_proc = start_local_petstore("/api/v3", 38085)
         try:
-            if wait_for_url("http://127.0.0.1:38085/api/v3/swagger.json"):
+            if wait_for_url("http://127.0.0.1:38085/api/v3/openapi.json") or wait_for_url("http://127.0.0.1:38085/v3/openapi.json") or wait_for_url("http://127.0.0.1:38085/api/v3/swagger.json"):
                 v3_env = os.environ.copy()
                 v3_env["PETSTORE_URL"] = "http://127.0.0.1:38085/api/v3"
                 run_cmd(["cmake", "."], cwd=v3_out_dir)
