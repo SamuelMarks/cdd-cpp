@@ -57,14 +57,23 @@ def get_coverage():
             ".*struct [a-zA-Z0-9_]+ {|.*~[a-zA-Z0-9_]+\\(\\) noexcept;|.*return std::unexpected.*|.*= false;.*|.*return 1;.*",
         ]
         if sys.platform.startswith("linux"):
-            gcovr_cmd.extend(["--gcov-executable", "llvm-cov gcov"])
+            import shutil
+            llvm_cov_exe = "llvm-cov"
+            if not shutil.which(llvm_cov_exe):
+                for v in range(20, 9, -1):
+                    if shutil.which(f"llvm-cov-{v}"):
+                        llvm_cov_exe = f"llvm-cov-{v}"
+                        break
+            gcovr_cmd.extend(["--gcov-executable", f"{llvm_cov_exe} gcov"])
         
         result = subprocess.run(
             gcovr_cmd,
             capture_output=True,
             text=True,
-            check=True,
         )
+        if result.returncode != 0:
+            print(f"gcovr failed: {result.stderr}", file=sys.stderr)
+            sys.exit(1)
 
         data = json.loads(result.stdout)
         total_lines = 0

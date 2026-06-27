@@ -12,6 +12,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CC: clang
+      CXX: clang++
     steps:
       - uses: actions/checkout@v6
 
@@ -25,9 +28,6 @@ jobs:
         run: pre-commit run clang-format --all-files && pre-commit run cpplint --all-files
 
       - name: Configure CMake
-        env:
-          CC: clang
-          CXX: clang++
         run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON
 
       - name: Build
@@ -50,13 +50,19 @@ jobs:
         run: |
           docker run -d -p 8080:8080 -e SWAGGER_HOST="http://127.0.0.1:8080" -e SWAGGER_BASE_PATH="/v2" --name petstore_server_v2 swaggerapi/petstore
           echo "Waiting for Swagger 2.0 Petstore to start..."
+          started=0
           for i in {1..30}; do
             if curl -s -f -o /dev/null http://127.0.0.1:8080/v2/swagger.json; then
               echo "Swagger 2.0 Petstore is up!"
+              started=1
               break
             fi
             sleep 5
           done
+          if [ $started -eq 0 ]; then
+            echo "Failed to start Swagger 2.0 Petstore"
+            exit 1
+          fi
 
       - name: Test Swagger 2.0 SDK Generation and Execution
         run: |
@@ -75,13 +81,19 @@ jobs:
         run: |
           docker run -d -p 8080:8080 -e SWAGGER_HOST="http://127.0.0.1:8080" -e SWAGGER_BASE_PATH="/api/v3" --name petstore_server_v3 swaggerapi/petstore
           echo "Waiting for OpenAPI 3.2.0 Petstore to start..."
+          started=0
           for i in {1..30}; do
             if curl -s -f -o /dev/null http://127.0.0.1:8080/api/v3/swagger.json; then
               echo "OpenAPI 3.2.0 Petstore is up!"
+              started=1
               break
             fi
             sleep 5
           done
+          if [ $started -eq 0 ]; then
+            echo "Failed to start OpenAPI 3.2.0 Petstore"
+            exit 1
+          fi
 
       - name: Test OpenAPI 3.2.0 SDK Generation and Execution
         run: |
