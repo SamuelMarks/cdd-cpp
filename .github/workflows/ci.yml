@@ -12,6 +12,21 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-24.04
+    services:
+      petstore-v2:
+        image: swaggerapi/petstore
+        ports:
+          - 8080:8080
+        env:
+          SWAGGER_HOST: "http://127.0.0.1:8080"
+          SWAGGER_BASE_PATH: "/v2"
+      petstore-v3:
+        image: openapitools/openapi-petstore
+        ports:
+          - 8081:8080
+        env:
+          OPENAPI_BASE_PATH: "/api/v3"
+
     env:
       CC: clang
       CXX: clang++
@@ -47,24 +62,6 @@ jobs:
           curl -sL https://raw.githubusercontent.com/SamuelMarks/cdd-openapi-test-harness/master/petstore.json -o ../petstore.json
           curl -sL https://raw.githubusercontent.com/SamuelMarks/cdd-openapi-test-harness/master/petstore_oas3.json -o ../petstore_oas3.json
 
-      - name: Setup Swagger 2.0 Petstore
-        run: |
-          docker run -d -p 8080:8080 -e SWAGGER_HOST="http://127.0.0.1:8080" -e SWAGGER_BASE_PATH="/v2" --name petstore_server_v2 swaggerapi/petstore
-          echo "Waiting for Swagger 2.0 Petstore to start..."
-          started=0
-          for i in {1..30}; do
-            if curl -s -f -o /dev/null http://127.0.0.1:8080/v2/swagger.json; then
-              echo "Swagger 2.0 Petstore is up!"
-              started=1
-              break
-            fi
-            sleep 5
-          done
-          if [ $started -eq 0 ]; then
-            echo "Failed to start Swagger 2.0 Petstore"
-            exit 1
-          fi
-
       - name: Test Swagger 2.0 SDK Generation and Execution
         run: |
           rm -rf ../cdd-cpp-client-v2
@@ -74,28 +71,6 @@ jobs:
           cmake --build .
           PETSTORE_URL="http://127.0.0.1:8080/v2" ./tests/client_test
 
-      - name: Teardown Swagger 2.0 Petstore
-        if: always()
-        run: docker rm -f petstore_server_v2 || true
-
-      - name: Setup OpenAPI 3.2.0 Petstore
-        run: |
-          docker run -d -p 8080:8080 -e OPENAPI_BASE_PATH="/api/v3" --name petstore_server_v3 openapitools/openapi-petstore
-          echo "Waiting for OpenAPI 3.2.0 Petstore to start..."
-          started=0
-          for i in {1..30}; do
-            if curl -s -f -o /dev/null http://127.0.0.1:8080/api/v3/openapi.json || curl -s -f -o /dev/null http://127.0.0.1:8080/v3/openapi.json || curl -s -f -o /dev/null http://127.0.0.1:8080/api/v3/swagger.json; then
-              echo "OpenAPI 3.2.0 Petstore is up!"
-              started=1
-              break
-            fi
-            sleep 5
-          done
-          if [ $started -eq 0 ]; then
-            echo "Failed to start OpenAPI 3.2.0 Petstore"
-            exit 1
-          fi
-
       - name: Test OpenAPI 3.2.0 SDK Generation and Execution
         run: |
           rm -rf ../cdd-cpp-client-v3
@@ -103,11 +78,7 @@ jobs:
           cd ../cdd-cpp-client-v3
           cmake . -DFETCHCONTENT_UPDATES_DISCONNECTED=ON
           cmake --build .
-          PETSTORE_URL="http://127.0.0.1:8080/api/v3" ./tests/client_test
-
-      - name: Teardown OpenAPI 3.2.0 Petstore
-        if: always()
-        run: docker rm -f petstore_server_v3 || true
+          PETSTORE_URL="http://127.0.0.1:8081/api/v3" ./tests/client_test
 
       - name: Test OpenAPI 3.2.0 Server Generation and Execution
         run: |

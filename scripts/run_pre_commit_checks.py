@@ -189,6 +189,30 @@ def is_java_available():
         return False
 
 def start_local_petstore(base_path, port=8080):
+
+    # Check if instance is already active
+    test_urls = [f"http://127.0.0.1:{port}{base_path}/swagger.json"]
+    if base_path == "/api/v3":
+        test_urls.extend([
+            f"http://127.0.0.1:{port}/v3/openapi.json",
+            f"http://127.0.0.1:{port}{base_path}/openapi.json"
+        ])
+    
+    is_active = False
+    for url in test_urls:
+        try:
+            req = urllib.request.Request(url)
+            with urllib.request.urlopen(req, timeout=2) as response:
+                if response.status == 200:
+                    is_active = True
+                    break
+        except Exception:
+            pass
+
+    if is_active:
+        print(f"Reusing active petstore instance on port {port}...")
+        return {"type": "existing"}
+
     print(f"Starting Python mock petstore on port {port}...")
     mock_script = os.path.abspath(os.path.join("scripts", "mock_petstore.py"))
 
@@ -308,6 +332,9 @@ def start_local_petstore(base_path, port=8080):
 
 def cleanup_petstore(proc_info):
     if not proc_info:
+        return
+    if isinstance(proc_info, dict) and proc_info.get("type") == "existing":
+        print("Reusing existing petstore instance, no cleanup needed.")
         return
     if isinstance(proc_info, dict) and proc_info.get("type") == "docker":
         print(f"Stopping docker container {proc_info['name']}...")
