@@ -11,15 +11,16 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       CC: clang
       CXX: clang++
+      CXXFLAGS: "-stdlib=libc++"
     steps:
       - uses: actions/checkout@v6
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y cmake build-essential python3 curl git python3-pip clang llvm
+        run: sudo apt-get update && sudo apt-get install -y cmake build-essential python3 curl git python3-pip clang llvm libc++-dev libc++abi-dev
 
       - name: Install pre-commit
         run: pip3 install --break-system-packages pre-commit gcovr || pip3 install pre-commit gcovr
