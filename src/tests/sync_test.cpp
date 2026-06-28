@@ -31,7 +31,10 @@ void test_sync() {
   s.close();
 
   // Test sync
-  sync("test_sync_dir", "test_sync_spec.json");
+  SyncConfig config;
+  config.input = "test_sync_dir";
+  config.output = "test_sync_spec.json";
+  sync(config);
 
   // It should overwrite spec
   std::ifstream is("test_sync_spec.json");

@@ -8,6 +8,7 @@
 #include "../openapi/upgraders/upgrader.hpp"
 #include "../orm/emit.hpp"
 #include "../server/emit.hpp"
+#include "api.hpp"
 #include <charconv>
 #include <cstdlib>
 #include <expected>
@@ -105,15 +106,25 @@ std::string handle_mcp_cli_message(const std::string &request_json) {
          ",\"error\":{\"code\":-32601,\"message\":\"Method not found\"}}";
 }
 
-int mcp_stdio_main() {
+namespace cdd_cpp::cli {
+int mcp_command_help(std::ostream &out) {
+  out << "Usage:\n"
+      << "  cdd-cpp mcp\n\n"
+      << "Start a Model Context Protocol (MCP) STDIO server.\n";
+  return 0;
+}
+
+int mcp(std::ostream &out, std::ostream &err, std::istream &in) {
+  (void)err;
   std::string line;
-  while (std::getline(std::cin, line)) {
+  while (std::getline(in, line)) {
     if (line.empty())
       continue;
-    std::cout << handle_mcp_cli_message(line) << "\n";
+    out << handle_mcp_cli_message(line) << "\n";
   }
   return 0;
 }
+} // namespace cdd_cpp::cli
 
 void print_help(std::ostream &out) noexcept {
   out << "CDD CLI (Code-Driven Development)\n"
@@ -148,6 +159,8 @@ void print_help(std::ostream &out) noexcept {
          "<target_directory> [--no-github-actions] [--no-installable-package] "
          "[--tests]\n"
          "  cdd-cpp serve_json_rpc [-p|--port <port>] [-l|--listen <address>]\n"
+         "  cdd-cpp sync -i <dir> -o <file>\n"
+         "  cdd-cpp mcp\n"
          "\n"
          "Commands:\n"
          "  from_openapi : Generate code from an OpenAPI specification.\n"
@@ -158,12 +171,16 @@ void print_help(std::ostream &out) noexcept {
          "  serve_json_rpc: Expose CLI interface as JSON-RPC server.\n"
          "  from_google_discovery: Generate code from a Google Discovery "
          "JSON.\n"
+         "  sync         : Synchronize an OpenAPI specification with source "
+         "code.\n"
+         "  mcp          : Start a Model Context Protocol (MCP) STDIO server.\n"
          "\nOptions:\n"
-         "  -i, --input                     Path or URL to the OpenAPI "
+         "  -i, --input                         Path or URL to the OpenAPI "
          "specification.\n"
-         "      --input-dir                 Directory containing OpenAPI "
+         "  -d, --input-dir                 Directory containing OpenAPI "
          "specifications.\n"
          "  -o, --output                    Output file or directory path.\n"
+         "  -m, --mcp                       Generate MCP server.\n"
          "      --tests                     Generate integration tests and "
          "mocks.\n"
          "      --no-github-actions         Do not generate GitHub Actions "
@@ -172,8 +189,8 @@ void print_help(std::ostream &out) noexcept {
          "package scaffolding.\n"
          "      --no-imports                Omit the imports field.\n"
          "      --no-wrapping               Omit the wrapper fields.\n"
-         "  -h, --help                      Show this help message\n"
-         "  -v, --version                   Show version information\n";
+         "  -h, --help                      Show this help message.\n"
+         "  -v, --version                   Show version information.\n";
 }
 
 void print_version(std::ostream &out) noexcept {
@@ -209,10 +226,6 @@ bool get_bool_arg_or_env(bool val, const std::string &env_var) noexcept {
   return false;
 }
 
-namespace cdd_cpp::cli {
-void sync(const std::string &code_dir, const std::string &spec_file) noexcept;
-}
-
 int main_impl(int argc, char **argv, std::ostream &out,
               std::ostream &err) noexcept {
   if (argc < 2) {
@@ -223,8 +236,57 @@ int main_impl(int argc, char **argv, std::ostream &out,
   std::string command = argv[1];
 
   if (command == "mcp") {
-    return mcp_stdio_main();
+    for (int i = 2; i < argc; ++i) {
+      std::string arg = argv[i];
+      if (arg == "--help" || arg == "-h") {
+        return cdd_cpp::cli::mcp_command_help(out);
+      }
+    }
+
+    return cdd_cpp::cli::mcp(out, err, std::cin);
   }
+
+  if (command == "sync") {
+    for (int i = 2; i < argc; ++i) {
+      std::string arg = argv[i];
+      if (arg == "--help" || arg == "-h") {
+        out << "Usage:\n  cdd-cpp sync -i <dir> -o <file> [-t|--truth "
+               "<code|spec>]\n"
+               "\nOptions:\n"
+               "  -i, --input                         Path to source code "
+               "directory.\n"
+               "  -o, --output                    Path to OpenAPI spec file.\n"
+               "  -t, --truth                     Source of truth (code or "
+               "spec).\n";
+        return 0;
+      }
+    }
+    std::string input;
+    std::string output;
+    std::string truth;
+    for (int i = 2; i < argc; ++i) {
+      std::string arg = argv[i];
+      if ((arg == "-i" || arg == "--input") && i + 1 < argc) {
+        input = argv[++i];
+      } else if ((arg == "-o" || arg == "--output") && i + 1 < argc) {
+        output = argv[++i];
+      } else if ((arg == "-t" || arg == "--truth") && i + 1 < argc) {
+        truth = argv[++i];
+      }
+    }
+    input = get_arg_or_env(input, "CDD_INPUT");
+    output = get_arg_or_env(output, "CDD_OUTPUT");
+    if (input.empty() || output.empty()) {
+      err << "Missing --input or --output\n";
+      return 1;
+    }
+    cdd_cpp::cli::SyncConfig config;
+    config.input = input;
+    config.output = output;
+    config.truth = truth;
+    return cdd_cpp::cli::sync(config, out, err);
+  }
+
   if (command == "--help" || command == "-h") {
     print_help(out);
     return 0;
@@ -258,12 +320,14 @@ int main_impl(int argc, char **argv, std::ostream &out,
                "<target_directory> [--no-github-actions] "
                "[--no-installable-package] [--tests]\n"
             << "\nOptions:\n"
-            << "  -i, --input                     Path or URL to the OpenAPI "
+            << "  -i, --input                         Path or URL to the "
+               "OpenAPI "
                "specification.\n"
-            << "      --input-dir                 Directory containing OpenAPI "
+            << "  -d, --input-dir                 Directory containing OpenAPI "
                "specifications.\n"
             << "  -o, --output                    Output file or directory "
                "path.\n"
+            << "  -m, --mcp                       Generate MCP server.\n"
             << "      --tests                     Generate integration tests "
                "and mocks.\n"
             << "      --no-github-actions         Do not generate GitHub "
@@ -285,8 +349,10 @@ int main_impl(int argc, char **argv, std::ostream &out,
     bool no_github_actions = false;
     bool no_installable_package = false;
     bool tests = false;
+    bool mcp = false;
     bool with_postgres = false;
     bool with_faker = false;
+    (void)mcp;
     (void)with_postgres;
     (void)with_faker;
 
@@ -294,10 +360,12 @@ int main_impl(int argc, char **argv, std::ostream &out,
       std::string arg = argv[i];
       if ((arg == "-i" || arg == "--input") && i + 1 < argc) {
         input = argv[++i];
-      } else if (arg == "--input-dir" && i + 1 < argc) {
+      } else if ((arg == "-d" || arg == "--input-dir") && i + 1 < argc) {
         input_dir = argv[++i];
       } else if ((arg == "-o" || arg == "--output") && i + 1 < argc) {
         output = argv[++i];
+      } else if (arg == "-m" || arg == "--mcp") {
+        mcp = true;
       } else if (arg == "--no-github-actions") {
         no_github_actions = true;
       } else if (arg == "--no-installable-package") {
@@ -515,7 +583,7 @@ int main_impl(int argc, char **argv, std::ostream &out,
         out << "Usage:\n  cdd-cpp to_openapi -i <path/to/code> [-o "
                "<spec.json>]\n"
                "\nOptions:\n"
-               "  -i, --input                     Path to source code "
+               "  -i, --input                         Path to source code "
                "directory or file.\n"
                "  -o, --output                    Output file or directory "
                "path.\n";
@@ -556,7 +624,8 @@ int main_impl(int argc, char **argv, std::ostream &out,
         out << "Usage:\n  cdd-cpp to_docs_json [--no-imports] [--no-wrapping] "
                "-i <spec.json> [-o <docs.json>]\n"
                "\nOptions:\n"
-               "  -i, --input                     Path or URL to the OpenAPI "
+               "  -i, --input                         Path or URL to the "
+               "OpenAPI "
                "specification.\n"
                "  -o, --output                    Output file or directory "
                "path.\n"

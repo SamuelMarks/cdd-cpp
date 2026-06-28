@@ -4,7 +4,7 @@ cdd-cpp
 [![License](https://img.shields.io/badge/license-Apache--2.0%20OR%20MIT-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![interactive WASM web demo](https://img.shields.io/badge/interactive-WASM_web_demo-blue.svg)](https://offscale.io/wasm_web_demo)
 [![CI](https://github.com/SamuelMarks/cdd-cpp/actions/workflows/ci.yml/badge.svg)](https://github.com/SamuelMarks/cdd-cpp/actions)
-[![Test Coverage](https://img.shields.io/badge/coverage-Lines: 100.00%, Functions: 100.00%, Branches: 53.63%%25-brightgreen.svg)](#)
+[![Test Coverage](https://img.shields.io/badge/coverage-Lines: 100.00%, Functions: 100.00%, Branches: 53.64%%25-brightgreen.svg)](#)
 [![Doc Coverage](https://img.shields.io/badge/docs-100.00%25-brightgreen.svg)](#)
 
 **Compiler Driven Development (CDD)** is a development approach designed to eradicate the disconnect between: API specifications; server implementations; client SDKs; and command-line tooling.
@@ -120,41 +120,134 @@ A true ecosystem requires standardized tooling. Once a developer learns the CDD 
 
 #### `from_openapi to_sdk_cli`
 Generate a client SDK and a corresponding command-line interface (CLI) from an OpenAPI specification.
-- `--input, -i <spec>`: Path to the OpenAPI specification file.
+```text
+Usage:
+  cdd-cpp from_openapi to_sdk_cli -i <spec.json> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+  cdd-cpp from_openapi to_sdk_cli --input-dir <specs_dir> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+  cdd-cpp from_openapi to_sdk -i <spec.json> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+  cdd-cpp from_openapi to_sdk --input-dir <specs_dir> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+  cdd-cpp from_openapi to_server -i <spec.json> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+  cdd-cpp from_openapi to_server --input-dir <specs_dir> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+
+Options:
+  -i, -f, --input                     Path or URL to the OpenAPI specification.
+      --input-dir                 Directory containing OpenAPI specifications.
+  -o, --output                    Output file or directory path.
+      --tests                     Generate integration tests and mocks.
+      --no-github-actions         Do not generate GitHub Actions scaffolding.
+      --no-installable-package    Do not generate installable package scaffolding.
+```
 
 #### `from_openapi to_sdk`
 Generate a client SDK from an OpenAPI specification.
-- `--input, -i <spec>`: Path to the OpenAPI specification file.
+```text
+Usage:
+  cdd-cpp from_openapi to_sdk_cli -i <spec.json> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+  cdd-cpp from_openapi to_sdk_cli --input-dir <specs_dir> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+  cdd-cpp from_openapi to_sdk -i <spec.json> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+  cdd-cpp from_openapi to_sdk --input-dir <specs_dir> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+  cdd-cpp from_openapi to_server -i <spec.json> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+  cdd-cpp from_openapi to_server --input-dir <specs_dir> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+
+Options:
+  -i, -f, --input                     Path or URL to the OpenAPI specification.
+      --input-dir                 Directory containing OpenAPI specifications.
+  -o, --output                    Output file or directory path.
+      --tests                     Generate integration tests and mocks.
+      --no-github-actions         Do not generate GitHub Actions scaffolding.
+      --no-installable-package    Do not generate installable package scaffolding.
+```
 
 #### `from_openapi to_server`
 Generate server boilerplate, models, and routing logic from an OpenAPI specification.
-- `--input, -i <spec>`: Path to the OpenAPI specification file.
+```text
+Usage:
+  cdd-cpp from_openapi to_sdk_cli -i <spec.json> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+  cdd-cpp from_openapi to_sdk_cli --input-dir <specs_dir> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+  cdd-cpp from_openapi to_sdk -i <spec.json> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+  cdd-cpp from_openapi to_sdk --input-dir <specs_dir> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+  cdd-cpp from_openapi to_server -i <spec.json> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+  cdd-cpp from_openapi to_server --input-dir <specs_dir> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+
+Options:
+  -i, -f, --input                     Path or URL to the OpenAPI specification.
+      --input-dir                 Directory containing OpenAPI specifications.
+  -o, --output                    Output file or directory path.
+      --tests                     Generate integration tests and mocks.
+      --no-github-actions         Do not generate GitHub Actions scaffolding.
+      --no-installable-package    Do not generate installable package scaffolding.
+```
 
 #### `to_openapi`
 Parse the existing codebase and extract an authoritative OpenAPI specification.
-- `--input, -i <path>` (or `-f <path>`): Path to the source code directory or file to parse.
+```text
+Usage:
+  cdd-cpp to_openapi -i <path/to/code> [-o <spec.json>]
+
+Options:
+  -i, -f, --input                     Path to source code directory or file.
+  -o, --output                    Output file or directory path.
+```
 
 #### `to_docs_json`
 Convert an OpenAPI specification into a localized, documentation-optimized JSON format.
-- `--input, -i <spec>`: Path to the OpenAPI specification file.
-- `--no-imports`: Disable import statements in the generated documentation.
-- `--no-wrapping`: Disable line wrapping in the generated documentation.
+```text
+Usage:
+  cdd-cpp to_docs_json [--no-imports] [--no-wrapping] -i <spec.json> [-o <docs.json>]
+
+Options:
+  -i, -f, --input                     Path or URL to the OpenAPI specification.
+  -o, --output                    Output file or directory path.
+      --no-imports                Omit the imports field.
+      --no-wrapping               Omit the wrapper fields.
+```
 
 #### `serve_json_rpc`
 Launch a JSON-RPC server for editor and tool integrations.
-- `--port <port>` (or `-p`): Port to listen on (e.g., `8080`).
-- `--listen <address>` (or `-l`): Address to bind to (e.g., `0.0.0.0`).
+```text
+Usage:
+  cdd-cpp serve_json_rpc [-p|--port <port>] [-l|--listen <address>]
+
+Options:
+  -p, --port                      Port to listen on.
+  -l, --listen                    Address to listen on.
+```
 
 #### `mcp`
 Run the Model Context Protocol server via stdio.
+```text
+Usage:
+  cdd-cpp mcp
+
+Start a Model Context Protocol (MCP) STDIO server.
+```
 
 #### `from_google_discovery to_sdk_cli`
 Generate a client SDK and a corresponding command-line interface (CLI) from a Google Discovery JSON.
-- `--input, -i <discovery.json>`: Path to the Google Discovery JSON file.
+```text
+Usage:
+  cdd-cpp from_google_discovery to_sdk_cli -i <discovery.json> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+  cdd-cpp from_google_discovery to_sdk -i <discovery.json> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+```
 
 #### `from_google_discovery to_sdk`
 Generate a client SDK from a Google Discovery JSON.
-- `--input, -i <discovery.json>`: Path to the Google Discovery JSON file.
+```text
+Usage:
+  cdd-cpp from_google_discovery to_sdk_cli -i <discovery.json> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+  cdd-cpp from_google_discovery to_sdk -i <discovery.json> -o <target_directory> [--no-github-actions] [--no-installable-package] [--tests]
+```
+
+#### `sync`
+Synchronize an OpenAPI specification with source code.
+```text
+Usage:
+  cdd-cpp sync -i <dir> -o <file>
+
+Options:
+  -i, -f, --input                     Path to source code directory.
+  -o, --output                    Path to OpenAPI spec file.
+```
 
 ### Detail Features Beyond Common Subset
 

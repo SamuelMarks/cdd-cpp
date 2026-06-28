@@ -220,9 +220,10 @@ void test_to_docs_json() {
          from_server_err->find("Missing -i") != std::string::npos);
 
   std::cout << "Testing from_openapi to_sdk ok with flags\n";
-  auto from_sdk = exec("./cdd-cpp from_openapi to_sdk -i test_spec.json -o "
-                       "out_dir "
-                       "--no-github-actions --no-installable-package --tests");
+  auto from_sdk =
+      exec("./cdd-cpp from_openapi to_sdk -i test_spec.json -o "
+           "out_dir "
+           "--no-github-actions --no-installable-package --tests --mcp");
   assert(from_sdk);
 
   std::cout << "Testing from_openapi to_sdk_cli ok\n";
@@ -259,8 +260,8 @@ void test_to_docs_json() {
   assert(from_sdk_dir);
 
   std::cout << "Testing from_openapi to_sdk_cli dir\n";
-  auto from_sdk_cli_dir = exec(
-      "./cdd-cpp from_openapi to_sdk_cli --input-dir test_tmp_dir -o out_dir");
+  auto from_sdk_cli_dir =
+      exec("./cdd-cpp from_openapi to_sdk_cli -d test_tmp_dir -o out_dir");
   assert(from_sdk_cli_dir);
 
   std::cout << "Testing from_openapi to_server dir\n";
@@ -412,6 +413,9 @@ void test_to_docs_json() {
 namespace cdd_cpp::cli {
 void test_mcp_cli() {
   std::cout << "Testing mcp cli\n";
+  auto res_help = exec("./cdd-cpp mcp --help");
+  assert(res_help && res_help->find("Usage:") != std::string::npos);
+
   auto res1 = exec("echo '   ' | ./cdd-cpp mcp");
   assert(res1 && res1->find("Parse error") != std::string::npos);
   auto res1_2 = exec("echo 'invalid_json' | ./cdd-cpp mcp");
@@ -523,6 +527,41 @@ void test_main_cli_coverage() {
          err_out_gd->find("Could not open output file") != std::string::npos);
   std::filesystem::permissions("read_only_gd", std::filesystem::perms::all);
   std::filesystem::remove_all("read_only_gd");
+
+  std::cout << "Testing sync help\n";
+  auto sync_help = exec("./cdd-cpp sync --help");
+  assert(sync_help && sync_help->find("Usage:") != std::string::npos);
+
+  std::cout << "Testing sync err\n";
+  auto sync_err = exec("./cdd-cpp sync");
+  assert(sync_err &&
+         sync_err->find("Missing --input or --output") != std::string::npos);
+
+  std::cout << "Testing sync ok\n";
+  std::filesystem::create_directories("test_sync_dir");
+  FILE *f_sync = fopen("test_sync_spec.json", "w");
+  if (f_sync) {
+    std::string s = "{\"openapi\":\"3.2.0\"}";
+    fwrite(s.c_str(), 1, s.size(), f_sync);
+    fclose(f_sync);
+  }
+  auto sync_ok = exec("./cdd-cpp sync -i test_sync_dir -o test_sync_spec.json");
+  assert(sync_ok && sync_ok->find("Syncing code") != std::string::npos);
+
+  std::cout << "Testing sync ok with --truth\n";
+  auto sync_truth = exec(
+      "./cdd-cpp sync -i test_sync_dir -o test_sync_spec.json --truth code");
+  assert(sync_truth && sync_truth->find("Syncing code") != std::string::npos);
+
+  std::cout << "Testing sync ok with -t\n";
+  auto sync_truth_t =
+      exec("./cdd-cpp sync -i test_sync_dir -o test_sync_spec.json -t code");
+  assert(sync_truth_t &&
+         sync_truth_t->find("Syncing code") != std::string::npos);
+
+  auto sync_env = exec("CDD_INPUT=test_sync_dir "
+                       "CDD_OUTPUT=test_sync_spec.json ./cdd-cpp sync");
+  assert(sync_env && sync_env->find("Syncing code") != std::string::npos);
 }
 } // namespace cdd_cpp::cli
 namespace cdd_cpp::cli {
