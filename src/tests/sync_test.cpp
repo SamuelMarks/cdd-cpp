@@ -103,14 +103,13 @@ void test_sync() {
   assert(rc_new == 0);
   assert(std::filesystem::exists("test_sync_spec.json", ec));
 
-  // 7. Test sync when client file output directory is not writable
-  std::filesystem::create_directories("test_sync_dir/src", ec);
-  std::filesystem::permissions("test_sync_dir/src",
-                               std::filesystem::perms::none, ec);
+  // 7. Test sync when client file output path cannot be opened for writing
+  // (target file path is an existing directory, which deterministically fails
+  // with EISDIR even under root/CAP_DAC_OVERRIDE in CI containers)
+  std::filesystem::remove_all("test_sync_dir/src", ec);
+  std::filesystem::create_directories("test_sync_dir/src/client.hpp", ec);
   int rc_ro = sync(config, out_ss, err_ss);
   assert(rc_ro == 1);
-  std::filesystem::permissions("test_sync_dir/src", std::filesystem::perms::all,
-                               ec);
 
   std::filesystem::remove_all("test_sync_dir", ec);
   std::filesystem::remove("test_sync_spec.json", ec);

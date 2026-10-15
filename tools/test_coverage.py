@@ -93,12 +93,15 @@ def get_coverage():
         covered_branches = 0
 
         for file in data["files"]:
+            fname = file["file"]
             for line in file["lines"]:
                 if line.get("gcovr/excluded", False):
                     continue
                 total_lines += 1
                 if line["count"] > 0:
                     covered_lines += 1
+                else:
+                    print(f"Uncovered line: {fname}:{line['line_number']}", file=sys.stderr)
 
                 branches = line.get("branches", [])
                 for b in branches:
@@ -107,6 +110,8 @@ def get_coverage():
                     total_branches += 1
                     if b["count"] > 0:
                         covered_branches += 1
+                    else:
+                        print(f"Uncovered branch: {fname}:{line['line_number']}", file=sys.stderr)
 
             for func in file["functions"]:
                 if func.get("gcovr/excluded", False):
@@ -114,6 +119,8 @@ def get_coverage():
                 total_funcs += 1
                 if func["execution_count"] > 0:
                     covered_funcs += 1
+                else:
+                    print(f"Uncovered function: {fname}:{func.get('name', '?')}", file=sys.stderr)
 
         lines = (covered_lines / total_lines * 100.0) if total_lines > 0 else 100.0
         funcs = (covered_funcs / total_funcs * 100.0) if total_funcs > 0 else 100.0

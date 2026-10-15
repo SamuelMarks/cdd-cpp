@@ -396,14 +396,12 @@ void test_to_docs_json() noexcept {
          from_server_bad_parse.err.find("Error:") != std::string::npos);
 
   std::string ro_dir = tmp.path("read_only_dir");
-  std::filesystem::create_directories(ro_dir, fs_ec);
-  std::filesystem::permissions(ro_dir, std::filesystem::perms::none, fs_ec);
-  auto err_out_file = run_cli({"cdd-cpp", "from_openapi", "to_sdk", "-i",
-                               spec_file, "-o", ro_dir + "/file.json"});
+  std::filesystem::create_directories(ro_dir + "/src/client.hpp", fs_ec);
+  auto err_out_file = run_cli(
+      {"cdd-cpp", "from_openapi", "to_sdk", "-i", spec_file, "-o", ro_dir});
   assert(err_out_file.code != 0 &&
          err_out_file.err.find("Could not open output file") !=
              std::string::npos);
-  std::filesystem::permissions(ro_dir, std::filesystem::perms::all, fs_ec);
 
   std::string env_out_json = tmp.path("env_out.json");
   setenv("CDD_NO_IMPORTS", "true", 1);
@@ -613,14 +611,12 @@ void test_main_cli_coverage() {
 
   std::error_code fs_ec;
   std::string ro_gd = tmp.path("read_only_gd");
-  std::filesystem::create_directories(ro_gd, fs_ec);
-  std::filesystem::permissions(ro_gd, std::filesystem::perms::none, fs_ec);
-  auto err_out_gd = run_cli({"cdd-cpp", "from_google_discovery", "to_sdk", "-i",
-                             gd1, "-o", ro_gd + "/file.json"});
+  std::filesystem::create_directories(ro_gd + "/src/client.hpp", fs_ec);
+  auto err_out_gd = run_cli(
+      {"cdd-cpp", "from_google_discovery", "to_sdk", "-i", gd1, "-o", ro_gd});
   assert(err_out_gd.code != 0 &&
          err_out_gd.err.find("Could not open output file") !=
              std::string::npos);
-  std::filesystem::permissions(ro_gd, std::filesystem::perms::all, fs_ec);
 
   auto sync_help = run_cli({"cdd-cpp", "sync", "--help"});
   assert(sync_help.code == 0 &&
