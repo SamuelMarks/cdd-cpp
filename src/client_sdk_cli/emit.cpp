@@ -1,3 +1,6 @@
+/// @file emit.cpp
+/// @brief Implementation of C++ CLI application generator from OpenAPI 3.2.0
+/// specs.
 
 #include "../docstrings/emit.hpp"
 #include "../mocks/emit.hpp"
@@ -29,11 +32,13 @@ struct CliNode {
   }
 };
 
+/// @brief Internal helper or implementation for `sanitize_string`.
 static void sanitize_string(std::string &str) noexcept {
   std::replace(str.begin(), str.end(), '-', '_');
   std::replace(str.begin(), str.end(), ' ', '_');
 }
 
+/// @brief Internal helper or implementation for `escape_string`.
 static std::string escape_string(const std::string &s) noexcept {
   std::string out;
   for (char c : s) {
@@ -67,7 +72,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
   ss << "#include <simdjson.h>\n\n";
 
   ss << "using namespace simdjson;\n\n";
-  ss << "static std::string escape_string(const std::string& s) {\n";
+  ss << "static std::string escape_string(const std::string& s) noexcept {\n";
   ss << "    std::string out;\n";
   ss << "    for (char c : s) {\n";
   ss << "        if (c == '\\\"') out += \"\\\\\\\"\";\n";
@@ -84,7 +89,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
   ss << "        std::string base_url;\n";
   ss << "        CURL* curl;\n\n";
   ss << "        static size_t WriteCallback(void* contents, size_t size, "
-        "size_t nmemb, void* userp) {\n";
+        "size_t nmemb, void* userp) noexcept {\n";
   ss << "            ((std::string*)userp)->append((char*)contents, size * "
         "nmemb);\n";
   ss << "            return size * nmemb;\n";
@@ -96,20 +101,40 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
     default_url = spec.servers.operator*().front().url;
   }
 
+  ss << "        struct CurlGlobalInit {\n";
+  ss << "            CurlGlobalInit() noexcept { "
+        "curl_global_init(CURL_GLOBAL_DEFAULT); }\n";
+  ss << "            ~CurlGlobalInit() noexcept { curl_global_cleanup(); }\n";
+  ss << "            static const CurlGlobalInit& instance() noexcept {\n";
+  ss << "                static const CurlGlobalInit inst;\n";
+  ss << "                return inst;\n";
+  ss << "            }\n";
+  ss << "        };\n\n";
   ss << "        Client(const std::string& url = \""
-     << escape_string(default_url) << "\") : base_url(url) {\n";
-  ss << "            curl_global_init(CURL_GLOBAL_DEFAULT);\n";
+     << escape_string(default_url) << "\") noexcept : base_url(url) {\n";
+  ss << "            (void)CurlGlobalInit::instance();\n";
   ss << "            curl = curl_easy_init();\n";
   ss << "        }\n\n";
 
-  ss << "        ~Client() {\n";
+  ss << "        ~Client() noexcept {\n";
   ss << "            if(curl) curl_easy_cleanup(curl);\n";
-  ss << "            curl_global_cleanup();\n";
+  ss << "        }\n\n";
+
+  ss << "        std::string url_encode(const std::string& val) const noexcept "
+        "{\n";
+  ss << "            if (!curl) return val;\n";
+  ss << "            char* esc = curl_easy_escape(curl, val.c_str(), "
+        "static_cast<int>(val.size()));\n";
+  ss << "            if (!esc) return val;\n";
+  ss << "            std::string out(esc);\n";
+  ss << "            curl_free(esc);\n";
+  ss << "            return out;\n";
   ss << "        }\n\n";
 
   ss << "        std::expected<std::string, std::string> request(const "
         "std::string& method, const "
-        "std::string& path, const std::string& body = \"\") noexcept {\n";
+        "std::string& path, const std::string& body = \"\", const "
+        "std::map<std::string, std::string>& extra_headers = {}) noexcept {\n";
   ss << "            if (!curl) return std::unexpected(\"Curl not "
         "initialized\");\n";
   ss << "            std::string readBuffer;\n";
@@ -121,14 +146,18 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
         "WriteCallback);\n";
   ss << "            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);\n";
   ss << "            struct curl_slist *headers = NULL;\n";
+  ss << "            for (const auto& [hk, hv] : extra_headers) {\n";
+  ss << "                if (!hv.empty()) headers = curl_slist_append(headers, "
+        "(hk + \": \" + hv).c_str());\n";
+  ss << "            }\n";
   ss << "            if (!body.empty()) {\n";
   ss << "                headers = curl_slist_append(headers, \"Content-Type: "
         "application/json\");\n";
-  ss << "                curl_easy_setopt(curl, CURLOPT_HTTPHEADER, "
-        "headers);\n";
   ss << "                curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "
         "body.c_str());\n";
   ss << "            }\n";
+  ss << "            if (headers) curl_easy_setopt(curl, CURLOPT_HTTPHEADER, "
+        "headers);\n";
   ss << "            CURLcode res = curl_easy_perform(curl);\n";
   ss << "            if(headers) curl_slist_free_all(headers);\n";
   ss << "            if(res != CURLE_OK) {\n";
@@ -193,7 +222,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
   };
   assign_ids(assign_ids, root.get());
 
-  ss << "void print_help(int node_id) {\n";
+  ss << "void print_help(int node_id) noexcept {\n";
   ss << "    switch (node_id) {\n";
   auto generate_help = [&](auto &self, CliNode *n) -> void {
     ss << "        case " << node_ids[n] << ": {\n";
@@ -239,7 +268,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
   auto generate_handlers = [&](auto &self, CliNode *n) -> void {
     if (n->is_mcp) {
       // MCP node doesn't need a global handler function here.
-    } else if (n->method.has_value() && n->op.has_value()) {
+    } else if (n->op.has_value()) {
       std::string op_id =
           n->op->operationId.value_or("op_" + std::to_string(node_ids[n]));
       sanitize_string(op_id);
@@ -284,6 +313,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
       ss << "    std::string path = \"" << escape_string(n->path.operator*())
          << "\";\n";
       ss << "    std::string qs = \"\";\n";
+      ss << "    std::map<std::string, std::string> extra_headers;\n";
 
       if (n->op->parameters.has_value()) {
         for (const auto &p : n->op->parameters.operator*()) {
@@ -294,30 +324,36 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
             ss << "        size_t pos = path.find(\"{" << escape_string(p.name)
                << "}\");\n";
             ss << "        if (pos != std::string::npos) {\n";
-            ss << "            path.replace(pos, " << p.name.size() + 2 << ", "
-               << pname << ");\n";
+            ss << "            path.replace(pos, " << p.name.size() + 2
+               << ", client.url_encode(" << pname << "));\n";
             ss << "        }\n";
             ss << "    }\n";
           } else if (p.in == "query") {
             ss << "    if (!" << pname << ".empty()) {\n";
             ss << "        qs += (qs.empty() ? \"?\" : \"&\") + std::string(\""
+               << escape_string(p.name) << "=\") + client.url_encode(" << pname
+               << ");\n";
+            ss << "    }\n";
+          } else if (p.in == "header") {
+            ss << "    if (!" << pname << ".empty()) {\n";
+            ss << "        extra_headers[\"" << escape_string(p.name)
+               << "\"] = " << pname << ";\n";
+            ss << "    }\n";
+          } else if (p.in == "cookie") {
+            ss << "    if (!" << pname << ".empty()) {\n";
+            ss << "        extra_headers[\"Cookie\"] += "
+                  "(extra_headers[\"Cookie\"].empty() ? \"\" : \"; \") + "
+                  "std::string(\""
                << escape_string(p.name) << "=\") + " << pname << ";\n";
             ss << "    }\n";
           }
         }
       }
 
-      // To support generic unlisted query parameters that the user passes:
-      // Since this is statically typed, we'll just ignore unlisted params for
-      // now in the explicitly typed handler, or we could add a
-      // `std::map<std::string, std::string> extra_params` but that complicates
-      // `to_openapi`. Better to stick to explicitly typed params so that
-      // `to_openapi` works smoothly.
-
       ss << "    path += qs;\n";
       ss << "    return client.request(\""
          << escape_string(n->method.operator*()) << "\", path, "
-         << (has_body ? "body" : "\"\"") << ");\n";
+         << (has_body ? "body" : "\"\"") << ", extra_headers);\n";
       ss << "}\n\n";
     }
     for (auto &[name, child] : n->children) {
@@ -326,7 +362,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
   };
   generate_handlers(generate_handlers, root.get());
 
-  ss << "int main(int argc, char** argv) {\n";
+  ss << "int main(int argc, char** argv) noexcept {\n";
 
   ss << "    std::vector<std::string> args;\n";
   ss << "    for (int i = 1; i < argc; ++i) args.push_back(argv[i]);\n";
@@ -344,11 +380,19 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
 
   ss << "        if (arg.size() > 2 && arg[0] == '-' && arg[1] == '-') {\n";
   ss << "            size_t eq = arg.find('=');\n";
+  ss << "            std::string key;\n";
+  ss << "            std::string val;\n";
   ss << "            if (eq != std::string::npos) {\n";
-  ss << "                query_params[arg.substr(2, eq - 2)] = arg.substr(eq + "
-        "1);\n";
+  ss << "                key = arg.substr(2, eq - 2);\n";
+  ss << "                val = arg.substr(eq + 1);\n";
   ss << "            } else if (idx + 1 < args.size()) {\n";
-  ss << "                query_params[arg.substr(2)] = args[++idx];\n";
+  ss << "                key = arg.substr(2);\n";
+  ss << "                val = args[++idx];\n";
+  ss << "            }\n";
+  ss << "            if (key == \"body\") {\n";
+  ss << "                body = val;\n";
+  ss << "            } else if (!key.empty()) {\n";
+  ss << "                query_params[key] = val;\n";
   ss << "            }\n";
   ss << "            idx++;\n";
   ss << "            continue;\n";
@@ -367,7 +411,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
     ss << "                ";
     bool first = true;
     for (auto &[name, child] : n->children) {
-      if (!name.empty() && name[0] == '{' && name.back() == '}') {
+      if (name.starts_with('{')) {
         has_param_child = true;
         param_child_name = name.substr(1, name.size() - 2);
         param_child_id = node_ids[child.get()];
@@ -438,12 +482,16 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
       ss << "                std::string id_str = \"null\";\n";
       ss << "                simdjson::ondemand::value id_val;\n";
       ss << "                if (!doc[\"id\"].get(id_val)) {\n";
-      ss << "                    if (id_val.type() == "
+      ss << "                    simdjson::ondemand::json_type id_type;\n";
+      ss << "                    if (!id_val.type().get(id_type)) {\n";
+      ss << "                        if (id_type == "
             "simdjson::ondemand::json_type::number) { int64_t v=0; "
-            "id_val.get(v); id_str = std::to_string(v); }\n";
-      ss << "                    else if (id_val.type() == "
+            "if (!id_val.get(v)) id_str = std::to_string(v); }\n";
+      ss << "                        else if (id_type == "
             "simdjson::ondemand::json_type::string) { std::string_view v; "
-            "id_val.get(v); id_str = \"\\\"\" + std::string(v) + \"\\\"\"; }\n";
+            "if (!id_val.get(v)) id_str = \"\\\"\" + std::string(v) + "
+            "\"\\\"\"; }\n";
+      ss << "                    }\n";
       ss << "                }\n";
       ss << "                std::string_view jsonrpc_v;\n";
       ss << "                if (doc[\"jsonrpc\"].get(jsonrpc_v) || jsonrpc_v "
@@ -489,8 +537,10 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
             "clientInfo.version\\\"}}<END>\\n\";\n";
       ss << "                        continue;\n";
       ss << "                    }\n";
-      ss << "                    if (doc[\"params\"][\"capabilities\"].type() "
-            "!= simdjson::ondemand::json_type::object) {\n";
+      ss << "                    simdjson::ondemand::json_type cap_type;\n";
+      ss << "                    if "
+            "(doc[\"params\"][\"capabilities\"].type().get(cap_type) || "
+            "cap_type != simdjson::ondemand::json_type::object) {\n";
       ss << "                        if (!is_notification) std::cout << "
             "\"{\\\"jsonrpc\\\":\\\"2.0\\\",\\\"id\\\":\" << id_str << "
             "\",\\\"error\\\":{\\\"code\\\":-32602,\\\"message\\\":\\\"Missing "
@@ -523,7 +573,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
       // Here we inject tools json
       bool first_tool = true;
       auto generate_tools_json = [&](auto &self, CliNode *cn) -> void {
-        if (cn->method.has_value() && cn->op.has_value()) {
+        if (cn->op.has_value()) {
           std::string op_id = cn->op->operationId.value_or(
               "op_" + std::to_string(node_ids[cn]));
           sanitize_string(op_id);
@@ -614,7 +664,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
             "!doc[\"params\"][\"arguments\"].get(args_val);\n";
 
       auto generate_tools_call = [&](auto &self, CliNode *cn) -> void {
-        if (cn->method.has_value() && cn->op.has_value()) {
+        if (cn->op.has_value()) {
           std::string op_id = cn->op->operationId.value_or(
               "op_" + std::to_string(node_ids[cn]));
           sanitize_string(op_id);
@@ -706,7 +756,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
       ss << "            }\n";
       ss << "            break;\n";
       ss << "        }\n";
-    } else if (n->method.has_value() && n->op.has_value()) {
+    } else if (n->op.has_value()) {
       std::string op_id =
           n->op->operationId.value_or("op_" + std::to_string(node_ids[n]));
       sanitize_string(op_id);
@@ -722,11 +772,9 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
           sanitize_string(pname);
           if (p.in == "path") {
             ss << ", path_params[\"" << escape_string(p.name) << "\"]";
-          } else if (p.in == "query") {
+          } else if (p.in == "query" || p.in == "header" || p.in == "cookie") {
             ss << ", query_params[\"" << escape_string(p.name) << "\"]";
           } else {
-            // Other param types (header, cookie) not currently handled in CLI
-            // args, pass empty
             ss << ", \"\"";
           }
         }
@@ -770,6 +818,8 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
         "  cmake_policy(SET CMP0135 NEW)\n"
         "endif()\n"
         "set(CMAKE_CXX_STANDARD 26)\n"
+        "add_definitions(-DSIMDJSON_EXCEPTIONS=0)\n"
+        "add_compile_options(-fno-exceptions -fno-rtti)\n"
         "if(CMAKE_CXX_COMPILER_ID MATCHES \"Clang|GNU\")\n"
         "  add_compile_options(-Wno-deprecated-literal-operator "
         "-Wno-character-conversion)\n"
@@ -826,12 +876,14 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
         "target_link_libraries(cli_test gtest_main gmock)\n"
         "include(GoogleTest)\n"
         "gtest_discover_tests(cli_test)\n";
-    result["tests/cli_test.cpp"] = "#include <gtest/gtest.h>\n"
-                                   "#include \"mocks.hpp\"\n\n"
-                                   "TEST(CliTest, MockTest) {\n"
-                                   "    cdd_mock_client::MockClient mock;\n"
-                                   "    EXPECT_TRUE(true);\n"
-                                   "}\n";
+    result["tests/cli_test.cpp"] =
+        "#include <gtest/gtest.h>\n"
+        "#include \"mocks.hpp\"\n\n"
+        "TEST(CliTest, MockTest) {\n"
+        "    cdd_mock_client::MockClient mock;\n"
+        "    cdd_mock_client::IClient* iface = &mock;\n"
+        "    ASSERT_NE(iface, nullptr);\n"
+        "}\n";
   }
 
   if (!no_github_actions) {

@@ -1,12 +1,18 @@
+/// @file emit.cpp
+/// @brief Implementation of GoogleMock C++ mock client emitter.
 
 #include "emit.hpp"
 #include <sstream>
 
 namespace cdd_cpp::mocks {
+
+/// @brief Internal helper or implementation for `emit`.
 std::string emit(const openapi::OpenAPI &spec) noexcept {
   std::stringstream ss;
 
   ss << "#pragma once\n";
+  ss << "#include <expected>\n";
+  ss << "#include <optional>\n";
   ss << "#include <string>\n";
   ss << "#include <gmock/gmock.h>\n\n";
 
@@ -19,6 +25,7 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
 
   if (spec.paths.has_value() && !spec.paths->empty()) {
     for (const auto &[path, item] : spec.paths.operator*()) {
+      (void)path;
       auto emit_interface_method =
           [&](const std::optional<openapi::Operation> &op) {
             if (!op.has_value())
@@ -41,6 +48,7 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   ss << "    public:\n";
   if (spec.paths.has_value() && !spec.paths->empty()) {
     for (const auto &[path, item] : spec.paths.operator*()) {
+      (void)path;
       auto emit_mock_method = [&](const std::optional<openapi::Operation> &op) {
         if (!op.has_value())
           return;
@@ -62,4 +70,5 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
 
   return ss.str();
 }
+
 } // namespace cdd_cpp::mocks

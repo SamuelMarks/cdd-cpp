@@ -1,239 +1,191 @@
+/// @file parse.cpp
+/// @brief Implementation of C++ CLI application source parser into
+/// OpenAPI 3.2.0.
 
 #include "parse.hpp"
+#include "../docstrings/parse.hpp"
 #include "../utils/cpp_ast.hpp"
-#include <expected>
-#include <regex>
+#include <optional>
+#include <set>
 #include <sstream>
+#include <string>
+#include <string_view>
 
 namespace cdd_cpp::client_sdk_cli {
 
-std::expected<openapi::OpenAPI, std::string>
-parse(const std::string &input) noexcept {
+/// @brief Strip leading whitespace and `///` or `//` markers from a line.
+/// @param line Raw line string view.
+/// @return Trimmed line content after comment markers.
+static std::string strip_line_comment(std::string_view line) noexcept {
+  size_t first = line.find_first_not_of(" \t");
+  if (first == std::string_view::npos)
+    return "";
+  std::string_view rem = line.substr(first);
+  if (rem.starts_with("///"))
+    rem.remove_prefix(3);
+  else if (rem.starts_with("//"))
+    rem.remove_prefix(2);
+  else
+    return "";
+  size_t s = rem.find_first_not_of(" \t");
+  size_t e = rem.find_last_not_of(" \t\r\n");
+  return std::string(rem.substr(s, e - s + 1));
+}
+
+/// @brief Parse `@param`, `@param_example`, and `@param_deprecated` tags from a
+/// docstring or comment block.
+/// @param block Source docstring or comment block.
+/// @param p_descs Map populated with parameter descriptions.
+/// @param p_examples Map populated with parameter examples.
+/// @param p_deps Set populated with deprecated parameter names.
+static void parse_param_tags(const std::string &block,
+                             std::map<std::string, std::string> &p_descs,
+                             std::map<std::string, std::string> &p_examples,
+                             std::set<std::string> &p_deps) noexcept {
+  std::istringstream iss(block);
+  std::string line;
+  while (std::getline(iss, line)) {
+    std::string content = strip_line_comment(line);
+    if (content.starts_with("@param ")) {
+      std::string rest = content.substr(7);
+      size_t s1 = rest.find_first_not_of(" \t");
+      size_t e1 = rest.find_first_of(" \t", s1);
+      if (e1 != std::string::npos) {
+        std::string pname = rest.substr(s1, e1 - s1);
+        size_t s2 = rest.find_first_not_of(" \t", e1);
+        p_descs[pname] = rest.substr(s2);
+      }
+    } else if (content.starts_with("@param_example ")) {
+      std::string rest = content.substr(15);
+      size_t s1 = rest.find_first_not_of(" \t");
+      size_t e1 = rest.find_first_of(" \t", s1);
+      std::string pname = rest.substr(s1, e1 - s1);
+      size_t s2 = rest.find_first_not_of(" \t", e1);
+      p_examples[pname] = rest.substr(s2);
+    } else if (content.starts_with("@param_deprecated ")) {
+      std::string rest = content.substr(18);
+      size_t s1 = rest.find_first_not_of(" \t");
+      size_t e1 = rest.find_first_of(" \t\r\n", s1);
+      p_deps.insert(rest.substr(s1, e1 - s1));
+    }
+  }
+}
+
+/// @brief Internal helper or implementation for `parse`.
+Result<openapi::OpenAPI> parse(const std::string &input) noexcept {
   openapi::OpenAPI spec;
   spec.openapi = "3.2.0";
   spec.info.title = "Parsed CLI";
   spec.info.version = "1.0.0";
   spec.paths = std::map<std::string, openapi::PathItem>{};
 
-  auto extract = [&](const std::string &docstring,
-                     const std::string &tag) -> std::optional<std::string> {
-    std::regex re(R"(@)" + tag + R"(\s+([^
+  docstrings::parse_api_docstrings(input, spec);
 
-]+))");
-    std::smatch match;
-    if (std::regex_search(docstring, match, re)) {
-      std::string res = match[1].str();
-      res.erase(res.find_last_not_of(" \t\r") + 1);
-      return res;
-    }
-    return std::nullopt;
-  };
+  // 1. Parse modern `handle_<op_id>(cdd_cli::Client& client, ...)` functions
+  // via CppAST
+  utils::CppAST ast = utils::parse_cpp(input);
 
-  auto parse_doc = [&](openapi::OpenAPI &spec, const std::string &docstring) {
-    if (auto v = extract(docstring, "title"))
-      spec.info.title = *v;
-    if (auto v = extract(docstring, "summary"))
-      spec.info.summary = *v;
-    if (auto v = extract(docstring, "version"))
-      spec.info.version = *v;
-    if (auto v = extract(docstring, "description"))
-      spec.info.description = *v;
-    if (auto v = extract(docstring, "termsOfService"))
-      spec.info.termsOfService = *v;
+  for (const auto &fn : ast.functions) {
+    if (!fn.name.starts_with("handle_"))
+      continue;
 
-    if (auto v = extract(docstring, "contact_name")) {
-      if (!spec.info.contact.has_value())
-        spec.info.contact = openapi::Contact{};
-      spec.info.contact->name = *v;
-    }
-    if (auto v = extract(docstring, "contact_url")) {
-      if (!spec.info.contact.has_value())
-        spec.info.contact = openapi::Contact{};
-      spec.info.contact->url = *v;
-    }
-    if (auto v = extract(docstring, "contact_email")) {
-      if (!spec.info.contact.has_value())
-        spec.info.contact = openapi::Contact{};
-      spec.info.contact->email = *v;
+    std::string op_id = fn.name.substr(7);
+    openapi::Operation op;
+    op.operationId = op_id;
+    docstrings::parse_operation_docstrings(fn.docstring, op);
+
+    std::string method = "POST";
+    std::string path = "/" + op_id;
+    if (auto route_val = docstrings::extract_tag(fn.docstring, "route")) {
+      size_t sp = route_val->find_first_of(" \t");
+      method = route_val->substr(0, sp);
+      size_t ps = route_val->find_first_not_of(" \t", sp);
+      size_t pe = route_val->find_first_of(" \t\r\n", ps);
+      path = route_val->substr(ps, pe - ps);
     }
 
-    if (auto v = extract(docstring, "license_name")) {
-      if (!spec.info.license.has_value())
-        spec.info.license = openapi::License{};
-      spec.info.license->name = *v;
-    }
-    if (auto v = extract(docstring, "license_identifier")) {
-      if (!spec.info.license.has_value())
-        spec.info.license = openapi::License{};
-      spec.info.license->identifier = *v;
-    }
-    if (auto v = extract(docstring, "license_url")) {
-      if (!spec.info.license.has_value())
-        spec.info.license = openapi::License{};
-      spec.info.license->url = *v;
-    }
+    std::map<std::string, std::string> p_descs;
+    std::map<std::string, std::string> p_examples;
+    std::set<std::string> p_deps;
+    parse_param_tags(fn.docstring, p_descs, p_examples, p_deps);
 
-    size_t servers_idx = docstring.find("@servers");
-    if (servers_idx != std::string::npos) {
-      spec.servers = std::vector<openapi::Server>{};
-      std::string servers_block = docstring.substr(servers_idx);
-      std::istringstream iss(servers_block);
-      std::string line;
-
-      openapi::Server *current_server = nullptr;
-
-      while (std::getline(iss, line)) {
-        std::regex prefix_re(R"(^\s*(?:\*|///)\s*(.*))");
-        std::smatch m;
-        std::string content = line;
-        if (std::regex_match(line, m, prefix_re)) {
-          content = m[1].str();
+    std::vector<openapi::Parameter> params;
+    for (const auto &p : fn.params) {
+      if (p.name == "client")
+        continue;
+      if (p.name == "body") {
+        openapi::RequestBody rb;
+        rb.description = "CLI body parameter";
+        op.requestBody = rb;
+      } else {
+        openapi::Parameter param;
+        param.name = p.name;
+        if (path.find("{" + p.name + "}") != std::string::npos) {
+          param.in = "path";
+          param.required = true;
+        } else {
+          param.in = "query";
         }
-
-        size_t content_first_non_space = content.find_first_not_of(" \t");
-        if (content_first_non_space != std::string::npos &&
-            content[content_first_non_space] == '@') {
-          if (content.find("@servers") == std::string::npos &&
-              content.find("@server_variable") == std::string::npos)
-            break;
-        }
-
-        std::regex srv_re(R"(^\-\s+([^\s]+)(?:\s+\(([^)]+)\))?)");
-        if (std::regex_search(content, m, srv_re)) {
-          openapi::Server srv;
-          srv.url = m[1].str();
-          if (m[2].matched) {
-            srv.description = m[2].str();
-          }
-          spec.servers->push_back(srv);
-          current_server = &spec.servers->back();
-        } else if (current_server) {
-          std::regex var_re(
-              R"(@server_variable\s+([^\s]+)\s+([^\s]+)(?:\s+([^\[]*))?(?:\[(.*)\])?)");
-          if (std::regex_search(content, m, var_re)) {
-            openapi::ServerVariable var;
-            std::string var_name = m[1].str();
-            var.default_value = m[2].str();
-
-            if (m[3].matched) {
-              std::string desc = m[3].str();
-              desc.erase(desc.find_last_not_of(" \t\r") + 1);
-              if (!desc.empty()) {
-                var.description = desc;
-              }
-            }
-            if (m[4].matched) {
-              std::string enums_str = m[4].str();
-              if (!enums_str.empty()) {
-                var.enum_values = std::vector<std::string>{};
-                std::stringstream enum_ss(enums_str);
-                std::string enum_val;
-                while (std::getline(enum_ss, enum_val, ',')) {
-                  var.enum_values->push_back(enum_val);
-                }
-              }
-            }
-            if (!current_server->variables.has_value()) {
-              current_server->variables =
-                  std::map<std::string, openapi::ServerVariable>{};
-            }
-            (*current_server->variables)[var_name] = var;
-          }
-        }
+        if (p_descs.contains(p.name))
+          param.description = p_descs[p.name];
+        if (p_examples.contains(p.name))
+          param.example = p_examples[p.name];
+        if (p_deps.contains(p.name))
+          param.deprecated = true;
+        params.push_back(param);
       }
     }
-  };
+    if (!params.empty())
+      op.parameters = params;
 
-  parse_doc(spec, input);
+    (*spec.paths)[path].set_operation(method, std::move(op));
+  }
 
-  // Find subcommands
-  std::regex cmd_re(
-      R"(if\s*\(\s*command\s*==\s*\"([^\"]+)\"\s*\)\s*\{([^}]+)\})");
-  std::sregex_iterator cmd_it(input.begin(), input.end(), cmd_re);
-  std::sregex_iterator end;
+  // 2. Parse legacy `if (command == "...") { ... }` subcommands
+  size_t search_pos = 0;
+  for (;;) {
+    size_t cmd_idx = input.find("command == \"", search_pos);
+    if (cmd_idx == std::string::npos)
+      break;
+    size_t q1 = cmd_idx + 11;
+    size_t q2 = input.find('"', q1 + 1);
+    size_t open_b = input.find('{', q2 + 1);
+    size_t close_b = input.find('}', open_b + 1);
 
-  while (cmd_it != end) {
-    std::string cmd = (*cmd_it)[1].str();
-    std::string body = (*cmd_it)[2].str();
+    std::string cmd = input.substr(q1 + 1, q2 - q1 - 1);
+    std::string body = input.substr(open_b + 1, close_b - open_b - 1);
 
     std::string path = "/" + cmd;
     openapi::PathItem pi;
     openapi::Operation op;
     op.operationId = cmd;
 
-    std::regex tags_re(R"(//\s*@tags\s+([^\r
-]+))");
-    std::smatch tags_match;
-    if (std::regex_search(body, tags_match, tags_re)) {
-      std::string tags_str = tags_match[1].str();
-      op.tags = std::vector<std::string>{};
-      std::stringstream ts(tags_str);
-      std::string tag;
-      while (std::getline(ts, tag, ',')) {
-        op.tags->push_back(tag);
+    docstrings::parse_operation_docstrings(body, op);
+
+    std::istringstream bss(body);
+    std::string bline;
+    while (std::getline(bss, bline)) {
+      std::string cmt = strip_line_comment(bline);
+      if (!cmt.empty()) {
+        op.summary = cmt;
+        op.description = cmt;
+        break;
       }
     }
 
-    std::regex dep_re(R"(//\s*@deprecated)");
-    if (std::regex_search(body, tags_match, dep_re)) {
-      op.deprecated = true;
-    }
-
-    std::regex sec_re(R"(//\s*@security\s+([^\s]+)\s+\[([^\]]*)\])");
-    auto sec_begin = std::sregex_iterator(body.begin(), body.end(), sec_re);
-    auto sec_end = std::sregex_iterator();
-    if (sec_begin != sec_end) {
-      op.security = std::vector<openapi::SecurityRequirement>{};
-      for (std::sregex_iterator s = sec_begin; s != sec_end; ++s) {
-        openapi::SecurityRequirement req;
-        std::string scheme = (*s)[1].str();
-        std::string scopes_str = (*s)[2].str();
-        std::vector<std::string> scopes;
-        std::stringstream ss(scopes_str);
-        std::string scope;
-        while (std::getline(ss, scope, ',')) {
-          scopes.push_back(scope);
-        }
-        req[scheme] = scopes;
-        op.security->push_back(req);
-      }
-    }
-
-    std::regex resp_content_re(R"(//\s*@response_content\s+([0-9]+)\s+([^\r
-]+))");
-    auto rc_begin =
-        std::sregex_iterator(body.begin(), body.end(), resp_content_re);
-    auto rc_end = std::sregex_iterator();
-    if (rc_begin != rc_end) {
-      if (!op.responses.has_value())
-        op.responses = std::map<std::string, openapi::Response>{};
-      for (std::sregex_iterator rc = rc_begin; rc != rc_end; ++rc) {
-        std::string code = (*rc)[1].str();
-        std::string mtype = (*rc)[2].str();
-        if (op.responses->find(code) == op.responses->end()) {
-          op.responses->insert({code, openapi::Response{}});
-        }
-        if (!(*op.responses)[code].content.has_value()) {
-          (*op.responses)[code].content =
-              std::map<std::string, openapi::MediaType>{};
-        }
-        (*op.responses)[code].content->insert({mtype, openapi::MediaType{}});
-      }
-    }
-
-    std::regex op_desc_re(R"(//\s*([^
-]+))");
-    std::smatch match;
-    if (std::regex_search(body, match, op_desc_re)) {
-      op.summary = match[1].str();
-      op.description = match[1].str();
-    }
+    std::map<std::string, std::string> p_descs;
+    std::map<std::string, std::string> p_examples;
+    std::set<std::string> p_deps;
+    parse_param_tags(body, p_descs, p_examples, p_deps);
 
     std::vector<openapi::Parameter> params;
-    std::regex param_re(R"(if\s*\(\s*arg\s*==\s*\"--([^\"]+)\"\s*\))");
-    std::sregex_iterator p_it(body.begin(), body.end(), param_re);
-    while (p_it != end) {
-      std::string p_name = (*p_it)[1].str();
+    size_t p_pos = 0;
+    for (;;) {
+      size_t flag_idx = body.find("\"--", p_pos);
+      if (flag_idx == std::string::npos)
+        break;
+      size_t flag_end = body.find('"', flag_idx + 3);
+      std::string p_name = body.substr(flag_idx + 3, flag_end - flag_idx - 3);
       if (p_name == "body") {
         openapi::RequestBody reqBody;
         reqBody.description = "CLI body parameter";
@@ -241,39 +193,25 @@ parse(const std::string &input) noexcept {
       } else {
         openapi::Parameter p;
         p.name = p_name;
-        p.in = "query"; // default to query
-
-        std::string pdesc_str = R"(//\s*@param\s+)" + p_name + R"(\s+([^
-]+))";
-        std::regex pdesc_re(pdesc_str);
-        std::smatch pdesc_match;
-        if (std::regex_search(body, pdesc_match, pdesc_re)) {
-          p.description = pdesc_match[1].str();
-        }
-        std::string pex_str = R"(//\s*@param_example\s+)" + p_name + R"(\s+([^
-]+))";
-        std::regex pex_re(pex_str);
-        if (std::regex_search(body, pdesc_match, pex_re)) {
-          p.example = pdesc_match[1].str();
-        }
-        std::string pdep_str = R"(//\s*@param_deprecated\s+)" + p_name;
-        std::regex pdep_re(pdep_str);
-        if (std::regex_search(body, pdesc_match, pdep_re)) {
+        p.in = "query";
+        if (p_descs.contains(p_name))
+          p.description = p_descs[p_name];
+        if (p_examples.contains(p_name))
+          p.example = p_examples[p_name];
+        if (p_deps.contains(p_name))
           p.deprecated = true;
-        }
-
         params.push_back(p);
       }
-      ++p_it;
+      p_pos = flag_end + 1;
     }
 
     if (!params.empty()) {
       op.parameters = params;
     }
 
-    pi.post = op; // default to post
+    pi.post = op;
     spec.paths->insert({path, pi});
-    ++cmd_it;
+    search_pos = close_b + 1;
   }
 
   return spec;

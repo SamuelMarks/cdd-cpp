@@ -1,56 +1,101 @@
+/// @file upgrader.cpp
+/// @brief Implementation of Swagger 1.2, Swagger 2.0, and OpenAPI 3.0/3.1
+/// upgraders to OpenAPI 3.2.0.
+
 #include "upgrader.hpp"
 #include "../../utils/json_writer.hpp"
 #include "../emit.hpp"
 #include "../parse.hpp"
 #include <iostream>
 #include <map>
+#include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
 namespace cdd_cpp::openapi::upgraders {
 
+/// @brief Swagger 2.0 parameter keys that belong inside the OpenAPI 3.x
+/// parameter `schema` object.
+static const std::set<std::string_view> kSwaggerParamSchemaKeys{
+    "type",      "format",           "items",   "default",
+    "maximum",   "exclusiveMaximum", "minimum", "exclusiveMinimum",
+    "maxLength", "minLength",        "pattern", "maxItems",
+    "minItems",  "uniqueItems",      "enum",    "multipleOf"};
+
+/// @brief Top-level Swagger 2.0 keys copied verbatim to OpenAPI 3.2.0.
+static const std::set<std::string_view> kTopLevelCopyKeys{
+    "tags", "externalDocs", "security"};
+
+/// @brief Swagger 1.x version strings upgraded via `upgrade_swagger_1_2`.
+static const std::set<std::string_view> kSwagger1Versions{"1.2", "1.1", "1.0"};
+
+/// @brief Unwrap a `simdjson::dom::object` from an element without throwing.
+/// @param el The simdjson DOM element.
+/// @return Unwrapped `simdjson::dom::object`.
+static simdjson::dom::object unwrap_obj(simdjson::dom::element el) noexcept {
+  simdjson::dom::object o;
+  (void)el.get(o);
+  return o;
+}
+
+/// @brief Unwrap a `simdjson::dom::array` from an element without throwing.
+/// @param el The simdjson DOM element.
+/// @return Unwrapped `simdjson::dom::array`.
+static simdjson::dom::array unwrap_arr(simdjson::dom::element el) noexcept {
+  simdjson::dom::array a;
+  (void)el.get(a);
+  return a;
+}
+
+/// @brief Unwrap a `std::string` from an element without throwing.
+/// @param el The simdjson DOM element.
+/// @return Unwrapped `std::string`.
+static std::string unwrap_str(simdjson::dom::element el) noexcept {
+  std::string_view sv;
+  (void)el.get(sv);
+  return std::string(sv);
+}
+
+/// @brief Extract a numeric bound (`int64`, `uint64`, or `double`) from a
+/// schema object.
+/// @param schema The schema object.
+/// @param key The field name ("minimum" or "maximum").
+/// @return Extracted double value, or 0.0 if absent.
+static double extract_numeric_bound(simdjson::dom::object schema,
+                                    std::string_view key) noexcept {
+  simdjson::dom::element el;
+  if (schema[key].get(el) == simdjson::SUCCESS) {
+    int64_t i_val = 0;
+    if (el.get(i_val) == simdjson::SUCCESS)
+      return static_cast<double>(i_val);
+    uint64_t u_val = 0;
+    if (el.get(u_val) == simdjson::SUCCESS)
+      return static_cast<double>(u_val);
+    double d_val = 0.0;
+    (void)el.get(d_val);
+    return d_val;
+  }
+  return 0.0;
+}
+
+/// @brief Internal helper or implementation for `process_schema_3_0`.
 void process_schema_3_0(simdjson::dom::object schema,
                         utils::JsonWriter &jw) noexcept;
+/// @brief Internal helper or implementation for `process_element_3_0`.
 void process_element_3_0(simdjson::dom::element el,
                          utils::JsonWriter &jw) noexcept;
 
+/// @brief Internal helper or implementation for `process_schema_3_0`.
 void process_schema_3_0(simdjson::dom::object schema,
                         utils::JsonWriter &jw) noexcept {
   jw.start_object();
-  double min_val = 0;
-  bool has_min = false;
-  double max_val = 0;
-  bool has_max = false;
+  double min_val = extract_numeric_bound(schema, "minimum");
+  double max_val = extract_numeric_bound(schema, "maximum");
   bool exclusive_min = false;
   bool exclusive_max = false;
-  (void)has_min;
-  (void)has_max;
-
-  simdjson::dom::element el;
-  if (schema["minimum"].get(el) == simdjson::SUCCESS) {
-    has_min = true;
-    if (el.is_int64())
-      min_val = (double)el.get_int64().value_unsafe();
-    else if (el.is_uint64())
-      min_val = (double)el.get_uint64().value_unsafe();
-    else if (el.is_double())
-      min_val = el.get_double().value_unsafe();
-  }
-  if (schema["maximum"].get(el) == simdjson::SUCCESS) {
-    has_max = true;
-    if (el.is_int64())
-      max_val = (double)el.get_int64().value_unsafe();
-    else if (el.is_uint64())
-      max_val = (double)el.get_uint64().value_unsafe();
-    else if (el.is_double())
-      max_val = el.get_double().value_unsafe();
-  }
-  if (schema["exclusiveMinimum"].get(el) == simdjson::SUCCESS && el.is_bool()) {
-    exclusive_min = el.get_bool().value_unsafe();
-  }
-  if (schema["exclusiveMaximum"].get(el) == simdjson::SUCCESS && el.is_bool()) {
-    exclusive_max = el.get_bool().value_unsafe();
-  }
+  (void)schema["exclusiveMinimum"].get(exclusive_min);
+  (void)schema["exclusiveMaximum"].get(exclusive_max);
 
   for (auto field : schema) {
     std::string key(field.key);
@@ -59,17 +104,13 @@ void process_schema_3_0(simdjson::dom::object schema,
     if (key == "maximum" && exclusive_max)
       continue;
     if (key == "exclusiveMinimum") {
-      if (exclusive_min) {
-        jw.key("exclusiveMinimum");
-        jw.raw_value(std::to_string(min_val));
-      }
+      jw.key("exclusiveMinimum");
+      jw.raw_value(std::to_string(min_val));
       continue;
     }
     if (key == "exclusiveMaximum") {
-      if (exclusive_max) {
-        jw.key("exclusiveMaximum");
-        jw.raw_value(std::to_string(max_val));
-      }
+      jw.key("exclusiveMaximum");
+      jw.raw_value(std::to_string(max_val));
       continue;
     }
 
@@ -85,27 +126,23 @@ void process_schema_3_0(simdjson::dom::object schema,
   jw.end_object();
 }
 
+/// @brief Internal helper or implementation for `process_element_3_0`.
 void process_element_3_0(simdjson::dom::element el,
                          utils::JsonWriter &jw) noexcept {
-  switch (el.type()) {
-  case simdjson::dom::element_type::ARRAY: {
+  if (el.is_array()) {
     jw.start_array();
-    for (auto item : auto(el.get_array().value_unsafe())) {
+    for (auto item : unwrap_arr(el)) {
       process_element_3_0(item, jw);
     }
     jw.end_array();
-    break;
+    return;
   }
-  case simdjson::dom::element_type::OBJECT: {
-    auto obj = el.get_object().value_unsafe();
-    simdjson::dom::element type_el;
-    bool is_schema = false;
-    if (obj["type"].get(type_el) == simdjson::SUCCESS && type_el.is_string()) {
-      is_schema = true; // rough heuristic
-    } else if (obj["properties"].get(type_el) == simdjson::SUCCESS ||
-               obj["items"].get(type_el) == simdjson::SUCCESS) {
-      is_schema = true;
-    }
+  if (el.is_object()) {
+    auto obj = unwrap_obj(el);
+    std::string_view type_sv;
+    simdjson::dom::element prop_el;
+    bool is_schema = (obj["type"].get(type_sv) == simdjson::SUCCESS) ||
+                     (obj["properties"].get(prop_el) == simdjson::SUCCESS);
 
     if (is_schema) {
       process_schema_3_0(obj, jw);
@@ -113,21 +150,16 @@ void process_element_3_0(simdjson::dom::element el,
       jw.start_object();
       for (auto field : obj) {
         jw.key(std::string(field.key));
-        // Deep check for schemas in known paths like "schema", "items",
-        // "properties" could be better, but recursive heuristic mostly works.
-
         process_element_3_0(field.value, jw);
       }
       jw.end_object();
     }
-    break;
+    return;
   }
-  default:
-    jw.raw_value(simdjson::minify(el));
-    break;
-  }
+  jw.raw_value(simdjson::minify(el));
 }
 
+/// @brief Internal helper or implementation for `upgrade_openapi_3`.
 std::string upgrade_openapi_3(simdjson::dom::object root,
                               std::string_view current_version) noexcept {
   utils::JsonWriter jw;
@@ -136,7 +168,7 @@ std::string upgrade_openapi_3(simdjson::dom::object root,
 
   for (auto field : root) {
     std::string key(field.key);
-    if (key == "openapi" || key == "swagger")
+    if (key == "openapi")
       continue;
 
     jw.key(key);
@@ -151,6 +183,7 @@ std::string upgrade_openapi_3(simdjson::dom::object root,
   return jw.str();
 }
 
+/// @brief Internal helper or implementation for `upgrade_swagger_1_2`.
 std::string upgrade_swagger_1_2(simdjson::dom::object root) noexcept {
   utils::JsonWriter jw;
   jw.start_object();
@@ -159,22 +192,17 @@ std::string upgrade_swagger_1_2(simdjson::dom::object root) noexcept {
   jw.key("info");
   jw.start_object();
 
-  simdjson::dom::element info_el;
-  if (root["info"].get(info_el) == simdjson::SUCCESS &&
-      info_el.type() == simdjson::dom::element_type::OBJECT) {
-    auto info = info_el.get_object().value_unsafe();
-    simdjson::dom::element title_el, desc_el;
-    if (info["title"].get(title_el) == simdjson::SUCCESS &&
-        title_el.type() == simdjson::dom::element_type::STRING) {
-      jw.key_value("title", std::string(title_el.get_string().value_unsafe()));
+  simdjson::dom::object info;
+  if (root["info"].get(info) == simdjson::SUCCESS) {
+    std::string_view title_sv, desc_sv;
+    if (info["title"].get(title_sv) == simdjson::SUCCESS) {
+      jw.key_value("title", std::string(title_sv));
     } else {
       jw.key_value("title", "Upgraded from 1.2");
     }
 
-    if (info["description"].get(desc_el) == simdjson::SUCCESS &&
-        desc_el.type() == simdjson::dom::element_type::STRING) {
-      jw.key_value("description",
-                   std::string(desc_el.get_string().value_unsafe()));
+    if (info["description"].get(desc_sv) == simdjson::SUCCESS) {
+      jw.key_value("description", std::string(desc_sv));
     }
   } else {
     jw.key_value("title", "Upgraded from 1.2");
@@ -186,57 +214,45 @@ std::string upgrade_swagger_1_2(simdjson::dom::object root) noexcept {
   jw.key("paths");
   jw.start_object();
 
-  simdjson::dom::element apis_el;
-  if (root["apis"].get(apis_el) == simdjson::SUCCESS &&
-      apis_el.type() == simdjson::dom::element_type::ARRAY) {
-    for (auto api : auto(apis_el.get_array().value_unsafe())) {
-      if (api.type() == simdjson::dom::element_type::OBJECT) {
-        auto api_obj = api.get_object().value_unsafe();
-        simdjson::dom::element path_el;
-        if (api_obj["path"].get(path_el) == simdjson::SUCCESS) {
-          std::string path_str(path_el.get_string().value_unsafe());
-          jw.key(path_str);
+  simdjson::dom::array apis_arr;
+  if (root["apis"].get(apis_arr) == simdjson::SUCCESS) {
+    for (auto api : apis_arr) {
+      auto api_obj = unwrap_obj(api);
+      simdjson::dom::element path_el;
+      (void)api_obj["path"].get(path_el);
+      jw.key(unwrap_str(path_el));
+      jw.start_object();
+
+      simdjson::dom::array ops_arr;
+      if (api_obj["operations"].get(ops_arr) == simdjson::SUCCESS) {
+        for (auto op : ops_arr) {
+          auto op_obj = unwrap_obj(op);
+          simdjson::dom::element m_el;
+          (void)op_obj["method"].get(m_el);
+          std::string method_str = unwrap_str(m_el);
+          for (auto &c : method_str)
+            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+          jw.key(method_str);
           jw.start_object();
 
-          simdjson::dom::element ops_el;
-          if (api_obj["operations"].get(ops_el) == simdjson::SUCCESS &&
-              ops_el.type() == simdjson::dom::element_type::ARRAY) {
-            for (auto op : auto(ops_el.get_array().value_unsafe())) {
-              if (op.type() == simdjson::dom::element_type::OBJECT) {
-                auto op_obj = op.get_object().value_unsafe();
-                simdjson::dom::element method_el;
-                if (op_obj["method"].get(method_el) == simdjson::SUCCESS) {
-                  std::string method_str(method_el.get_string().value_unsafe());
-                  for (auto &c : method_str)
-                    c = std::tolower(c);
-                  jw.key(method_str);
-                  jw.start_object();
-
-                  simdjson::dom::element nickname_el;
-                  if (op_obj["nickname"].get(nickname_el) ==
-                      simdjson::SUCCESS) {
-                    jw.key_value(
-                        "operationId",
-                        std::string(nickname_el.get_string().value_unsafe()));
-                  }
-
-                  jw.key("responses");
-                  jw.start_object();
-                  jw.key("200");
-                  jw.start_object();
-                  jw.key_value("description", "Success");
-                  jw.end_object();
-                  jw.end_object();
-
-                  jw.end_object(); // op
-                }
-              }
-            }
+          std::string_view nickname_sv;
+          if (op_obj["nickname"].get(nickname_sv) == simdjson::SUCCESS) {
+            jw.key_value("operationId", std::string(nickname_sv));
           }
 
-          jw.end_object(); // path
+          jw.key("responses");
+          jw.start_object();
+          jw.key("200");
+          jw.start_object();
+          jw.key_value("description", "Success");
+          jw.end_object();
+          jw.end_object();
+
+          jw.end_object(); // op
         }
       }
+
+      jw.end_object(); // path
     }
   }
 
@@ -246,6 +262,7 @@ std::string upgrade_swagger_1_2(simdjson::dom::object root) noexcept {
   return jw.str();
 }
 
+/// @brief Internal helper or implementation for `upgrade_swagger_2_0`.
 std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
   utils::JsonWriter jw;
   jw.start_object();
@@ -260,8 +277,7 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
   // Copy top-level properties
   for (auto field : root) {
     std::string key(field.key);
-    if (key == "tags" || key == "externalDocs" || key == "security" ||
-        key.starts_with("x-")) {
+    if (kTopLevelCopyKeys.contains(key) || key.starts_with("x-")) {
       jw.key(key);
       jw.raw_value(simdjson::minify(field.value));
     }
@@ -269,17 +285,18 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
 
   std::string host = "";
   std::string basePath = "";
-  simdjson::dom::element host_el, bp_el, schemes_el;
+  simdjson::dom::element host_el, bp_el;
   if (root["host"].get(host_el) == simdjson::SUCCESS)
-    host = host_el.get_string().value_unsafe();
+    host = unwrap_str(host_el);
   if (root["basePath"].get(bp_el) == simdjson::SUCCESS)
-    basePath = bp_el.get_string().value_unsafe();
+    basePath = unwrap_str(bp_el);
 
   std::vector<std::string> schemes;
-  if (root["schemes"].get(schemes_el) == simdjson::SUCCESS &&
-      schemes_el.type() == simdjson::dom::element_type::ARRAY) {
-    for (auto s : auto(schemes_el.get_array().value_unsafe()))
-      schemes.push_back(std::string(s.get_string().value_unsafe()));
+  simdjson::dom::array schemes_arr;
+  if (root["schemes"].get(schemes_arr) == simdjson::SUCCESS) {
+    for (auto s : schemes_arr) {
+      schemes.push_back(unwrap_str(s));
+    }
   }
   if (schemes.empty() && host != "")
     schemes.push_back("https");
@@ -297,16 +314,14 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
 
   std::vector<std::string> global_consumes;
   std::vector<std::string> global_produces;
-  simdjson::dom::element g_cons_el, g_prod_el;
-  if (root["consumes"].get(g_cons_el) == simdjson::SUCCESS &&
-      g_cons_el.is_array()) {
-    for (auto c : auto(g_cons_el.get_array().value_unsafe()))
-      global_consumes.push_back(std::string(c.get_string().value_unsafe()));
+  simdjson::dom::array g_cons_arr, g_prod_arr;
+  if (root["consumes"].get(g_cons_arr) == simdjson::SUCCESS) {
+    for (auto c : g_cons_arr)
+      global_consumes.push_back(unwrap_str(c));
   }
-  if (root["produces"].get(g_prod_el) == simdjson::SUCCESS &&
-      g_prod_el.is_array()) {
-    for (auto p : auto(g_prod_el.get_array().value_unsafe()))
-      global_produces.push_back(std::string(p.get_string().value_unsafe()));
+  if (root["produces"].get(g_prod_arr) == simdjson::SUCCESS) {
+    for (auto p : g_prod_arr)
+      global_produces.push_back(unwrap_str(p));
   }
   if (global_consumes.empty())
     global_consumes.push_back("application/json");
@@ -314,233 +329,196 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
     global_produces.push_back("application/json");
 
   // Helper lambda to process parameters
-  auto process_parameters = [&](simdjson::dom::element params_el) {
+  auto process_parameters = [&](simdjson::dom::array p_arr) {
     std::string body_param_raw = "";
-    std::vector<std::string> form_params;
+    std::vector<simdjson::dom::object> form_params;
     jw.key("parameters");
     jw.start_array();
-    if (params_el.is_array()) {
-      for (auto p : auto(params_el.get_array().value_unsafe())) {
-        if (p.is_object()) {
-          auto p_obj = p.get_object().value_unsafe();
-          simdjson::dom::element in_el;
-          if (p_obj["in"].get(in_el) == simdjson::SUCCESS) {
-            std::string in_val(in_el.get_string().value_unsafe());
-            if (in_val == "body") {
-              simdjson::dom::element schema_el;
-              if (p_obj["schema"].get(schema_el) == simdjson::SUCCESS) {
-                body_param_raw = simdjson::minify(schema_el);
-              }
-            } else if (in_val == "formData") {
-              form_params.push_back(simdjson::minify(p));
-            } else {
-              jw.start_object();
-              for (auto pp : p_obj) {
-                std::string pk(pp.key);
-                if (pk == "type" || pk == "format" || pk == "items" ||
-                    pk == "collectionFormat" || pk == "default" ||
-                    pk == "maximum" || pk == "exclusiveMaximum" ||
-                    pk == "minimum" || pk == "exclusiveMinimum" ||
-                    pk == "maxLength" || pk == "minLength" || pk == "pattern" ||
-                    pk == "maxItems" || pk == "minItems" ||
-                    pk == "uniqueItems" || pk == "enum" || pk == "multipleOf")
-                  continue; // Move to schema
-                jw.key(pk);
-                jw.raw_value(simdjson::minify(pp.value));
-              }
-              jw.key("schema");
-              jw.start_object();
-              for (auto pp : p_obj) {
-                std::string pk(pp.key);
-                if (pk == "type" || pk == "format" || pk == "items" ||
-                    pk == "default" || pk == "maximum" ||
-                    pk == "exclusiveMaximum" || pk == "minimum" ||
-                    pk == "exclusiveMinimum" || pk == "maxLength" ||
-                    pk == "minLength" || pk == "pattern" || pk == "maxItems" ||
-                    pk == "minItems" || pk == "uniqueItems" || pk == "enum" ||
-                    pk == "multipleOf") {
-                  jw.key(pk);
-                  jw.raw_value(simdjson::minify(pp.value));
-                }
-              }
-              jw.end_object();
-              jw.end_object();
-            }
-          } else {
-            jw.raw_value(simdjson::minify(p)); // $ref or other
+    for (auto p : p_arr) {
+      auto p_obj = unwrap_obj(p);
+      simdjson::dom::element in_el;
+      if (p_obj["in"].get(in_el) == simdjson::SUCCESS) {
+        std::string in_val = unwrap_str(in_el);
+        if (in_val == "body") {
+          simdjson::dom::element sch_el;
+          (void)p_obj["schema"].get(sch_el);
+          body_param_raw = simdjson::minify(sch_el);
+        } else if (in_val == "formData") {
+          form_params.push_back(p_obj);
+        } else {
+          jw.start_object();
+          for (auto pp : p_obj) {
+            std::string pk(pp.key);
+            if (kSwaggerParamSchemaKeys.contains(pk) ||
+                pk == "collectionFormat")
+              continue; // Move to schema
+            jw.key(pk);
+            jw.raw_value(simdjson::minify(pp.value));
           }
+          jw.key("schema");
+          jw.start_object();
+          for (auto pp : p_obj) {
+            std::string pk(pp.key);
+            if (kSwaggerParamSchemaKeys.contains(pk)) {
+              jw.key(pk);
+              jw.raw_value(simdjson::minify(pp.value));
+            }
+          }
+          jw.end_object();
+          jw.end_object();
         }
+      } else {
+        jw.raw_value(simdjson::minify(p)); // $ref or other
       }
     }
     jw.end_array();
     return std::make_pair(body_param_raw, form_params);
   };
 
-  simdjson::dom::element paths_el;
-  if (root["paths"].get(paths_el) == simdjson::SUCCESS &&
-      paths_el.is_object()) {
+  simdjson::dom::object paths_obj;
+  if (root["paths"].get(paths_obj) == simdjson::SUCCESS) {
     jw.key("paths");
     jw.start_object();
 
-    for (auto path_field : auto(paths_el.get_object().value_unsafe())) {
+    for (auto path_field : paths_obj) {
       jw.key(std::string(path_field.key));
       jw.start_object(); // path item
-      if (path_field.value.is_object()) {
-        for (auto op_field :
-             auto(path_field.value.get_object().value_unsafe())) {
-          std::string op_method(op_field.key);
-          if (op_method == "parameters") {
-            // Path level parameters
-            auto p_res = process_parameters(op_field.value);
-            continue;
-          }
-          if (op_method.starts_with("x-") || op_method == "$ref") {
-            jw.key(op_method);
-            jw.raw_value(simdjson::minify(op_field.value));
-            continue;
-          }
-
+      auto pi_obj = unwrap_obj(path_field.value);
+      for (auto op_field : pi_obj) {
+        std::string op_method(op_field.key);
+        if (op_method == "parameters") {
+          (void)process_parameters(unwrap_arr(op_field.value));
+          continue;
+        }
+        if (op_method.starts_with("x-") || op_method == "$ref") {
           jw.key(op_method);
-          jw.start_object(); // operation
-          if (op_field.value.is_object()) {
-            auto op_obj = op_field.value.get_object().value_unsafe();
+          jw.raw_value(simdjson::minify(op_field.value));
+          continue;
+        }
 
-            std::vector<std::string> local_consumes = global_consumes;
-            std::vector<std::string> local_produces = global_produces;
+        jw.key(op_method);
+        jw.start_object(); // operation
+        auto op_obj = unwrap_obj(op_field.value);
 
-            simdjson::dom::element l_cons_el, l_prod_el;
-            if (op_obj["consumes"].get(l_cons_el) == simdjson::SUCCESS &&
-                l_cons_el.is_array()) {
-              local_consumes.clear();
-              for (auto c : auto(l_cons_el.get_array().value_unsafe()))
-                local_consumes.push_back(
-                    std::string(c.get_string().value_unsafe()));
-            }
-            if (op_obj["produces"].get(l_prod_el) == simdjson::SUCCESS &&
-                l_prod_el.is_array()) {
-              local_produces.clear();
-              for (auto p : auto(l_prod_el.get_array().value_unsafe()))
-                local_produces.push_back(
-                    std::string(p.get_string().value_unsafe()));
-            }
+        std::vector<std::string> local_consumes = global_consumes;
+        std::vector<std::string> local_produces = global_produces;
 
-            std::string body_param_raw = "";
-            std::vector<std::string> form_params;
+        simdjson::dom::array l_cons_arr, l_prod_arr;
+        if (op_obj["consumes"].get(l_cons_arr) == simdjson::SUCCESS) {
+          local_consumes.clear();
+          for (auto c : l_cons_arr)
+            local_consumes.push_back(unwrap_str(c));
+        }
+        if (op_obj["produces"].get(l_prod_arr) == simdjson::SUCCESS) {
+          local_produces.clear();
+          for (auto p : l_prod_arr)
+            local_produces.push_back(unwrap_str(p));
+        }
 
-            for (auto op_prop : op_obj) {
-              std::string k(op_prop.key);
-              if (k == "consumes" || k == "produces")
-                continue;
-              if (k == "parameters") {
-                auto p_res = process_parameters(op_prop.value);
-                body_param_raw = p_res.first;
-                form_params = p_res.second;
-                continue;
-              }
+        std::string body_param_raw = "";
+        std::vector<simdjson::dom::object> form_params;
 
-              if (k == "responses") {
-                jw.key("responses");
-                jw.start_object();
-                if (op_prop.value.is_object()) {
-                  for (auto r :
-                       auto(op_prop.value.get_object().value_unsafe())) {
-                    jw.key(std::string(r.key));
+        for (auto op_prop : op_obj) {
+          std::string k(op_prop.key);
+          if (k == "consumes" || k == "produces")
+            continue;
+          if (k == "parameters") {
+            auto p_res = process_parameters(unwrap_arr(op_prop.value));
+            body_param_raw = p_res.first;
+            form_params = p_res.second;
+            continue;
+          }
+
+          if (k == "responses") {
+            jw.key("responses");
+            jw.start_object();
+            for (auto r : unwrap_obj(op_prop.value)) {
+              jw.key(std::string(r.key));
+              jw.start_object();
+              auto r_obj = unwrap_obj(r.value);
+              for (auto rp : r_obj) {
+                std::string rk(rp.key);
+                if (rk == "schema") {
+                  jw.key("content");
+                  jw.start_object();
+                  for (const auto &prod : local_produces) {
+                    jw.key(prod);
                     jw.start_object();
-                    if (r.value.is_object()) {
-                      for (auto rp :
-                           auto(r.value.get_object().value_unsafe())) {
-                        std::string rk(rp.key);
-                        if (rk == "schema") {
-                          jw.key("content");
-                          jw.start_object();
-                          for (const auto &prod : local_produces) {
-                            jw.key(prod);
-                            jw.start_object();
-                            jw.key("schema");
-                            jw.raw_value(simdjson::minify(rp.value));
-                            jw.end_object();
-                          }
-                          jw.end_object();
-                        } else {
-                          jw.key(rk);
-                          jw.raw_value(simdjson::minify(rp.value));
-                        }
-                      }
-                    }
+                    jw.key("schema");
+                    jw.raw_value(simdjson::minify(rp.value));
                     jw.end_object();
                   }
-                }
-                jw.end_object();
-                continue;
-              }
-
-              jw.key(k);
-              jw.raw_value(simdjson::minify(op_prop.value));
-            }
-
-            // Construct requestBody
-            if (!body_param_raw.empty() || !form_params.empty()) {
-              jw.key("requestBody");
-              jw.start_object();
-              jw.key("content");
-              jw.start_object();
-
-              if (!body_param_raw.empty()) {
-                for (const auto &cons : local_consumes) {
-                  jw.key(cons);
-                  jw.start_object();
-                  jw.key("schema");
-                  jw.raw_value(body_param_raw);
                   jw.end_object();
+                } else {
+                  jw.key(rk);
+                  jw.raw_value(simdjson::minify(rp.value));
                 }
-              } else if (!form_params.empty()) {
-                // Generate an object schema from form params
-                std::string cons = "application/x-www-form-urlencoded";
-                for (const auto &c : local_consumes)
-                  if (c == "multipart/form-data")
-                    cons = c;
-
-                jw.key(cons);
-                jw.start_object();
-                jw.key("schema");
-                jw.start_object();
-                jw.key_value("type", "object");
-                jw.key("properties");
-                jw.start_object();
-
-                simdjson::dom::parser p_parser;
-                for (const auto &fp : form_params) {
-                  simdjson::dom::element el;
-                  if (p_parser.parse(fp).get(el) == simdjson::SUCCESS &&
-                      el.is_object()) {
-                    auto obj = el.get_object().value_unsafe();
-                    simdjson::dom::element name_el;
-                    if (obj["name"].get(name_el) == simdjson::SUCCESS) {
-                      jw.key(std::string(name_el.get_string().value_unsafe()));
-                      jw.start_object();
-                      for (auto field : obj) {
-                        std::string k(field.key);
-                        if (k == "name" || k == "in" || k == "required")
-                          continue;
-                        jw.key(k);
-                        jw.raw_value(simdjson::minify(field.value));
-                      }
-                      jw.end_object();
-                    }
-                  }
-                }
-
-                jw.end_object(); // properties
-                jw.end_object(); // schema
-                jw.end_object(); // cons
               }
-
-              jw.end_object(); // content
-              jw.end_object(); // requestBody
+              jw.end_object();
             }
+            jw.end_object();
+            continue;
           }
-          jw.end_object(); // operation
+
+          jw.key(k);
+          jw.raw_value(simdjson::minify(op_prop.value));
         }
+
+        // Construct requestBody
+        if (!body_param_raw.empty() || !form_params.empty()) {
+          jw.key("requestBody");
+          jw.start_object();
+          jw.key("content");
+          jw.start_object();
+
+          if (!body_param_raw.empty()) {
+            for (const auto &cons : local_consumes) {
+              jw.key(cons);
+              jw.start_object();
+              jw.key("schema");
+              jw.raw_value(body_param_raw);
+              jw.end_object();
+            }
+          } else {
+            // Generate an object schema from form params
+            std::string cons = "application/x-www-form-urlencoded";
+            for (const auto &c : local_consumes)
+              if (c == "multipart/form-data")
+                cons = c;
+
+            jw.key(cons);
+            jw.start_object();
+            jw.key("schema");
+            jw.start_object();
+            jw.key_value("type", "object");
+            jw.key("properties");
+            jw.start_object();
+
+            for (const auto &obj : form_params) {
+              simdjson::dom::element n_el;
+              (void)obj["name"].get(n_el);
+              jw.key(unwrap_str(n_el));
+              jw.start_object();
+              for (auto field : obj) {
+                std::string k(field.key);
+                if (k == "name" || k == "in" || k == "required")
+                  continue;
+                jw.key(k);
+                jw.raw_value(simdjson::minify(field.value));
+              }
+              jw.end_object();
+            }
+
+            jw.end_object(); // properties
+            jw.end_object(); // schema
+            jw.end_object(); // cons
+          }
+
+          jw.end_object(); // content
+          jw.end_object(); // requestBody
+        }
+
+        jw.end_object(); // operation
       }
       jw.end_object(); // path item
     }
@@ -556,61 +534,53 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
     jw.raw_value(simdjson::minify(defs_el)); // Simplified: direct copy
   }
 
-  simdjson::dom::element p_el;
-  if (root["parameters"].get(p_el) == simdjson::SUCCESS && p_el.is_object()) {
+  simdjson::dom::object p_map;
+  if (root["parameters"].get(p_map) == simdjson::SUCCESS) {
     jw.key("parameters");
     jw.start_object();
-    for (auto p : auto(p_el.get_object().value_unsafe())) {
+    for (auto p : p_map) {
       jw.key(std::string(p.key));
       jw.start_object();
-      if (p.value.is_object()) {
-        auto p_obj = p.value.get_object().value_unsafe();
-        jw.key("schema");
-        jw.start_object();
-        for (auto pp : p_obj) {
-          std::string pk(pp.key);
-          if (pk == "type" || pk == "format" || pk == "items" ||
-              pk == "default" || pk == "maximum" || pk == "exclusiveMaximum" ||
-              pk == "minimum" || pk == "exclusiveMinimum" ||
-              pk == "maxLength" || pk == "minLength" || pk == "pattern" ||
-              pk == "maxItems" || pk == "minItems" || pk == "uniqueItems" ||
-              pk == "enum" || pk == "multipleOf") {
-            jw.key(pk);
-            jw.raw_value(simdjson::minify(pp.value));
-          }
+      auto p_obj = unwrap_obj(p.value);
+      jw.key("schema");
+      jw.start_object();
+      for (auto pp : p_obj) {
+        std::string pk(pp.key);
+        if (kSwaggerParamSchemaKeys.contains(pk)) {
+          jw.key(pk);
+          jw.raw_value(simdjson::minify(pp.value));
         }
-        jw.end_object();
       }
+      jw.end_object();
       jw.end_object();
     }
     jw.end_object();
   }
 
-  simdjson::dom::element r_el;
-  if (root["responses"].get(r_el) == simdjson::SUCCESS && r_el.is_object()) {
+  simdjson::dom::object r_map;
+  if (root["responses"].get(r_map) == simdjson::SUCCESS) {
     jw.key("responses");
     jw.start_object();
-    for (auto r : auto(r_el.get_object().value_unsafe())) {
+    for (auto r : r_map) {
       jw.key(std::string(r.key));
       jw.start_object();
-      if (r.value.is_object()) {
-        for (auto rp : auto(r.value.get_object().value_unsafe())) {
-          std::string rk(rp.key);
-          if (rk == "schema") {
-            jw.key("content");
+      auto r_obj = unwrap_obj(r.value);
+      for (auto rp : r_obj) {
+        std::string rk(rp.key);
+        if (rk == "schema") {
+          jw.key("content");
+          jw.start_object();
+          for (const auto &prod : global_produces) {
+            jw.key(prod);
             jw.start_object();
-            for (const auto &prod : global_produces) {
-              jw.key(prod);
-              jw.start_object();
-              jw.key("schema");
-              jw.raw_value(simdjson::minify(rp.value));
-              jw.end_object();
-            }
-            jw.end_object();
-          } else {
-            jw.key(rk);
+            jw.key("schema");
             jw.raw_value(simdjson::minify(rp.value));
+            jw.end_object();
           }
+          jw.end_object();
+        } else {
+          jw.key(rk);
+          jw.raw_value(simdjson::minify(rp.value));
         }
       }
       jw.end_object();
@@ -618,61 +588,54 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
     jw.end_object();
   }
 
-  simdjson::dom::element sec_el;
-  if (root["securityDefinitions"].get(sec_el) == simdjson::SUCCESS) {
+  simdjson::dom::object sec_map;
+  if (root["securityDefinitions"].get(sec_map) == simdjson::SUCCESS) {
     jw.key("securitySchemes");
     jw.start_object();
-    if (sec_el.is_object()) {
-      for (auto sf : auto(sec_el.get_object().value_unsafe())) {
-        jw.key(std::string(sf.key));
+    for (auto sf : sec_map) {
+      jw.key(std::string(sf.key));
+      jw.start_object();
+      auto sfo = unwrap_obj(sf.value);
+      simdjson::dom::element t_el;
+      (void)sfo["type"].get(t_el);
+      std::string type_val = unwrap_str(t_el);
+
+      if (type_val == "basic") {
+        jw.key_value("type", "http");
+        jw.key_value("scheme", "basic");
+      } else if (type_val == "oauth2") {
+        jw.key_value("type", "oauth2");
+        jw.key("flows");
         jw.start_object();
-        if (sf.value.is_object()) {
-          auto sfo = sf.value.get_object().value_unsafe();
-          simdjson::dom::element type_el;
-          std::string type_val = "";
-          if (sfo["type"].get(type_el) == simdjson::SUCCESS)
-            type_val = type_el.get_string().value_unsafe();
 
-          if (type_val == "basic") {
-            jw.key_value("type", "http");
-            jw.key_value("scheme", "basic");
-          } else if (type_val == "oauth2") {
-            jw.key_value("type", "oauth2");
-            jw.key("flows");
-            jw.start_object();
+        simdjson::dom::element f_el;
+        (void)sfo["flow"].get(f_el);
+        std::string flow_val = unwrap_str(f_el);
+        std::string nflow = flow_val;
+        if (nflow == "accessCode")
+          nflow = "authorizationCode";
+        if (nflow == "application")
+          nflow = "clientCredentials";
 
-            simdjson::dom::element flow_el;
-            std::string flow_val = "implicit";
-            if (sfo["flow"].get(flow_el) == simdjson::SUCCESS)
-              flow_val = flow_el.get_string().value_unsafe();
-
-            std::string nflow = flow_val;
-            if (nflow == "accessCode")
-              nflow = "authorizationCode";
-            if (nflow == "application")
-              nflow = "clientCredentials";
-
-            jw.key(nflow);
-            jw.start_object();
-            for (auto sfp : sfo) {
-              std::string k(sfp.key);
-              if (k == "type" || k == "flow")
-                continue;
-              jw.key(k);
-              jw.raw_value(simdjson::minify(sfp.value));
-            }
-            jw.end_object();
-            jw.end_object(); // flows
-          } else {
-            // apikey, etc
-            for (auto sfp : sfo) {
-              jw.key(std::string(sfp.key));
-              jw.raw_value(simdjson::minify(sfp.value));
-            }
-          }
+        jw.key(nflow);
+        jw.start_object();
+        for (auto sfp : sfo) {
+          std::string k(sfp.key);
+          if (k == "type" || k == "flow")
+            continue;
+          jw.key(k);
+          jw.raw_value(simdjson::minify(sfp.value));
         }
         jw.end_object();
+        jw.end_object(); // flows
+      } else {
+        // apikey, etc
+        for (auto sfp : sfo) {
+          jw.key(std::string(sfp.key));
+          jw.raw_value(simdjson::minify(sfp.value));
+        }
       }
+      jw.end_object();
     }
     jw.end_object();
   }
@@ -680,49 +643,66 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
   jw.end_object(); // components
 
   jw.end_object();
-  return jw.str();
+  std::string out = jw.str();
+  auto replace_all = [](std::string &str, const std::string &from,
+                        const std::string &to) {
+    size_t pos = 0;
+    while ((pos = str.find(from, pos)) != std::string::npos) {
+      str.replace(pos, from.length(), to);
+      pos += to.length();
+    }
+  };
+  replace_all(out, "\"#/definitions/", "\"#/components/schemas/");
+  replace_all(out, "\"#/parameters/", "\"#/components/parameters/");
+  replace_all(out, "\"#/responses/", "\"#/components/responses/");
+  return out;
 }
 
-std::expected<std::string, std::string>
-upgrade_to_latest(const std::string &json_spec) noexcept {
+/// @brief Internal helper or implementation for `upgrade_to_latest`.
+Result<std::string> upgrade_to_latest(const std::string &json_spec) noexcept {
   simdjson::dom::parser parser;
   simdjson::dom::element doc;
   if (parser.parse(json_spec).get(doc) != simdjson::SUCCESS ||
-      doc.type() != simdjson::dom::element_type::OBJECT) {
-    return std::unexpected("Invalid JSON document");
+      !doc.is_object()) {
+    return utils::make_error(utils::ErrorCode::JsonParseError,
+                             "Invalid JSON document");
   }
-
-  simdjson::dom::object root = doc.get_object().value_unsafe();
+  simdjson::dom::object root = unwrap_obj(doc);
 
   simdjson::dom::element version_el;
   if (root["swagger"].get(version_el) == simdjson::SUCCESS) {
-    std::string_view v_view;
-    if (version_el.get(v_view) != simdjson::SUCCESS)
-      return std::unexpected("Invalid swagger version format");
-    std::string v(v_view);
-    if (v == "1.2" || v == "1.1" || v == "1.0")
+    std::string_view v_sv;
+    if (version_el.get(v_sv) != simdjson::SUCCESS)
+      return utils::make_error(utils::ErrorCode::InvalidFieldType,
+                               "Invalid swagger version format");
+    std::string v(v_sv);
+    if (kSwagger1Versions.contains(v))
       return upgrade_swagger_1_2(root);
     if (v == "2.0")
       return upgrade_swagger_2_0(root);
-    return std::unexpected("Unknown swagger version: " + v);
+    return utils::make_error(utils::ErrorCode::UnsupportedSpecVersion,
+                             "Unknown swagger version: " + v);
   } else if (root["openapi"].get(version_el) == simdjson::SUCCESS) {
-    std::string_view v_view;
-    if (version_el.get(v_view) != simdjson::SUCCESS)
-      return std::unexpected("Invalid openapi version format");
-    std::string v(v_view);
+    std::string_view v_sv;
+    if (version_el.get(v_sv) != simdjson::SUCCESS)
+      return utils::make_error(utils::ErrorCode::InvalidFieldType,
+                               "Invalid openapi version format");
+    std::string v(v_sv);
     if (v.starts_with("3.0") || v.starts_with("3.1")) {
       return upgrade_openapi_3(root, v);
     }
     if (v.starts_with("3.2")) {
       return json_spec; // Already latest
     }
-    return std::unexpected("Unknown openapi version: " + v);
+    return utils::make_error(utils::ErrorCode::UnsupportedSpecVersion,
+                             "Unknown openapi version: " + v);
   } else if (root["swaggerVersion"].get(version_el) ==
              simdjson::SUCCESS) { // Swagger 1.2 root
     return upgrade_swagger_1_2(root);
   }
 
-  return std::unexpected(
+  return utils::make_error(
+      utils::ErrorCode::InvalidOpenApiDocument,
       "Could not detect OpenAPI/Swagger version in document");
 }
 

@@ -279,7 +279,16 @@ void test_emit() {
 
   openapi::PathItem item3;
   item3.get = op2;
+  openapi::Operation op_body_no_params;
+  op_body_no_params.operationId = "bodyNoParams";
+  op_body_no_params.requestBody = openapi::RequestBody{};
+  item3.post = op_body_no_params;
   spec.paths->insert({"/really_empty", item3});
+
+  openapi::OpenAPI empty_spec;
+  assert(emit(empty_spec).find("class Router") != std::string::npos);
+  empty_spec.components = openapi::Components{};
+  assert(!emit_modular(empty_spec, false, false, false, false).empty());
 
   auto files = emit_modular(spec, false, false, false, false);
 
@@ -288,7 +297,11 @@ void test_emit() {
   p_unk.name = "unk";
   p_unk.schema = openapi::Schema{};
   p_unk.schema->type = "unknown_type";
+  openapi::Parameter p_empty_type;
+  p_empty_type.name = "empty_t";
+  p_empty_type.schema = openapi::Schema{};
   op.parameters->push_back(p_unk);
+  op.parameters->push_back(p_empty_type);
   item.get = op;
   spec.paths->at("/api/v1/test") = item;
 
@@ -303,6 +316,9 @@ void test_emit() {
   assert(full_files.count("tests/CMakeLists.txt"));
   assert(full_files["src/generated_server.cpp"].find(
              "cdd_orm::DatabaseConfig::from_env()") != std::string::npos);
+
+  auto no_pg_test_files = emit_modular(spec, false, true, false, false);
+  assert(no_pg_test_files.count("tests/CMakeLists.txt"));
 
   auto no_pg_files = emit_modular(spec, true, false, false, false);
   assert(no_pg_files.count("src/generated_server.cpp"));
@@ -326,6 +342,24 @@ void test_emit() {
 
   std::string json_rpc = serve_json_rpc("");
   assert(json_rpc.find("Method not found") != std::string::npos);
+  assert(serve_json_rpc("{\"jsonrpc\":\"2.0\",\"id\":1}")
+             .find("Method not found") != std::string::npos);
+  assert(
+      serve_json_rpc("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\"}")
+          .find("Tool not found") != std::string::npos);
+  assert(
+      serve_json_rpc("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\","
+                     "\"params\":{\"name\":\"cdd_sync\"}}")
+          .find("OK") != std::string::npos);
+  assert(
+      serve_json_rpc("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\","
+                     "\"params\":{\"name\":\"cdd_generate\",\"arguments\":{}}}")
+          .find("OK") != std::string::npos);
+  assert(
+      serve_json_rpc("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\","
+                     "\"params\":{\"name\":\"cdd_generate\",\"arguments\":{"
+                     "\"input\":\"nonexistent_spec.json\"}}}")
+          .find("-32603") != std::string::npos);
   assert(code.find("@server_variable var default desc [enum1]") !=
          std::string::npos);
   assert(code.find("@securitySchemes") != std::string::npos);

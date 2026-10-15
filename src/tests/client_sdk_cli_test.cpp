@@ -13,6 +13,7 @@ void test_client_sdk_cli_emit_details() {
   spec.openapi = "3.1.0";
   spec.info.title = "D";
   spec.info.version = "1";
+  spec.servers = std::vector<openapi::Server>{};
 
   openapi::PathItem pathItem;
   openapi::Operation op;
@@ -24,6 +25,11 @@ void test_client_sdk_cli_emit_details() {
   openapi::RequestBody reqBody;
   op.requestBody = reqBody;
   pathItem.get = op;
+
+  openapi::Operation op_body_only;
+  op_body_only.operationId = "bodyOnly";
+  op_body_only.requestBody = reqBody;
+  pathItem.post = op_body_only;
 
   spec.paths = std::map<std::string, openapi::PathItem>{{"/path", pathItem}};
 
@@ -352,6 +358,58 @@ void test_parse() {
   auto spec3 = parse(cli_code3).operator*();
   assert(spec3.info.contact->email == "just_email");
   assert(spec3.info.license->url == "just_url");
+
+  // Round-trip emitted modern CLI code with handle_<op_id> functions
+  openapi::OpenAPI emit_spec;
+  emit_spec.info.title = "RoundTrip CLI";
+  emit_spec.info.version = "1.0.0";
+  openapi::PathItem rt_pi;
+  openapi::Operation rt_op;
+  rt_op.operationId = "createUser";
+  openapi::Parameter rt_p1;
+  rt_p1.name = "orgId";
+  rt_p1.in = "path";
+  rt_p1.required = true;
+  rt_p1.description = "Organization ID";
+  rt_p1.example = "org_123";
+  rt_p1.deprecated = true;
+  openapi::Parameter rt_p2;
+  rt_p2.name = "verbose";
+  rt_p2.in = "query";
+  openapi::Parameter rt_p3;
+  rt_p3.name = "X_Token";
+  rt_p3.in = "header";
+  openapi::Parameter rt_p4;
+  rt_p4.name = "session_id";
+  rt_p4.in = "cookie";
+  rt_op.parameters =
+      std::vector<openapi::Parameter>{rt_p1, rt_p2, rt_p3, rt_p4};
+  rt_op.requestBody = openapi::RequestBody{};
+  rt_pi.post = rt_op;
+  emit_spec.paths =
+      std::map<std::string, openapi::PathItem>{{"/orgs/{orgId}/users", rt_pi}};
+  auto emitted_files = emit_cli(emit_spec);
+  auto rt_parsed = parse(emitted_files["src/generated_cli.cpp"]);
+  assert(rt_parsed.has_value());
+  assert(rt_parsed->paths->contains("/orgs/{orgId}/users"));
+  assert(rt_parsed->paths->at("/orgs/{orgId}/users").post.has_value());
+  const auto &parsed_rt_op = *rt_parsed->paths->at("/orgs/{orgId}/users").post;
+  assert(parsed_rt_op.operationId == "createUser");
+  assert(parsed_rt_op.requestBody.has_value());
+  assert(parsed_rt_op.parameters.has_value() &&
+         parsed_rt_op.parameters->size() == 4);
+  assert(parsed_rt_op.parameters->at(0).in == "path");
+  assert(parsed_rt_op.parameters->at(0).example == "org_123");
+  assert(parsed_rt_op.parameters->at(0).deprecated == true);
+
+  std::string cli_edge = R"(
+    void handle_noRouteOp(cdd_cli::Client& client, std::string undocumentedParam) {}
+    if (command == "nocomment") { int x = 0; }
+  )";
+  auto edge_parsed = parse(cli_edge);
+  assert(edge_parsed.has_value());
+  assert(edge_parsed->paths->contains("/noRouteOp"));
+  assert(edge_parsed->paths->contains("/nocomment"));
 
   std::cout << "client_sdk_cli::test_parse passed.\n";
 }

@@ -1,8 +1,21 @@
+/// @file parse.hpp
+/// @brief Standalone C++ function declarations parser into OpenAPI.
+
 #pragma once
-#include <simdjson.h>
+#include "../openapi/models.hpp"
+#include "../utils/error.hpp"
 #include <string>
 
 namespace cdd_cpp::functions {
-/// Parse functions from string
-void parse(const std::string &input) noexcept;
+
+/// @brief Standard Result alias for functions operations.
+template <typename T> using Result = utils::Result<T>;
+
+/// @brief Parse standalone C++ function declarations into an OpenAPI
+/// specification.
+/// @param input The C++ function declarations source code.
+/// @return Result containing the extracted OpenAPI specification or a typed
+/// Error.
+Result<openapi::OpenAPI> parse(const std::string &input) noexcept;
+
 } // namespace cdd_cpp::functions

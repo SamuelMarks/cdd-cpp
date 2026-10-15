@@ -14,9 +14,7 @@ void test_exhaustive() {
   if (!f)
     f = std::fopen("../spec.json", "r");
   if (!f) {
-
     std::cerr << "could not find exhaustive json!\n";
-
     return;
   }
   std::fseek(f, 0, SEEK_END);
@@ -837,6 +835,25 @@ void test_openapi_emit_final_details7() {
   p.summary = "sum";
   comp.pathItems = std::map<std::string, PathItem>{{"P1", p}};
 
+  Schema s_min_xml;
+  s_min_xml.xml = XML{};
+  comp.schemas = std::map<std::string, Schema>{{"MinXml", s_min_xml}};
+
+  SecurityScheme sec_min_flow;
+  sec_min_flow.type = "oauth2";
+  OAuthFlows min_flows;
+  min_flows.implicit = OAuthFlow{};
+  sec_min_flow.flows = min_flows;
+  comp.securitySchemes =
+      std::map<std::string, SecurityScheme>{{"MinFlow", sec_min_flow}};
+
+  Server srv_min_var;
+  srv_min_var.url = "http://min";
+  ServerVariable sv_min;
+  sv_min.default_value = "d";
+  srv_min_var.variables = std::map<std::string, ServerVariable>{{"v", sv_min}};
+  spec.servers = std::vector<Server>{srv_min_var};
+
   spec.components = comp;
   auto out = emit(spec);
 }
@@ -957,6 +974,11 @@ void test_emit() {
       "schemas": {
         "Pet": {
           "type": "object",
+          "default": "dog",
+          "const": "dog",
+          "enum": ["dog", "cat"],
+          "examples": ["dog"],
+          "additionalProperties": false,
           "discriminator": {
 
             "propertyName": "petType",

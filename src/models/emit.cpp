@@ -1,24 +1,19 @@
+/// @file emit.cpp
+/// @brief Implementation of C++ model (struct) emitters from OpenAPI schemas.
 
 #include "emit.hpp"
+#include "../docstrings/emit.hpp"
+#include "../utils/json_writer.hpp"
 #include <functional>
 #include <set>
 #include <sstream>
 
 namespace cdd_cpp::models {
 
-static std::string format_multi(const std::string &indent,
-                                const std::string &text) {
-  std::string res;
-  for (char c : text) {
-    if (c == '\r')
-      continue;
-    res += c;
-    if (c == '\n')
-      res += indent;
-  }
-  return res;
-}
-
+/// @brief Map an OpenAPI Schema to its corresponding C++ type string.
+/// @param schema The OpenAPI Schema to map.
+/// @return C++ type string (e.g., "int", "double", "bool", "std::string",
+/// "std::vector<...>").
 std::string map_type(const openapi::Schema &schema) noexcept {
   if (schema.ref.has_value()) {
     std::string ref = schema.ref.operator*().ref;
@@ -48,14 +43,20 @@ std::string map_type(const openapi::Schema &schema) noexcept {
   return "std::string";
 }
 
+/// @brief Emit Doxygen docstrings for a Schema or property at a given
+/// indentation level.
+/// @param ss Output stringstream.
+/// @param schema The OpenAPI Schema whose metadata should be emitted.
+/// @param indent Leading indentation string.
 void emit_docstrings(std::stringstream &ss, const openapi::Schema &schema,
                      const std::string &indent) noexcept {
   if (schema.description)
     ss << indent << "/// @description "
-       << format_multi(indent + "/// ", *schema.description) << "\n";
+       << docstrings::format_multi(indent + "/// ", *schema.description)
+       << "\n";
   if (schema.example)
     ss << indent << "/// @example "
-       << format_multi(indent + "/// ", *schema.example) << "\n";
+       << docstrings::format_multi(indent + "/// ", *schema.example) << "\n";
   if (schema.externalDocs) {
     if (schema.externalDocs->description)
       ss << indent << "/// @externalDocs.description "
@@ -89,6 +90,7 @@ void emit_docstrings(std::stringstream &ss, const openapi::Schema &schema,
   }
 }
 
+/// @brief Internal helper or implementation for `emit`.
 std::string emit(const openapi::OpenAPI &spec) noexcept {
   std::stringstream ss;
   ss << "#pragma once\n";
@@ -126,13 +128,6 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
               }
             };
 
-    auto get_deps =
-        [&](const openapi::Schema &schema) -> std::vector<std::string> {
-      std::vector<std::string> deps;
-      extract_deps(schema, deps);
-      return deps;
-    };
-
     std::function<void(const std::string &)> dfs =
         [&](const std::string &name) {
           if (visited.count(name))
@@ -143,7 +138,9 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
 
           auto it = spec.components->schemas->find(name);
           if (it != spec.components->schemas->end()) {
-            for (const auto &dep : get_deps(it->second)) {
+            std::vector<std::string> deps;
+            extract_deps(it->second, deps);
+            for (const auto &dep : deps) {
               dfs(dep);
             }
           }
@@ -177,14 +174,7 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
             }
           }
 
-          std::string safe_prop = prop_name;
-          if (safe_prop == "default" || safe_prop == "enum" ||
-              safe_prop == "class" || safe_prop == "struct" ||
-              safe_prop == "union" || safe_prop == "namespace" ||
-              safe_prop == "template" || safe_prop == "typename" ||
-              safe_prop == "auto") {
-            safe_prop += "_";
-          }
+          std::string safe_prop = utils::sanitize_cpp_identifier(prop_name);
 
           std::string t = map_type(prop_schema);
           bool is_incomplete = false;
@@ -200,19 +190,11 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
           }
 
           if (is_incomplete) {
-            if (is_required) {
-              ss << "        std::unique_ptr<" << t << "> " << safe_prop
-                 << ";\n";
-            } else {
-              ss << "        std::unique_ptr<" << t << "> " << safe_prop
-                 << ";\n";
-            }
+            ss << "        std::unique_ptr<" << t << "> " << safe_prop << ";\n";
+          } else if (is_required) {
+            ss << "        " << t << " " << safe_prop << ";\n";
           } else {
-            if (is_required) {
-              ss << "        " << t << " " << safe_prop << ";\n";
-            } else {
-              ss << "        std::optional<" << t << "> " << safe_prop << ";\n";
-            }
+            ss << "        std::optional<" << t << "> " << safe_prop << ";\n";
           }
         }
       }
@@ -256,14 +238,7 @@ emit_modular(const openapi::OpenAPI &spec) noexcept {
     emit_docstrings(ss, schema, "    ");
     ss << "    struct " << name << " {\n";
     for (const auto &[prop_name, prop_schema] : *schema.properties) {
-      std::string safe_prop = prop_name;
-      if (safe_prop == "default" || safe_prop == "enum" ||
-          safe_prop == "class" || safe_prop == "struct" ||
-          safe_prop == "union" || safe_prop == "namespace" ||
-          safe_prop == "template" || safe_prop == "typename" ||
-          safe_prop == "auto") {
-        safe_prop += "_";
-      }
+      std::string safe_prop = utils::sanitize_cpp_identifier(prop_name);
       ss << "        /// @property " << safe_prop << "\n";
       emit_docstrings(ss, prop_schema, "        ");
       bool is_required = false;

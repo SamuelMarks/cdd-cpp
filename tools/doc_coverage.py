@@ -4,63 +4,78 @@ import os, sys, re
 def check_doc_coverage(verbose=False):
     total = 0
     documented = 0
-    pattern_struct = re.compile(
-        r"^\s*(?:struct|class)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*[{:]", re.MULTILINE
-    )
     for root, _, files in os.walk("src"):
+        if "tests" in root:
+            continue
         for file in files:
-            if not file.endswith(".hpp") or "tests" in root:
+            if file == "httplib.h" or file == "exceptions_stub.cpp":
+                continue
+            if not (file.endswith(".hpp") or file.endswith(".cpp")):
                 continue
 
-            with open(os.path.join(root, file), "r") as f:
+            filepath = os.path.join(root, file)
+            with open(filepath, "r") as f:
                 content = f.read()
 
-                lines = content.split("\n")
-                for i, line in enumerate(lines):
-                    stripped = line.strip()
-                    if not stripped:
-                        continue
+            # 1. File-level docstring check (@file or leading ///)
+            total += 1
+            first_lines = "\n".join(content.splitlines()[:10])
+            if ("@file" in first_lines or "///" in first_lines) and "Auto-generated doc." not in first_lines:
+                documented += 1
+            elif verbose:
+                print(f"UNDOC FILE: {filepath}")
+
+            if not file.endswith(".hpp"):
+                continue
+
+            lines = content.split("\n")
+            for i, line in enumerate(lines):
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                if (
+                    stripped.startswith("//")
+                    or stripped.startswith("/*")
+                    or stripped.startswith("*")
+                    or stripped.startswith("#")
+                    or stripped.startswith("}")
+                    or stripped.startswith(":")
+                ):
+                    continue
+
+                is_decl = False
+                if re.match(r"^(?:struct|class|enum\s+class)\s+[a-zA-Z_][a-zA-Z0-9_]*\s*[{:]", stripped):
+                    is_decl = True
+                elif re.match(
+                    r"^(?:template\s*<[^>]+>\s*)?(?:virtual\s+)?(?:(?:inline|static|explicit|constexpr)\s+)?(?:[a-zA-Z_:\-<>]+\s+)+[a-zA-Z_~:]+\s*\([^;{]*\)\s*(?:const)?\s*(?:noexcept)?\s*(?:=\s*0|=\s*default|=\s*delete)?\s*(?:;|{)",
+                    stripped,
+                ):
                     if (
-                        stripped.startswith("//")
-                        or stripped.startswith("/*")
-                        or stripped.startswith("*")
-                        or stripped.startswith("#")
-                        or stripped.startswith("}")
+                        " main(" in stripped
+                        or "return " in stripped
+                        or "if (" in stripped
+                        or "else " in stripped
+                        or "for (" in stripped
+                        or "while (" in stripped
+                        or "switch (" in stripped
                     ):
                         continue
+                    is_decl = True
 
-                    is_decl = False
+                if is_decl:
+                    total += 1
+                    prev_idx = i - 1
+                    if prev_idx >= 0 and lines[prev_idx].strip().startswith("template"):
+                        prev_idx -= 1
+                    prev_line = lines[prev_idx] if prev_idx >= 0 else ""
                     if (
-                        "struct " in stripped or "class " in stripped
-                    ) and "{" in stripped:
-                        is_decl = True
-                    elif re.match(
-                        r"^(?:template\s*<[^>]+>\s*)?(?:virtual\s+)?(?:(?:inline|static|explicit)\s+)?(?:[a-zA-Z_:-<>]+\s+)+[a-zA-Z_~:]+\s*\([^;{]*\)\s*(?:const)?\s*(?:noexcept)?\s*(?:=\s*0|=\s*default|=\s*delete)?\s*(?:;|{)",
-                        stripped,
+                        ("///" in prev_line or "*/" in prev_line or "//" in prev_line)
+                        and "Auto-generated doc." not in prev_line
                     ):
-                        if (
-                            " main(" in stripped
-                            or "return " in stripped
-                            or "if (" in stripped
-                            or "else " in stripped
-                            or "for (" in stripped
-                            or "while (" in stripped
-                            or "switch (" in stripped
-                        ):
-                            continue
-                        is_decl = True
-
-                    if is_decl:
-                        total += 1
-                        if i > 0 and (
-                            "///" in lines[i - 1]
-                            or "*/" in lines[i - 1]
-                            or "//" in lines[i - 1]
-                        ):
-                            documented += 1
-                        else:
-                            if verbose:
-                                print(f"UNDOC: {root}/{file}:{i + 1}: {stripped}")
+                        documented += 1
+                    else:
+                        if verbose:
+                            print(f"UNDOC: {filepath}:{i + 1}: {stripped}")
 
     if total == 0:
         total = 1
@@ -72,8 +87,7 @@ def check_doc_coverage(verbose=False):
 
 
 if __name__ == "__main__":
-    import sys
-
-    cov = check_doc_coverage(False)
+    verbose_flag = "--verbose" in sys.argv or "-v" in sys.argv
+    cov = check_doc_coverage(verbose_flag)
     if cov < 100.0:
         sys.exit(1)

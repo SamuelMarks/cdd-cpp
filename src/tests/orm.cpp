@@ -17,9 +17,13 @@ void test_emit() {
           "type": "object",
           "properties": {
             "id": { "type": "integer" },
+            "big_id": { "type": "integer", "format": "int64" },
             "name": { "type": "string" },
             "score": { "type": "number" },
+            "flt": { "type": "number", "format": "float" },
             "active": { "type": "boolean" },
+            "tags": { "type": "array" },
+            "meta": { "type": "object" },
             "custom": { "type": "unknown" }
           }
         },
@@ -48,10 +52,16 @@ void test_emit() {
   auto files_no_pg = emit_modular(*spec, false, false);
   assert(files_no_pg.count("src/orm/RepositoryFactory.hpp"));
   std::string rf_code_no_pg = files_no_pg["src/orm/RepositoryFactory.hpp"];
-  assert(rf_code_no_pg.find("RepositoryFactory() {}") != std::string::npos);
+  assert(rf_code_no_pg.find("RepositoryFactory() noexcept {}") !=
+         std::string::npos);
 
   std::string empty = emit(*spec);
   assert(empty.empty());
+
+  openapi::OpenAPI comp_no_schemas;
+  comp_no_schemas.components = openapi::Components{};
+  auto files_empty_comp = emit_modular(comp_no_schemas, false, false);
+  assert(files_empty_comp.count("src/orm/RepositoryFactory.hpp"));
 
   std::cout << "orm::test_emit passed.\n";
 }

@@ -1,4 +1,6 @@
-// GCOV_EXCL_BR_START
+/// @file mcp.cpp
+/// @brief Unit tests for MCP parsers and emitters.
+
 #include "../mcp/emit.hpp"
 #include "../mcp/parse.hpp"
 #include <cassert>
@@ -1508,5 +1510,3 @@ void test_mcp_logging_progress() {
 
   std::cout << "mcp::test_mcp_logging_progress passed.\n";
 }
-
-// GCOV_EXCL_BR_STOP

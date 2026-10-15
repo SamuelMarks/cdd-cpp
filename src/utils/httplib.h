@@ -355,6 +355,8 @@ using socket_t = int;
 #include <utility>
 #if __cplusplus >= 201703L
 #include <any>
+#include <charconv>
+#include <optional>
 #endif
 
 // On macOS with a TLS backend, enable Keychain root certificates by default
@@ -527,6 +529,25 @@ class WebSocket;
 } // namespace ws
 
 namespace detail {
+
+inline std::optional<int> parse_int_noexcept(const std::string &s) noexcept {
+  int val = 0;
+  auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), val);
+  if (ec == std::errc() && ptr == s.data() + s.size()) {
+    return val;
+  }
+  return std::nullopt;
+}
+
+inline std::optional<size_t>
+parse_size_t_noexcept(const std::string &s) noexcept {
+  unsigned long long val = 0;
+  auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), val);
+  if (ec == std::errc() && ptr == s.data() + s.size()) {
+    return static_cast<size_t>(val);
+  }
+  return std::nullopt;
+}
 
 /*
  * Backport std::make_unique from C++14.
@@ -12820,7 +12841,7 @@ inline bool ClientImpl::read_response_line(Stream &strm, const Request &req,
     return req.method == "CONNECT";
   }
   res.version = std::string(m[1]);
-  res.status = std::stoi(std::string(m[2]));
+  res.status = detail::parse_int_noexcept(std::string(m[2])).value_or(0);
   res.reason = std::string(m[3]);
 
   // Ignore '100 Continue' (only when not using Expect: 100-continue explicitly)
@@ -12836,7 +12857,7 @@ inline bool ClientImpl::read_response_line(Stream &strm, const Request &req,
       return false;
     }
     res.version = std::string(m[1]);
-    res.status = std::stoi(std::string(m[2]));
+    res.status = detail::parse_int_noexcept(std::string(m[2])).value_or(0);
     res.reason = std::string(m[3]);
   }
 
@@ -13164,7 +13185,7 @@ ClientImpl::open_stream(const std::string &method, const std::string &path,
   if (!content_length_str.empty()) {
     handle.body_reader_.has_content_length = true;
     handle.body_reader_.content_length =
-        static_cast<size_t>(std::stoull(content_length_str));
+        detail::parse_size_t_noexcept(content_length_str).value_or(0);
   }
 
   auto transfer_encoding =
@@ -13484,7 +13505,7 @@ inline bool ClientImpl::redirect(Request &req, Response &res, Error &error) {
 
   auto next_port = port_;
   if (!port_str.empty()) {
-    next_port = std::stoi(port_str);
+    next_port = detail::parse_int_noexcept(port_str).value_or(port_);
   } else if (!next_scheme.empty()) {
     next_port = next_scheme == "https" ? 443 : 80;
   }
@@ -15323,7 +15344,10 @@ inline Client::Client(const std::string &scheme_host_port,
     }
 
     auto port_str = m[4].str();
-    auto port = !port_str.empty() ? std::stoi(port_str) : (is_ssl ? 443 : 80);
+    auto port =
+        !port_str.empty()
+            ? detail::parse_int_noexcept(port_str).value_or(is_ssl ? 443 : 80)
+            : (is_ssl ? 443 : 80);
 
     if (is_ssl) {
 #ifdef CPPHTTPLIB_SSL_ENABLED
@@ -21236,7 +21260,10 @@ inline WebSocketClient::WebSocketClient(
     }
 
     auto port_str = m[4].str();
-    port_ = !port_str.empty() ? std::stoi(port_str) : (is_ssl ? 443 : 80);
+    port_ =
+        !port_str.empty()
+            ? detail::parse_int_noexcept(port_str).value_or(is_ssl ? 443 : 80)
+            : (is_ssl ? 443 : 80);
 
     path_ = m[5].str();
 

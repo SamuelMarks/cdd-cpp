@@ -1,9 +1,18 @@
+/// @file emit.cpp
+/// @brief Implementation of C++ HTTP server and JSON-RPC emitters from
+/// OpenAPI 3.2.0 specs.
+
 #include "../docstrings/emit.hpp"
+#include "../cli/api.hpp"
+#include "../mcp/emit.hpp"
+#include "../mcp/parse.hpp"
 #include "emit.hpp"
+#include <simdjson.h>
 #include <sstream>
 
 namespace cdd_cpp::server {
 
+/// @brief Internal helper or implementation for `map_type_to_cpp`.
 std::string map_type_to_cpp(const std::string &type) noexcept {
   if (type == "string")
     return "std::string";
@@ -16,9 +25,12 @@ std::string map_type_to_cpp(const std::string &type) noexcept {
   return "std::string";
 }
 
+/// @brief Internal helper or implementation for `emit`.
 std::string emit(const openapi::OpenAPI &spec) noexcept {
   std::stringstream ss;
   ss << "#pragma once\n";
+  ss << "#include <expected>\n";
+  ss << "#include <optional>\n";
   ss << "#include <string>\n";
   ss << "#include <functional>\n";
   ss << "#include <map>\n\n";
@@ -31,7 +43,7 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   ss << "        using Handler = std::function<std::string(const "
         "std::string&)>;\n\n";
 
-  if (spec.paths.has_value() && !spec.paths->empty()) {
+  if (spec.paths.has_value()) {
     for (const auto &[path, item] : *spec.paths) {
       auto emit_method = [&](const std::string &method,
                              const std::optional<openapi::Operation> &op) {
@@ -58,15 +70,9 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
         std::string param_list = "";
         for (size_t i = 0; i < all_params.size(); ++i) {
           const auto &p = all_params[i];
-          std::string type = "std::string";
-          if (p.schema && p.schema->type) {
-            if (*p.schema->type == "integer")
-              type = "int";
-            else if (*p.schema->type == "boolean")
-              type = "bool";
-            else if (*p.schema->type == "number")
-              type = "double";
-          }
+          std::string type = (p.schema && p.schema->type)
+                                 ? map_type_to_cpp(*p.schema->type)
+                                 : "std::string";
           if (i > 0)
             param_list += ", ";
           param_list += type + " " + p.name;
@@ -84,7 +90,7 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
            << "Handler = std::function<std::string(" << param_list << ")>;\n";
         ss << "        void on_" << method << "_" << func_name
            << "(const std::string& path, " << func_name
-           << "Handler handler) {\n";
+           << "Handler handler) noexcept {\n";
         ss << "            // " << param_list << "\n";
         ss << "            routes[\"" << method << " \" + path] = nullptr;\n";
         ss << "        }\n\n";
@@ -98,7 +104,7 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
     }
   }
 
-  ss << "        std::string handle_mcp_sse() const {\n";
+  ss << "        std::string handle_mcp_sse() const noexcept {\n";
   ss << "            return \"HTTP/1.1 200 OK\\r\\nContent-Type: "
         "text/event-stream\\r\\n\\r\\nevent: endpoint\\ndata: "
         "/mcp/message\\n\\n\";\n";
@@ -106,7 +112,7 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
 
   ss << "        std::string handle_mcp_message(const std::string& "
         "request_json, const std::map<std::string, std::string>& auth_headers "
-        "= {}) const {\n";
+        "= {}) const noexcept {\n";
   ss << "            // Parse json and forward to appropriate handler\n";
   ss << "            return "
         "\"{\\\"jsonrpc\\\":\\\"2.0\\\",\\\"id\\\":null,\\\"error\\\":{"
@@ -121,9 +127,154 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   return ss.str();
 }
 
-std::string serve_json_rpc(const std::string & /*request*/) noexcept {
-  return "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32601,"
-         "\"message\":\"Method not found\"}}";
+/// @brief Internal helper or implementation for `serve_json_rpc`.
+std::string serve_json_rpc(const std::string &request) noexcept {
+  auto make_err = [](const std::string &id, int code, const std::string &msg) {
+    mcp::JSONRPCError err_obj;
+    err_obj.jsonrpc = "2.0";
+    err_obj.id = id;
+    err_obj.error.code = code;
+    err_obj.error.message = msg;
+    utils::JsonWriter jw;
+    mcp::emit_jsonrpc_error(err_obj, jw);
+    return jw.str();
+  };
+
+  auto make_ok = [](const std::string &id, const std::string &result_json) {
+    mcp::JSONRPCResponse resp_obj;
+    resp_obj.jsonrpc = "2.0";
+    resp_obj.id = id;
+    resp_obj.result_json = result_json;
+    utils::JsonWriter jw;
+    mcp::emit_jsonrpc_response(resp_obj, jw);
+    return jw.str();
+  };
+
+  if (request.empty()) {
+    return make_err("null", -32601, "Method not found");
+  }
+
+  simdjson::ondemand::parser parser;
+  simdjson::padded_string padded(request);
+  simdjson::ondemand::document doc;
+  if (parser.iterate(padded).get(doc)) {
+    return make_err("null", -32700, "Parse error");
+  }
+
+  std::string id_str = "null";
+  simdjson::ondemand::value id_val;
+  if (!doc["id"].get(id_val)) {
+    int64_t num_id = 0;
+    std::string_view sv_id;
+    if (!id_val.get_int64().get(num_id)) {
+      id_str = std::to_string(num_id);
+    } else if (!id_val.get_string().get(sv_id)) {
+      id_str = "\"" + utils::escape_json_string(sv_id) + "\"";
+    }
+  }
+
+  std::string_view jsonrpc_v;
+  if (doc["jsonrpc"].get(jsonrpc_v) || jsonrpc_v != "2.0") {
+    return make_err(id_str, -32600, "Invalid Request");
+  }
+
+  std::string method = "";
+  std::string_view method_v;
+  if (!doc["method"].get(method_v)) {
+    method = method_v;
+  }
+
+  if (method == "initialize") {
+    mcp::InitializeResult init_res;
+    init_res.protocolVersion = "2024-11-05";
+    init_res.capabilities.tools = mcp::ServerCapabilitiesTools{};
+    init_res.serverInfo.name = "cdd-cli-mcp";
+    init_res.serverInfo.version = "0.0.3";
+    utils::JsonWriter jw;
+    mcp::emit_initialize_result(init_res, jw);
+    return make_ok(id_str, jw.str());
+  } else if (method == "tools/list") {
+    mcp::ListToolsResult ltr;
+    mcp::Tool t1;
+    t1.name = "cdd_generate";
+    t1.description = "Generate SDKs or Servers";
+    t1.inputSchema.type = "object";
+    t1.inputSchema.properties_json =
+        "{\"command\":{\"type\":\"string\"},\"input\":{\"type\":\"string\"},"
+        "\"output\":{\"type\":\"string\"}}";
+    t1.inputSchema.required =
+        std::vector<std::string>{"command", "input", "output"};
+    mcp::Tool t2;
+    t2.name = "cdd_inspect";
+    t2.description = "Inspect Schemas";
+    t2.inputSchema.type = "object";
+    t2.inputSchema.properties_json = "{\"input\":{\"type\":\"string\"}}";
+    t2.inputSchema.required = std::vector<std::string>{"input"};
+    mcp::Tool t3;
+    t3.name = "cdd_sync";
+    t3.description = "Bidirectional sync";
+    t3.inputSchema.type = "object";
+    t3.inputSchema.properties_json =
+        "{\"input\":{\"type\":\"string\"},\"output\":{\"type\":\"string\"}}";
+    t3.inputSchema.required = std::vector<std::string>{"input", "output"};
+    ltr.tools = {t1, t2, t3};
+    utils::JsonWriter jw;
+    mcp::emit_list_tools_result(ltr, jw);
+    return make_ok(id_str, jw.str());
+  } else if (method == "tools/call") {
+    std::string tool_name = "";
+    std::string_view name_sv;
+    if (!doc["params"]["name"].get(name_sv)) {
+      tool_name = std::string(name_sv);
+    }
+
+    if (tool_name == "cdd_generate") {
+      std::string cmd_arg = "";
+      std::string in_arg = "";
+      std::string out_arg = "";
+      simdjson::ondemand::object args_obj;
+      if (!doc["params"]["arguments"].get(args_obj)) {
+        std::string_view sv;
+        if (!args_obj["command"].get(sv))
+          cmd_arg = std::string(sv);
+        if (!args_obj["input"].get(sv))
+          in_arg = std::string(sv);
+        if (!args_obj["output"].get(sv))
+          out_arg = std::string(sv);
+      }
+      if (!in_arg.empty()) {
+        std::ostringstream out_ss, err_ss;
+        if (cmd_arg == "to_openapi") {
+          cli::ToOpenApiConfig cfg;
+          cfg.input = in_arg;
+          cfg.output = out_arg;
+          cli::to_openapi(cfg, out_ss, err_ss);
+        } else {
+          cli::FromOpenApiConfig cfg;
+          cfg.input = in_arg;
+          cfg.output = out_arg.empty() ? "." : out_arg;
+          cfg.subcommand = cmd_arg.empty() ? "to_sdk" : cmd_arg;
+          if (cli::from_openapi(cfg, out_ss, err_ss) != 0) {
+            return make_err(id_str, -32603, err_ss.str());
+          }
+        }
+      }
+      mcp::CallToolResult ctr;
+      ctr.content_json = "[{\"type\":\"text\",\"text\":\"OK\"}]";
+      utils::JsonWriter jw;
+      mcp::emit_call_tool_result(ctr, jw);
+      return make_ok(id_str, jw.str());
+    } else if (tool_name == "cdd_inspect" || tool_name == "cdd_sync") {
+      mcp::CallToolResult ctr;
+      ctr.content_json = "[{\"type\":\"text\",\"text\":\"OK\"}]";
+      utils::JsonWriter jw;
+      mcp::emit_call_tool_result(ctr, jw);
+      return make_ok(id_str, jw.str());
+    }
+    return make_err(id_str, -32601, "Tool not found");
+  }
+
+  return make_err(id_str, -32601, "Method not found");
 }
 
 std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
@@ -163,7 +314,7 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
             mk_ss << "            item." << prop_name << " = 42;\n";
           } else if (c_type == "double") {
             mk_ss << "            item." << prop_name << " = 3.14;\n";
-          } else if (c_type == "bool") {
+          } else {
             mk_ss << "            item." << prop_name << " = true;\n";
           }
         }
@@ -216,7 +367,7 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
     if (with_faker)
       s_ss << "#include \"mocks/" << name << "Mock.hpp\"\n";
   }
-  s_ss << "\nint main(int argc, char** argv) {\n";
+  s_ss << "\nint main(int argc, char** argv) noexcept {\n";
   if (with_postgres) {
     s_ss << "    auto config = cdd_orm::DatabaseConfig::from_env();\n";
     s_ss << "    for (int i = 1; i < argc; ++i) { if (std::string(argv[i]) == "
@@ -224,7 +375,7 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
     s_ss << "    auto conn_res = "
             "cdd_orm::ConnectionFactory::create_connection(config);\n";
     s_ss << "    PGconn* conn = nullptr;\n    if (conn_res) conn = "
-            "conn_res.value();\n    else std::cerr << \"Stub mode.\\n\";\n";
+            "*conn_res;\n    else std::cerr << \"Stub mode.\\n\";\n";
     s_ss << "    cdd_orm::RepositoryFactory factory(conn, conn == nullptr);\n";
   } else {
     s_ss << "    (void)argc;\n    (void)argv;\n";
@@ -247,7 +398,10 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
     std::stringstream c_ss;
     c_ss << "cmake_minimum_required(VERSION 3.15)\nproject(mock_server "
             "LANGUAGES CXX)\n";
-    c_ss << "set(CMAKE_CXX_STANDARD 26)\nadd_compile_options(-Wall -Wextra)\n";
+    c_ss << "set(CMAKE_CXX_STANDARD 26)\n"
+            "add_definitions(-DCPPHTTPLIB_NO_EXCEPTIONS "
+            "-DSIMDJSON_EXCEPTIONS=0)\n"
+            "add_compile_options(-Wall -Wextra -fno-exceptions -fno-rtti)\n";
     if (tests)
       c_ss << "enable_testing()\n";
     c_ss << "add_subdirectory(src)\n";

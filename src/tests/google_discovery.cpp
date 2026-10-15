@@ -129,6 +129,29 @@ void test_parse() {
   auto err_parse2 = parse("[]");
   assert(!err_parse2);
 
+  // Test minimal/edge discovery documents
+  assert(parse("{}")->empty());
+  assert(parse(R"({"kind":"unknown"})")->empty());
+  assert(parse(R"({"kind":"discovery#directoryList"})")->empty());
+  assert(parse(R"({"kind":"discovery#restDescription"})")->size() == 1);
+  auto edge_list =
+      parse(R"({"kind":"discovery#directoryList","items":[123, {}]})");
+  assert(edge_list && edge_list->size() == 1);
+
+  auto edge_rest = parse(R"({
+    "kind": "discovery#restDescription",
+    "schemas": { "NonObj": 123 },
+    "methods": {
+      "minimal": { "parameters": { "badParam": 123 } },
+      "headOp": { "httpMethod": "HEAD", "path": "h", "id": "h" }
+    },
+    "resources": {
+      "nonObjRes": 123,
+      "emptyRes": {}
+    }
+  })");
+  assert(edge_rest && edge_rest->size() == 1);
+
   std::cout << "google_discovery::test_parse passed.\n";
 }
 } // namespace cdd_cpp::google_discovery

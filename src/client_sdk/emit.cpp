@@ -1,17 +1,52 @@
 
+/// @file emit.cpp
+/// @brief Implementation of C++ client SDK generator from OpenAPI 3.2.0 specs.
+
 #include "emit.hpp"
 #include "../docstrings/emit.hpp"
+#include "../mocks/emit.hpp"
 #include "../models/emit.hpp"
 #include <sstream>
 
-#include "../mocks/emit.hpp"
-
 namespace cdd_cpp::client_sdk {
+
+/// @brief Map an OpenAPI Parameter to its C++ parameter type.
+/// @param p The OpenAPI Parameter.
+/// @return C++ type string ("int", "bool", "double", or "std::string").
+static std::string param_cpp_type(const openapi::Parameter &p) noexcept {
+  if (p.schema && p.schema->type) {
+    if (*p.schema->type == "integer")
+      return "int";
+    if (*p.schema->type == "boolean")
+      return "bool";
+    if (*p.schema->type == "number")
+      return "double";
+  }
+  return "std::string";
+}
+
+/// @brief Collect merged path-level and operation-level parameters.
+/// @param item The enclosing PathItem.
+/// @param op The Operation.
+/// @return Combined vector of parameters.
+static std::vector<openapi::Parameter>
+collect_params(const openapi::PathItem &item,
+               const openapi::Operation &op) noexcept {
+  std::vector<openapi::Parameter> all_params;
+  if (item.parameters)
+    for (const auto &p : *item.parameters)
+      all_params.push_back(p);
+  if (op.parameters)
+    for (const auto &p : *op.parameters)
+      all_params.push_back(p);
+  return all_params;
+}
 
 std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
                                                bool no_github_actions,
                                                bool no_installable_package,
                                                bool tests) noexcept {
+  (void)no_github_actions;
   std::map<std::string, std::string> result;
 
   // 1. models.hpp
@@ -61,13 +96,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
         if (!op.has_value())
           return;
         std::string func_name = op->operationId.value_or("request");
-        std::vector<openapi::Parameter> all_params;
-        if (item.parameters)
-          for (const auto &p : *item.parameters)
-            all_params.push_back(p);
-        if (op->parameters)
-          for (const auto &p : *op->parameters)
-            all_params.push_back(p);
+        std::vector<openapi::Parameter> all_params = collect_params(item, *op);
 
         openapi::Operation new_op = op.operator*();
         new_op.parameters = all_params;
@@ -77,18 +106,9 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
         std::string param_list = "";
         for (size_t i = 0; i < all_params.size(); ++i) {
           const auto &p = all_params[i];
-          std::string type = "std::string";
-          if (p.schema && p.schema->type) {
-            if (*p.schema->type == "integer")
-              type = "int";
-            else if (*p.schema->type == "boolean")
-              type = "bool";
-            else if (*p.schema->type == "number")
-              type = "double";
-          }
           if (i > 0)
             param_list += ", ";
-          param_list += type + " " + p.name;
+          param_list += param_cpp_type(p) + " " + p.name;
         }
 
         if (op->requestBody) {
@@ -124,15 +144,34 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
   c_cpp << "        return size * nmemb;\n";
   c_cpp << "    }\n\n";
 
+  c_cpp << "    struct CurlGlobalInit {\n";
+  c_cpp << "        CurlGlobalInit() noexcept { "
+           "curl_global_init(CURL_GLOBAL_DEFAULT); }\n";
+  c_cpp << "        ~CurlGlobalInit() noexcept { curl_global_cleanup(); }\n";
+  c_cpp << "        static const CurlGlobalInit& instance() noexcept {\n";
+  c_cpp << "            static const CurlGlobalInit inst;\n";
+  c_cpp << "            return inst;\n";
+  c_cpp << "        }\n";
+  c_cpp << "    };\n\n";
+  c_cpp << "    static std::string url_encode(CURL* curl, const std::string& "
+           "val) noexcept {\n";
+  c_cpp << "        if (!curl) return val;\n";
+  c_cpp << "        char* esc = curl_easy_escape(curl, val.c_str(), "
+           "static_cast<int>(val.size()));\n";
+  c_cpp << "        if (!esc) return val;\n";
+  c_cpp << "        std::string out(esc);\n";
+  c_cpp << "        curl_free(esc);\n";
+  c_cpp << "        return out;\n";
+  c_cpp << "    }\n\n";
+
   c_cpp << "    Client::Client(const std::string& url) noexcept : "
            "base_url(url) {\n";
-  c_cpp << "        curl_global_init(CURL_GLOBAL_DEFAULT);\n";
+  c_cpp << "        (void)CurlGlobalInit::instance();\n";
   c_cpp << "        curl = curl_easy_init();\n";
   c_cpp << "    }\n\n";
 
   c_cpp << "    Client::~Client() noexcept {\n";
   c_cpp << "        if(curl) curl_easy_cleanup(curl);\n";
-  c_cpp << "        curl_global_cleanup();\n";
   c_cpp << "    }\n\n";
 
   if (spec.paths.has_value() && !spec.paths->empty()) {
@@ -142,29 +181,14 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
         if (!op.has_value())
           return;
         std::string func_name = op->operationId.value_or("request");
-        std::vector<openapi::Parameter> all_params;
-        if (item.parameters)
-          for (const auto &p : *item.parameters)
-            all_params.push_back(p);
-        if (op->parameters)
-          for (const auto &p : *op->parameters)
-            all_params.push_back(p);
+        std::vector<openapi::Parameter> all_params = collect_params(item, *op);
 
         std::string param_list = "";
         for (size_t i = 0; i < all_params.size(); ++i) {
           const auto &p = all_params[i];
-          std::string type = "std::string";
-          if (p.schema && p.schema->type) {
-            if (*p.schema->type == "integer")
-              type = "int";
-            else if (*p.schema->type == "boolean")
-              type = "bool";
-            else if (*p.schema->type == "number")
-              type = "double";
-          }
           if (i > 0)
             param_list += ", ";
-          param_list += type + " " + p.name;
+          param_list += param_cpp_type(p) + " " + p.name;
         }
 
         if (op->requestBody) {
@@ -189,28 +213,26 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
 
         for (const auto &p : all_params) {
           std::string to_str = p.name;
-          std::string type = "std::string";
-          if (p.schema && p.schema->type) {
-            if (*p.schema->type == "integer")
-              type = "int";
-            else if (*p.schema->type == "boolean")
-              type = "bool";
-            else if (*p.schema->type == "number")
-              type = "double";
-          }
+          std::string type = param_cpp_type(p);
           if (type != "std::string") {
             to_str = "std::to_string(" + p.name + ")";
           }
 
           if (p.in == "path") {
-            c_cpp << "        full_url.replace(full_url.find(\"{" << p.name
-                  << "}\"), " << p.name.length() + 2 << ", " << to_str
-                  << ");\n";
+            c_cpp << "        {\n";
+            c_cpp << "            size_t pos = full_url.find(\"{" << p.name
+                  << "}\");\n";
+            c_cpp << "            if (pos != std::string::npos) {\n";
+            c_cpp << "                full_url.replace(pos, "
+                  << p.name.length() + 2 << ", url_encode(curl, " << to_str
+                  << "));\n";
+            c_cpp << "            }\n";
+            c_cpp << "        }\n";
           } else if (p.in == "query") {
             c_cpp << "        full_url += (full_url.find('?') == "
                      "std::string::npos ? \"?\" : \"&\");\n";
-            c_cpp << "        full_url += \"" << p.name << "=\" + " << to_str
-                  << ";\n";
+            c_cpp << "        full_url += \"" << p.name
+                  << "=\" + url_encode(curl, " << to_str << ");\n";
           } else if (p.in == "header") {
             c_cpp << "        headers = curl_slist_append(headers, (\""
                   << p.name << ": \" + " << to_str << ").c_str());\n";
@@ -273,7 +295,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
   }
 
   c_cpp << R"(
-    static std::string escape_str(const std::string& s) {
+    static std::string escape_str(const std::string& s) noexcept {
         std::string out;
         for (char c : s) {
             if (c == '"') out += "\\\"";
@@ -306,25 +328,18 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
                  "\"\\\",\\\"inputSchema\\\":{\\\"type\\\":\\\"object\\\","
                  "\\\"properties\\\":{\";\n";
 
-        std::vector<openapi::Parameter> all_params;
-        if (item.parameters)
-          for (const auto &p : *item.parameters)
-            all_params.push_back(p);
-        if (op->parameters)
-          for (const auto &p : *op->parameters)
-            all_params.push_back(p);
+        std::vector<openapi::Parameter> all_params = collect_params(item, *op);
 
         bool first_param = true;
         for (const auto &p : all_params) {
           std::string ptype = "string";
-          if (p.schema && p.schema->type) {
-            if (*p.schema->type == "integer")
-              ptype = "integer";
-            else if (*p.schema->type == "boolean")
-              ptype = "boolean";
-            else if (*p.schema->type == "number")
-              ptype = "number";
-          }
+          std::string ctype = param_cpp_type(p);
+          if (ctype == "int")
+            ptype = "integer";
+          else if (ctype == "bool")
+            ptype = "boolean";
+          else if (ctype == "double")
+            ptype = "number";
           if (!first_param)
             c_cpp << "        res += \",\";\n";
           first_param = false;
@@ -388,30 +403,19 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
         std::string func_name = op->operationId.value_or("request");
         c_cpp << "        if (name == \"" << func_name << "\") {\n";
 
-        std::vector<openapi::Parameter> all_params;
-        if (item.parameters)
-          for (const auto &p : *item.parameters)
-            all_params.push_back(p);
-        if (op->parameters)
-          for (const auto &p : *op->parameters)
-            all_params.push_back(p);
+        std::vector<openapi::Parameter> all_params = collect_params(item, *op);
 
         std::string call_args = "";
         for (size_t i = 0; i < all_params.size(); ++i) {
           const auto &p = all_params[i];
-          std::string type = "std::string";
+          std::string type = param_cpp_type(p);
           std::string default_val = "\"\"";
-          if (p.schema && p.schema->type) {
-            if (*p.schema->type == "integer") {
-              type = "int";
-              default_val = "0";
-            } else if (*p.schema->type == "boolean") {
-              type = "bool";
-              default_val = "false";
-            } else if (*p.schema->type == "number") {
-              type = "double";
-              default_val = "0.0";
-            }
+          if (type == "int") {
+            default_val = "0";
+          } else if (type == "bool") {
+            default_val = "false";
+          } else if (type == "double") {
+            default_val = "0.0";
           }
           c_cpp << "            " << type << " arg_" << i << " = "
                 << default_val << ";\n";
@@ -481,6 +485,8 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
         "  cmake_policy(SET CMP0135 NEW)\n"
         "endif()\n"
         "set(CMAKE_CXX_STANDARD 26)\n"
+        "add_definitions(-DSIMDJSON_EXCEPTIONS=0)\n"
+        "add_compile_options(-fno-exceptions -fno-rtti)\n"
         "if(CMAKE_CXX_COMPILER_ID MATCHES \"Clang|GNU\")\n"
         "  add_compile_options(-Wno-deprecated-literal-operator "
         "-Wno-character-conversion)\n"
@@ -559,117 +565,109 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
           << "    return \"" << server_url << "\";\n"
           << "}\n\n";
 
-    if (spec.paths.has_value() && !spec.paths->empty()) {
+    if (spec.paths.has_value()) {
       for (const auto &[path, item] : spec.paths.operator*()) {
         auto emit_test = [&](const std::string & /*method*/,
                              const std::optional<openapi::Operation> &op) {
           if (!op.has_value())
             return;
           std::string func_name = op->operationId.value_or("request");
-          if (func_name == "findPetsByStatus" || func_name == "getInventory")
-            return; // Skip hardcoded tests
+          if (func_name != "findPetsByStatus" && func_name != "getInventory") {
+            t_cpp << "TEST(ClientTest, " << func_name << "Test) {\n";
+            std::vector<openapi::Parameter> all_params =
+                collect_params(item, *op);
 
-          t_cpp << "TEST(ClientTest, " << func_name << "Test) {\n";
-          std::vector<openapi::Parameter> all_params;
-          if (item.parameters)
-            for (const auto &p : *item.parameters)
-              all_params.push_back(p);
-          if (op->parameters)
-            for (const auto &p : *op->parameters)
-              all_params.push_back(p);
-
-          std::string call_args = "";
-          for (size_t i = 0; i < all_params.size(); ++i) {
-            const auto &p = all_params[i];
-            std::string val = "\"user1\"";
-            if (p.schema && p.schema->type) {
-              if (*p.schema->type == "integer") {
+            std::string call_args = "";
+            for (size_t i = 0; i < all_params.size(); ++i) {
+              const auto &p = all_params[i];
+              std::string val = "\"user1\"";
+              std::string ctype = param_cpp_type(p);
+              if (ctype == "int") {
                 val = "1";
-              } else if (*p.schema->type == "boolean") {
+              } else if (ctype == "bool") {
                 val = "true";
-              } else if (*p.schema->type == "number") {
+              } else if (ctype == "double") {
                 val = "1.0";
               }
+
+              if (i > 0)
+                call_args += ", ";
+              call_args += val;
             }
 
-            if (i > 0)
-              call_args += ", ";
-            call_args += val;
-          }
+            if (op->requestBody) {
+              if (!call_args.empty())
+                call_args += ", ";
 
-          if (op->requestBody) {
-            if (!call_args.empty())
-              call_args += ", ";
+              std::string content_type = "application/json";
+              if (!op->requestBody->content.empty()) {
+                content_type = op->requestBody->content.begin()->first;
+              }
 
-            std::string content_type = "application/json";
-            if (!op->requestBody->content.empty()) {
-              content_type = op->requestBody->content.begin()->first;
+              std::string payload =
+                  "\"{\\\"id\\\":1,\\\"username\\\":\\\"user1\\\","
+                  "\\\"name\\\":\\\"test\\\",\\\"photoUrls\\\":[]}\"";
+
+              if (content_type == "application/x-www-form-urlencoded") {
+                payload = "\"name=test&status=available\"";
+              } else if (content_type == "application/octet-stream") {
+                payload = "\"file content\"";
+              } else if (content_type == "multipart/form-data") {
+                payload =
+                    "\"--boundary\\r\\nContent-Disposition: form-data; "
+                    "name=\\\"additionalMetadata\\\"\\r\\n\\r\\ntest\\r\\n-"
+                    "-boundary\\r\\nContent-Disposition: form-data; "
+                    "name=\\\"file\\\"; "
+                    "filename=\\\"test.png\\\"\\r\\nContent-Type: "
+                    "image/png\\r\\n\\r\\nPNG...\\r\\n--boundary--\\r\\n\"";
+              } else if (func_name.find("Array") != std::string::npos ||
+                         func_name.find("List") != std::string::npos) {
+                payload = "\"[{\\\"id\\\":1,\\\"username\\\":\\\"user1\\\","
+                          "\\\"name\\\":\\\"test\\\",\\\"photoUrls\\\":[]}]\"";
+              }
+              call_args += payload;
             }
 
-            std::string payload =
-                "\"{\\\"id\\\":1,\\\"username\\\":\\\"user1\\\",\\\"name\\\":"
-                "\\\"test\\\",\\\"photoUrls\\\":[]}\"";
-
-            if (content_type == "application/x-www-form-urlencoded") {
-              payload = "\"name=test&status=available\"";
-            } else if (content_type == "application/octet-stream") {
-              payload = "\"file content\"";
-            } else if (content_type == "multipart/form-data") {
-              payload = "\"--boundary\\r\\nContent-Disposition: form-data; "
-                        "name=\\\"additionalMetadata\\\"\\r\\n\\r\\ntest\\r\\n-"
-                        "-boundary\\r\\nContent-Disposition: form-data; "
-                        "name=\\\"file\\\"; "
-                        "filename=\\\"test.png\\\"\\r\\nContent-Type: "
-                        "image/png\\r\\n\\r\\nPNG...\\r\\n--boundary--\\r\\n\"";
-            } else if (func_name.find("Array") != std::string::npos ||
-                       func_name.find("List") != std::string::npos) {
-              payload = "\"[{\\\"id\\\":1,\\\"username\\\":\\\"user1\\\","
-                        "\\\"name\\\":\\\"test\\\",\\\"photoUrls\\\":[]}]\"";
-            }
-            call_args += payload;
-          }
-
-          t_cpp << "    cdd_client::Client client(get_server_url());\n";
-          t_cpp << "    auto res = client." << func_name << "(" << call_args
-                << ");\n";
-          bool has_success = false;
-          if (op->responses) {
-            for (const auto &[code, _] : *op->responses) {
-              if (code == "default" || (code.length() > 0 && code[0] == '2')) {
-                has_success = true;
-                break;
+            t_cpp << "    cdd_client::Client client(get_server_url());\n";
+            t_cpp << "    auto res = client." << func_name << "(" << call_args
+                  << ");\n";
+            bool has_success = false;
+            if (op->responses) {
+              for (const auto &[code, _] : *op->responses) {
+                if (code == "default" || code.starts_with('2')) {
+                  has_success = true;
+                  break;
+                }
               }
             }
-          }
-          if (has_success) {
-            t_cpp << "    if (!res.has_value()) {\n";
-            t_cpp << "        SUCCEED(); // Test server might not have the "
-                     "resource, returning early.\n";
-            t_cpp << "        return;\n";
-            t_cpp << "    }\n";
+            if (has_success) {
+              t_cpp << "    if (!res.has_value()) {\n";
+              t_cpp << "        ASSERT_FALSE(res.error().empty());\n";
+              t_cpp << "        return;\n";
+              t_cpp << "    }\n";
+            } else {
+              t_cpp << "    if (res.has_value()) {\n";
+              t_cpp << "        return;\n";
+              t_cpp << "    }\n";
+              t_cpp << "    ASSERT_FALSE(res.error().empty());\n";
+              t_cpp << "    return;\n";
+            }
             t_cpp << "    if (!res.operator*().empty()) {\n";
-          } else {
-            t_cpp << "    if (res.has_value()) {\n";
-            t_cpp << "        SUCCEED(); // Expected error but got success, "
-                     "returning early.\n";
-            t_cpp << "        return;\n";
+            t_cpp << "        simdjson::dom::parser parser;\n";
+            t_cpp << "        simdjson::dom::element doc;\n";
+            t_cpp << "        auto error = "
+                     "parser.parse(res.operator*()).get(doc);\n";
+            t_cpp << "        if (error == simdjson::SUCCESS) {\n";
+            t_cpp << "            if (doc.is_object() && "
+                     "doc[\"sabotage\"].error() == simdjson::SUCCESS) {\n";
+            t_cpp << "                FAIL() << \"Invalid schema: sabotage "
+                     "detected\";\n";
+            t_cpp << "            }\n";
+            t_cpp << "        }\n";
             t_cpp << "    }\n";
-            t_cpp << "    if (false) {\n";
+            t_cpp << "    SUCCEED();\n";
+            t_cpp << "}\n\n";
           }
-          t_cpp << "        simdjson::dom::parser parser;\n";
-          t_cpp << "        simdjson::dom::element doc;\n";
-          t_cpp << "        auto error = "
-                   "parser.parse(res.operator*()).get(doc);\n";
-          t_cpp << "        if (error == simdjson::SUCCESS) {\n";
-          t_cpp << "            if (doc.is_object() && "
-                   "doc[\"sabotage\"].error() == simdjson::SUCCESS) {\n";
-          t_cpp << "                FAIL() << \"Invalid schema: sabotage "
-                   "detected\";\n";
-          t_cpp << "            }\n";
-          t_cpp << "        }\n";
-          t_cpp << "    }\n";
-          t_cpp << "    SUCCEED();\n";
-          t_cpp << "}\n\n";
         };
 
         emit_test("GET", item.get);

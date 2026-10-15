@@ -121,6 +121,15 @@ void test_emit_client() {
   header_param.schema = openapi::Schema{};
   header_param.schema->type = "number";
 
+  openapi::Parameter cookie_no_schema;
+  cookie_no_schema.name = "c_no_schema";
+  cookie_no_schema.in = "cookie";
+
+  openapi::Parameter cookie_untyped_schema;
+  cookie_untyped_schema.name = "c_untyped";
+  cookie_untyped_schema.in = "cookie";
+  cookie_untyped_schema.schema = openapi::Schema{};
+
   pi.parameters = std::vector<openapi::Parameter>{path_param};
 
   openapi::Operation get_op;
@@ -134,7 +143,8 @@ void test_emit_client() {
   sec_req["Bearer"] = {"read", "write"};
   get_op.security->push_back(sec_req);
   get_op.parameters =
-      std::vector<openapi::Parameter>{query_param, header_param, string_param};
+      std::vector<openapi::Parameter>{query_param, header_param, string_param,
+                                      cookie_no_schema, cookie_untyped_schema};
 
   openapi::RequestBody req_body;
   req_body.description = "Body Description";
@@ -176,14 +186,21 @@ void test_emit_client() {
   openapi::Operation skip_op2 = get_op;
   skip_op2.operationId = "getInventory";
   openapi::Operation list_op = get_op;
-  list_op.operationId = "listItems";
+  list_op.operationId = "ListItems";
   list_op.requestBody->content = std::map<std::string, openapi::MediaType>{
       {"application/json", openapi::MediaType{}}};
+
+  openapi::Operation body_only_op;
+  body_only_op.operationId = "bodyOnlyOp";
+  body_only_op.requestBody = openapi::RequestBody{};
+  body_only_op.responses =
+      std::map<std::string, openapi::Response>{{"default", resp_200}};
 
   openapi::PathItem pi_extra;
   pi_extra.get = skip_op1;
   pi_extra.post = skip_op2;
   pi_extra.put = list_op;
+  pi_extra.delete_op = body_only_op;
 
   std::map<std::string, openapi::PathItem> paths;
   paths["/pet/{id}"] = pi;
@@ -264,12 +281,17 @@ void test_emit_client() {
   assert(generated2.find("cd tests && ./client_test") != std::string::npos);
 
   openapi::OpenAPI spec_empty;
+  emit_client(spec_empty, false, false, true);
+  spec_empty.servers = std::vector<openapi::Server>{};
+  spec_empty.paths = std::map<std::string, openapi::PathItem>{};
+  emit_client(spec_empty, false, false, true);
+
   spec_empty.paths =
       std::map<std::string, openapi::PathItem>{{"/{id}", openapi::PathItem{}}};
   openapi::Operation get_op_empty;
   get_op_empty.operationId = "getEmpty";
   spec_empty.paths->at("/{id}").get = get_op_empty;
-  emit_client(spec_empty);
+  emit_client(spec_empty, false, false, true);
 
   openapi::OpenAPI spec_str;
   spec_str.paths = std::map<std::string, openapi::PathItem>{
@@ -282,10 +304,12 @@ void test_emit_client() {
   std::cout << generated.substr(generated.find("getPet("), 100) << "\n";
 
   assert(generated.find("getPet(int id, bool filter, double X_Header, "
-                        "std::string str_val, const "
+                        "std::string str_val, std::string c_no_schema, "
+                        "std::string c_untyped, const "
                         "std::string& body)") != std::string::npos);
   assert(generated.find("patchPet(int id, bool filter, double X_Header, "
-                        "std::string str_val, const "
+                        "std::string str_val, std::string c_no_schema, "
+                        "std::string c_untyped, const "
                         "std::string& body)") != std::string::npos);
 
   assert(generated.find("full_url += (full_url.find('?') == std::string::npos "
@@ -360,6 +384,18 @@ void test_parse() {
             curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PATCH");
         }
         void emptyMethod() {}
+        static size_t WriteCallback(void* c, size_t s, size_t n, void* u) { return s * n; }
+        /// @param body request body - Custom body desc
+        std::string headerAndBodyOp(std::string X_Custom, std::string body) {
+            std::string full_url = base_url + "/api/v1/hdr";
+            headers = curl_slist_append(headers, ("X_Custom: " + X_Custom).c_str());
+            curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
+        }
+        /// @param body PlainBodyDesc
+        std::string bracePathOp(int id, std::string body) {
+            std::string full_url = base_url + "/api/v1/item/{id}";
+            curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
+        }
     };
 
     /**

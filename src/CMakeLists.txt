@@ -1,0 +1,29 @@
+# Subdirectory CMake configuration for cdd-cpp sources
+set(CDD_LIB_SRCS
+    src/cli/sync.cpp
+    src/functions/parse.cpp
+    src/functions/emit.cpp
+    src/client_sdk/parse.cpp
+    src/models/emit.cpp
+    src/models/parse.cpp
+    src/client_sdk/emit.cpp
+    src/client_sdk_cli/emit.cpp
+    src/client_sdk_cli/parse.cpp
+    src/docstrings/parse.cpp
+    src/docstrings/emit.cpp
+    src/server/parse.cpp
+    src/server/emit.cpp
+    src/mocks/parse.cpp
+    src/mocks/emit.cpp
+    src/utils/http.cpp
+    src/utils/cpp_ast.cpp
+    src/utils/cpp_parser.cpp
+    src/google_discovery/parse.cpp
+    src/openapi/parse.cpp
+    src/openapi/emit.cpp
+    src/openapi/upgraders/upgrader.cpp
+    src/orm/emit.cpp
+    src/mcp/parse.cpp
+    src/mcp/emit.cpp
+    PARENT_SCOPE
+)

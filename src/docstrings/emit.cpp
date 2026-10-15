@@ -1,25 +1,17 @@
+/// @file emit.cpp
+/// @brief Implementation of OpenAPI to C++ Doxygen docstring emitters.
 
 #include "emit.hpp"
 #include <sstream>
 
 namespace cdd_cpp::docstrings {
 
-static std::string format_multi(const std::string &indent,
-                                const std::string &text) {
-  std::string res;
-  for (char c : text) {
-    if (c == '\r')
-      continue;
-    res += c;
-    if (c == '\n')
-      res += indent;
-  }
-  return res;
-}
-
+/// @brief Internal helper or implementation for `emit_api_docstrings`.
 std::string emit_api_docstrings(const openapi::OpenAPI &spec) noexcept {
   std::stringstream ss;
   ss << "/// @title " << spec.info.title << "\n";
+  if (spec.info.summary)
+    ss << "/// @summary " << format_multi("/// ", *spec.info.summary) << "\n";
   ss << "/// @version " << spec.info.version << "\n";
   if (spec.info.description)
     ss << "/// @description " << format_multi("/// ", *spec.info.description)
@@ -43,6 +35,7 @@ std::string emit_api_docstrings(const openapi::OpenAPI &spec) noexcept {
       ss << "/// @license_url " << *spec.info.license->url << "\n";
   }
   if (spec.servers && !spec.servers->empty()) {
+    ss << "/// @servers\n";
     for (const auto &server : *spec.servers) {
       ss << "/// - " << server.url;
       if (server.description)
@@ -90,7 +83,7 @@ std::string emit_api_docstrings(const openapi::OpenAPI &spec) noexcept {
       if (scheme.oauth2MetadataUrl)
         ss << "///   @securityScheme_oauth2MetadataUrl " << name << " "
            << *scheme.oauth2MetadataUrl << "\n";
-      if (scheme.deprecated && *scheme.deprecated)
+      if (scheme.deprecated.value_or(false))
         ss << "///   @securityScheme_deprecated " << name << "\n";
     }
   }
@@ -98,6 +91,7 @@ std::string emit_api_docstrings(const openapi::OpenAPI &spec) noexcept {
   return ss.str();
 }
 
+/// @brief Internal helper or implementation for `emit_path_docstrings`.
 std::string emit_path_docstrings(const openapi::PathItem &pi) noexcept {
   std::stringstream ss;
   if (pi.summary)
@@ -109,6 +103,7 @@ std::string emit_path_docstrings(const openapi::PathItem &pi) noexcept {
   return ss.str();
 }
 
+/// @brief Internal helper or implementation for `emit_operation_docstrings`.
 std::string emit_operation_docstrings(const openapi::Operation &op) noexcept {
   std::stringstream ss;
   if (op.summary)

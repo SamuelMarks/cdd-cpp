@@ -188,6 +188,10 @@ void test_openapi_parse_final_details() {
                 "deviceAuthorization": {"authorizationUrl": "http", "tokenUrl": "http", "refreshUrl": "http", "scopes": {"read": "read access"}}
             }
         },
+        "SecEmptyFlows": {
+            "type": "oauth2",
+            "flows": {}
+        },
         "Sec2": {"$ref": "#/components/securitySchemes/Sec1"}
       },
       "links": {

@@ -1,10 +1,20 @@
-#include <expected>
+/// @file parse.hpp
+/// @brief C++ HTTP server route parser declarations.
+
 #pragma once
 #include "../openapi/models.hpp"
+#include "../utils/error.hpp"
 #include <string>
 
 namespace cdd_cpp::server {
-/// Parse routes from C++ server code
-std::expected<openapi::OpenAPI, std::string>
-parse(const std::string &input) noexcept;
+
+/// @brief Standard Result alias for server operations.
+template <typename T> using Result = utils::Result<T>;
+
+/// @brief Parse routes and schemas from C++ server source code into an OpenAPI
+/// spec.
+/// @param input The C++ server source code to parse.
+/// @return Result containing the parsed OpenAPI specification or a typed Error.
+Result<openapi::OpenAPI> parse(const std::string &input) noexcept;
+
 } // namespace cdd_cpp::server

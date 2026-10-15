@@ -1,20 +1,43 @@
+/// @file emit.cpp
+/// @brief Implementation of C++ ORM and PostgreSQL DAO generators.
+
 #include "emit.hpp"
+#include "../utils/json_writer.hpp"
 #include <sstream>
 
 namespace cdd_cpp::orm {
 
-std::string map_type_to_postgres(const std::string &type) noexcept {
+/// @brief Map an OpenAPI schema type and optional format to its PostgreSQL SQL
+/// column type.
+/// @param type The OpenAPI primitive type string.
+/// @param format Optional OpenAPI format string (e.g., "int64", "float").
+/// @return PostgreSQL column type string (e.g., "TEXT", "INTEGER", "BIGINT",
+/// "DOUBLE PRECISION", "REAL", "BOOLEAN", "JSONB").
+std::string map_type_to_postgres(const std::string &type,
+                                 const std::string &format = "") noexcept {
   if (type == "string")
     return "TEXT";
-  if (type == "integer")
+  if (type == "integer") {
+    if (format == "int64")
+      return "BIGINT";
     return "INTEGER";
-  if (type == "number")
+  }
+  if (type == "number") {
+    if (format == "float")
+      return "REAL";
     return "DOUBLE PRECISION";
+  }
   if (type == "boolean")
     return "BOOLEAN";
+  if (type == "array" || type == "object")
+    return "JSONB";
   return "TEXT";
 }
 
+/// @brief Map an OpenAPI schema type to its C++ primitive/standard library
+/// type.
+/// @param type The OpenAPI primitive type string.
+/// @return C++ type string ("std::string", "int", "double", "bool").
 std::string map_type_to_cpp(const std::string &type) noexcept {
   if (type == "string")
     return "std::string";
@@ -27,6 +50,7 @@ std::string map_type_to_cpp(const std::string &type) noexcept {
   return "std::string";
 }
 
+/// @brief Internal helper or implementation for `emit`.
 std::string emit(const openapi::OpenAPI & /*spec*/) noexcept {
   return ""; // Legacy
 }
@@ -42,7 +66,7 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
   err_ss << "    enum class Error { DatabaseConnectionFailed, "
             "QueryExecutionFailed, NotFound, InvalidInput, NotImplemented };\n";
   err_ss << "    inline std::ostream& operator<<(std::ostream& os, const "
-            "Error& e) {\n";
+            "Error& e) noexcept {\n";
   err_ss << "        switch(e) {\n";
   err_ss << "            case Error::DatabaseConnectionFailed: return os << "
             "\"DatabaseConnectionFailed\";\n";
@@ -115,7 +139,7 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
       names.push_back(name);
       std::string table_name = name;
       for (auto &c : table_name)
-        c = std::tolower(c);
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
 
       std::stringstream ss;
       ss << "#pragma once\n#include <expected>\n#include <vector>\n#include "
@@ -149,9 +173,11 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
       if (with_postgres) {
         ss << "    class Concrete" << name << "Dao : public I" << name
            << "Dao {\n        PGconn* conn;\n    public:\n        Concrete"
-           << name << "Dao(PGconn* c) : conn(c) {}\n";
+           << name << "Dao(PGconn* c) noexcept : conn(c) {}\n";
         ss << "        std::expected<void, Error> create_table() noexcept "
               "override {\n";
+        ss << "            if (!conn) return "
+              "std::unexpected(Error::DatabaseConnectionFailed);\n";
         ss << "            std::string sql = \"CREATE TABLE IF NOT EXISTS "
            << table_name << " (\";\n";
         bool first = true;
@@ -159,22 +185,27 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
           if (!first)
             ss << "            sql += \", \";\n";
           ss << "            sql += \"" << prop_name << " "
-             << map_type_to_postgres(prop_schema.type.value_or("string"))
+             << map_type_to_postgres(prop_schema.type.value_or("string"),
+                                     prop_schema.format.value_or(""))
              << "\";\n";
           first = false;
         }
         ss << "            sql += \")\";\n";
         ss << "            PGresult* res = PQexec(conn, sql.c_str());\n";
-        ss << "            if (PQresultStatus(res) != PGRES_COMMAND_OK) { "
-              "PQclear(res); return "
+        ss << "            if (!res || PQresultStatus(res) != "
+              "PGRES_COMMAND_OK) { "
+              "if (res) PQclear(res); return "
               "std::unexpected(Error::QueryExecutionFailed); }\n";
         ss << "            PQclear(res); return {};\n        }\n";
         ss << "        std::expected<void, Error> insert(const cdd_models::"
            << name << "& item) noexcept override {\n";
+        ss << "            if (!conn) return "
+              "std::unexpected(Error::DatabaseConnectionFailed);\n";
         ss << "            std::string sql = \"INSERT INTO " << table_name
            << " (\";\n";
         first = true;
         for (const auto &[prop_name, prop_schema] : *schema.properties) {
+          (void)prop_schema;
           if (!first)
             ss << "            sql += \", \";\n";
           ss << "            sql += \"" << prop_name << "\";\n";
@@ -195,14 +226,15 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
            << schema.properties->size() << "];\n";
         int paramIdx = 0;
         for (const auto &[prop_name, prop_schema] : *schema.properties) {
+          std::string safe_prop = utils::sanitize_cpp_identifier(prop_name);
           std::string c_type =
               map_type_to_cpp(prop_schema.type.value_or("string"));
           if (c_type == "std::string") {
             ss << "            paramValues[" << paramIdx << "] = item."
-               << prop_name << " ? item." << prop_name << "->c_str() : \"\";\n";
+               << safe_prop << " ? item." << safe_prop << "->c_str() : \"\";\n";
           } else {
             ss << "            std::string p" << paramIdx
-               << " = std::to_string(item." << prop_name << ".value_or(0));\n";
+               << " = std::to_string(item." << safe_prop << ".value_or(0));\n";
             ss << "            paramValues[" << paramIdx << "] = p" << paramIdx
                << ".c_str();\n";
           }
@@ -211,21 +243,24 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
         ss << "            PGresult* res = PQexecParams(conn, sql.c_str(), "
            << schema.properties->size()
            << ", nullptr, paramValues, nullptr, nullptr, 0);\n";
-        ss << "            if (PQresultStatus(res) != PGRES_COMMAND_OK) { "
-              "PQclear(res); return "
+        ss << "            if (!res || PQresultStatus(res) != "
+              "PGRES_COMMAND_OK) { "
+              "if (res) PQclear(res); return "
               "std::unexpected(Error::QueryExecutionFailed); }\n";
         ss << "            PQclear(res); return {};\n        }\n        "
               "std::expected<std::vector<cdd_models::"
            << name
            << ">, Error> get_all() noexcept override {\n            "
+              "if (!conn) return "
+              "std::unexpected(Error::DatabaseConnectionFailed);\n            "
               "std::vector<cdd_models::"
            << name
            << "> results;\n            std::string sql = \"SELECT * FROM \" + "
               "std::string(\""
            << table_name
            << "\");\n            PGresult* res = PQexec(conn, sql.c_str());\n  "
-              "          if (PQresultStatus(res) != PGRES_TUPLES_OK) { "
-              "PQclear(res); return "
+              "          if (!res || PQresultStatus(res) != PGRES_TUPLES_OK) { "
+              "if (res) PQclear(res); return "
               "std::unexpected(Error::QueryExecutionFailed); }\n            // "
               "In a real app we parse fields here.\n            "
               "PQclear(res);\n            return results;\n        }\n    };\n";
@@ -246,10 +281,11 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
            " class RepositoryFactory {\n";
   if (with_postgres) {
     rf_ss << "        PGconn* conn;\n        bool is_stub;\n    public:\n      "
-             "  RepositoryFactory(PGconn* c = nullptr, bool stub = false) : "
+             "  RepositoryFactory(PGconn* c = nullptr, bool stub = false) "
+             "noexcept : "
              "conn(c), is_stub(stub) {}\n";
   } else {
-    rf_ss << "    public:\n        RepositoryFactory() {}\n";
+    rf_ss << "    public:\n        RepositoryFactory() noexcept {}\n";
   }
   for (const auto &name : names) {
     rf_ss << "        std::unique_ptr<I" << name << "Dao> create_" << name

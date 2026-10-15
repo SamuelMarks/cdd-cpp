@@ -8,12 +8,9 @@ endif()
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-add_definitions(-DCPPHTTPLIB_NO_EXCEPTIONS)
+add_definitions(-DCPPHTTPLIB_NO_EXCEPTIONS -DSIMDJSON_EXCEPTIONS=0)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_compile_options(-fno-exceptions -fno-rtti)
-if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI")
-    add_definitions(-DSIMDJSON_EXCEPTIONS=0)
-endif()
 
 
 option(CDD_EXTREME_CHECKS "Enable extreme checks (sanitizers)" ON)
@@ -23,8 +20,11 @@ if(CDD_EXTREME_CHECKS)
     if(MSVC)
         set(EXTREME_FLAGS /W4 /WX /fsanitize=address)
         set(EXTREME_LINK_FLAGS /fsanitize=address)
+    elseif(COVERAGE)
+        set(EXTREME_FLAGS -Wall -Wextra -Wpedantic -Werror -Wno-deprecated-literal-operator -g -fno-omit-frame-pointer)
+        set(EXTREME_LINK_FLAGS "")
     else()
-        set(EXTREME_FLAGS -Wall -Wextra -Wpedantic -Werror -Wno-deprecated-literal-operator -Wno-uninitialized -Wno-missing-field-initializers -fsanitize=address,undefined -g -fno-omit-frame-pointer)
+        set(EXTREME_FLAGS -Wall -Wextra -Wpedantic -Werror -Wno-deprecated-literal-operator -fsanitize=address,undefined -g -fno-omit-frame-pointer)
         set(EXTREME_LINK_FLAGS -fsanitize=address,undefined)
     endif()
 else()
@@ -41,7 +41,6 @@ endfunction()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "WASI")
     add_compile_options(-fno-exceptions)
-    add_definitions(-DSIMDJSON_EXCEPTIONS=1)
 endif()
 
 option(USE_VCPKG "Use vcpkg for dependencies" OFF)
@@ -120,15 +119,7 @@ endif()
 
 
 # Define Library
-set(CDD_LIB_SRCS
-    src/functions/parse.cpp src/functions/emit.cpp
-    src/client_sdk/parse.cpp src/models/emit.cpp src/models/parse.cpp  src/client_sdk/emit.cpp src/client_sdk_cli/emit.cpp src/client_sdk_cli/parse.cpp
-    src/docstrings/parse.cpp src/docstrings/emit.cpp
-    src/server/parse.cpp src/server/emit.cpp
-    src/mocks/parse.cpp src/mocks/emit.cpp
-    src/utils/http.cpp src/utils/cpp_ast.cpp src/utils/cpp_parser.cpp src/google_discovery/parse.cpp src/openapi/parse.cpp src/openapi/emit.cpp src/openapi/upgraders/upgrader.cpp
-    src/orm/emit.cpp src/mcp/parse.cpp src/mcp/emit.cpp
-)
+add_subdirectory(src)
 
 
 if(COVERAGE)
@@ -156,13 +147,13 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Ems
 endif()
 
 # CLI
-add_executable(cdd-cpp src/cli/main.cpp src/cli/sync.cpp src/cli/exceptions_stub.cpp)
+add_executable(cdd-cpp src/cli/main.cpp)
 target_link_libraries(cdd-cpp PRIVATE cdd_lib)
 enable_extreme_checks(cdd-cpp)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     # Tests
-    add_executable(cdd-tests src/cli/exceptions_stub.cpp src/tests/client_sdk_cli_test.cpp  src/tests/main.cpp src/tests/parse.cpp src/tests/openapi_parse.cpp src/tests/emit.cpp src/tests/upgrader_test.cpp src/tests/google_discovery.cpp src/tests/models.cpp src/tests/client_sdk_test.cpp src/tests/functions.cpp src/tests/docstrings.cpp src/tests/server.cpp src/tests/mocks.cpp src/tests/http.cpp src/tests/cli.cpp src/tests/orm.cpp src/tests/mcp.cpp src/tests/mcp_meta_tests.cpp src/tests/mcp_parse_fail_tests.cpp src/tests/struct_test.cpp)
+    add_executable(cdd-tests src/tests/client_sdk_cli_test.cpp  src/tests/main.cpp src/tests/parse.cpp src/tests/openapi_parse.cpp src/tests/emit.cpp src/tests/upgrader_test.cpp src/tests/google_discovery.cpp src/tests/models.cpp src/tests/client_sdk_test.cpp src/tests/functions.cpp src/tests/docstrings.cpp src/tests/server.cpp src/tests/mocks.cpp src/tests/http.cpp src/tests/cli.cpp src/tests/orm.cpp src/tests/mcp.cpp src/tests/mcp_meta_tests.cpp src/tests/mcp_parse_fail_tests.cpp src/tests/struct_test.cpp)
     target_link_libraries(cdd-tests PRIVATE cdd_lib)
     enable_extreme_checks(cdd-tests)
 
@@ -192,17 +183,3 @@ if(EMSCRIPTEN)
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
     set_target_properties(cdd-cpp PROPERTIES LINK_FLAGS "-s WASM=1 -s STANDALONE_WASM=1")
 endif()
-
-set_source_files_properties(
-    src/cli/main.cpp
-    src/cli/sync.cpp src/cli/exceptions_stub.cpp
-    src/client_sdk/emit.cpp
-    src/client_sdk/parse.cpp
-    src/client_sdk_cli/emit.cpp
-    src/client_sdk_cli/parse.cpp
-    PROPERTIES COMPILE_OPTIONS -fno-exceptions
-)
-add_executable(test_simdjson_2 src/tests/test_simdjson_2.cpp src/cli/exceptions_stub.cpp)
-target_link_libraries(test_simdjson_2 PRIVATE cdd_lib)
-add_test(NAME TestSimdjson2 COMMAND test_simdjson_2)
-enable_extreme_checks(test_simdjson_2)

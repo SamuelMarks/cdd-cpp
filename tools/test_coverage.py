@@ -6,7 +6,16 @@ import json
 
 def get_coverage():
     try:
-        if not os.path.exists("build/cdd-tests"):
+        need_configure = not os.path.exists("build/CMakeCache.txt")
+        if not need_configure:
+            with open("build/CMakeCache.txt", "r") as f:
+                cache = f.read()
+            if (
+                "CMAKE_BUILD_TYPE:STRING=Debug" not in cache
+                or "COVERAGE:BOOL=ON" not in cache
+            ):
+                need_configure = True
+        if need_configure:
             subprocess.run(
                 [
                     "cmake",
@@ -21,12 +30,12 @@ def get_coverage():
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
-            subprocess.run(
-                ["cmake", "--build", "build", "-j4"],
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
+        subprocess.run(
+            ["cmake", "--build", "build", "-j4"],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
         # Delete previous .gcda files to prevent corruption on multiple runs
         for root, dirs, files in os.walk("build"):
             for file in files:
@@ -54,7 +63,7 @@ def get_coverage():
             "--exclude-throw-branches",
             "--exclude-unreachable-branches",
             "--exclude-lines-by-pattern",
-            ".*struct [a-zA-Z0-9_]+ {|.*~[a-zA-Z0-9_]+\\(\\) noexcept;|.*return std::unexpected.*|.*= false;.*|.*return 1;.*",
+            ".*struct [a-zA-Z0-9_]+ {|.*~[a-zA-Z0-9_]+\\(\\) noexcept;",
         ]
         if sys.platform.startswith("linux"):
             import shutil
@@ -123,5 +132,5 @@ def get_coverage():
 if __name__ == "__main__":
     lines, funcs, branches = get_coverage()
     print(f"Lines: {lines:.2f}%, Functions: {funcs:.2f}%, Branches: {branches:.2f}%")
-    if lines < 100.0 or funcs < 100.0:
+    if lines < 100.0 or funcs < 100.0 or branches < 100.0:
         sys.exit(1)

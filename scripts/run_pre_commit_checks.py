@@ -36,8 +36,8 @@ def run_cmd(cmd, cwd=None, env=None, capture_output=False, check=True):
 
 def build_project():
     print("Building project...")
-    run_cmd(["cmake", "-B", "build", "-S", ".", "-DCMAKE_BUILD_TYPE=Release", "-DCOVERAGE=ON"])
-    run_cmd(["cmake", "--build", "build", "--config", "Release", "-j4"])
+    run_cmd(["cmake", "-B", "build", "-S", ".", "-DCMAKE_BUILD_TYPE=Debug", "-DCOVERAGE=ON"])
+    run_cmd(["cmake", "--build", "build", "--config", "Debug", "-j4"])
 
 def run_tests():
     print("Running tests...")
@@ -391,13 +391,15 @@ def main():
         print(f"Coverage: Test={test_cov}, Doc={doc_cov}")
         
         print("Updating README badges...")
+        with open("README.md", "r") as f:
+            readme_before = f.read()
         run_cmd([sys.executable, "tools/update_badges.py", test_cov, doc_cov])
+        with open("README.md", "r") as f:
+            readme_after = f.read()
         
-        badges_updated = False
-        diff_res = subprocess.run(["git", "diff", "--quiet", "README.md"])
-        if diff_res.returncode != 0:
+        badges_updated = (readme_before != readme_after)
+        if badges_updated:
             print("README.md was updated with new badges.")
-            badges_updated = True
             
         cdd_cpp_bin = None
         if sys.platform == "win32":

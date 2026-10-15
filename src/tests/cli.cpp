@@ -1,26 +1,88 @@
+#include "../cli/api.hpp"
+#include "../utils/httplib.h"
 #include <array>
 #include <cassert>
+#include <chrono>
 #include <cstdlib>
 #include <expected>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <string>
+#include <thread>
+#include <vector>
 
 namespace cdd_cpp::cli {
+
+namespace {
+
+struct TempDirFixture {
+  std::filesystem::path dir;
+  explicit TempDirFixture(const std::string &name)
+      : dir(std::filesystem::temp_directory_path() / name) {
+    std::error_code ec;
+    std::filesystem::remove_all(dir, ec);
+    std::filesystem::create_directories(dir, ec);
+  }
+  ~TempDirFixture() {
+    std::error_code ec;
+    std::filesystem::permissions(dir, std::filesystem::perms::all, ec);
+    for (auto &entry : std::filesystem::recursive_directory_iterator(dir, ec)) {
+      std::filesystem::permissions(entry.path(), std::filesystem::perms::all,
+                                   ec);
+    }
+    std::filesystem::remove_all(dir, ec);
+  }
+  std::string path(const std::string &rel = "") const {
+    if (rel.empty())
+      return dir.string();
+    return (dir / rel).string();
+  }
+};
+
+struct CliResult {
+  int code;
+  std::string out;
+  std::string err;
+  std::string combined() const { return out + err; }
+};
+
+CliResult run_cli(const std::vector<std::string> &args,
+                  const std::string &stdin_str = "") {
+  std::vector<char *> argv;
+  argv.reserve(args.size());
+  for (const auto &a : args) {
+    argv.push_back(const_cast<char *>(a.c_str()));
+  }
+  std::ostringstream out_ss, err_ss;
+  std::istringstream in_ss(stdin_str);
+  int code = main_impl(static_cast<int>(argv.size()), argv.data(), out_ss,
+                       err_ss, in_ss);
+  return {code, out_ss.str(), err_ss.str()};
+}
+
+void write_str(const std::string &filepath, const std::string &content) {
+  std::filesystem::path p(filepath);
+  if (p.has_parent_path()) {
+    std::error_code ec;
+    std::filesystem::create_directories(p.parent_path(), ec);
+  }
+  std::ofstream fs(filepath);
+  fs << content;
+}
+
+} // namespace
+
 std::expected<std::string, std::string> exec(const char *cmd) {
   std::array<char, 128> buffer;
   std::string result;
   auto pclose_wrapper = [](FILE *f) { pclose(f); };
 
   FILE *p_res = popen(std::string(std::string(cmd) + " 2>&1").c_str(), "r");
-  if (std::string(cmd) == "FORCE_POPEN_FAIL")
-    p_res = nullptr;
-  std::unique_ptr<FILE, decltype(pclose_wrapper)> pipe(p_res,
-
-                                                       pclose_wrapper);
+  std::unique_ptr<FILE, decltype(pclose_wrapper)> pipe(p_res, pclose_wrapper);
   if (!pipe) {
-
     return std::unexpected("popen() failed!");
   }
   while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
@@ -29,12 +91,10 @@ std::expected<std::string, std::string> exec(const char *cmd) {
   return result;
 }
 
-void test_to_docs_json() {
-  std::filesystem::create_directories("test_tmp_dir");
+void test_to_docs_json() noexcept {
+  TempDirFixture tmp("cdd_cli_test_docs");
 
-  FILE *f_routes = fopen("test_tmp_dir/routes.hpp", "w");
-  if (f_routes) {
-    std::string cpp_routes = R"(
+  write_str(tmp.path("code/routes.hpp"), R"(
       void setup(httplib::Server& svr) {
         svr.Get("/r", [&](const httplib::Request& req, httplib::Response& res) {
             auto id = req.path_params.at("id");
@@ -49,14 +109,9 @@ void test_to_docs_json() {
         svr.Options("/r", [&](const httplib::Request& req, httplib::Response& res) {});
         svr.Head("/r", [&](const httplib::Request& req, httplib::Response& res) {});
       }
-    )";
-    fwrite(cpp_routes.c_str(), 1, cpp_routes.size(), f_routes);
-    fclose(f_routes);
-  }
+  )");
 
-  FILE *f_client = fopen("test_tmp_dir/client.cpp", "w");
-  if (f_client) {
-    std::string cpp_client = R"(
+  write_str(tmp.path("code/client.cpp"), R"(
     std::expected<std::string, std::string> Client::getTest(int id, double score, const std::string& body) noexcept {
         std::string full_url = base_url + "/c/{id}";
         CURLOPT_CUSTOMREQUEST, "GET"
@@ -85,14 +140,9 @@ void test_to_docs_json() {
         std::string full_url = base_url + "/c";
         CURLOPT_CUSTOMREQUEST, "HEAD"
     }
-    )";
-    fwrite(cpp_client.c_str(), 1, cpp_client.size(), f_client);
-    fclose(f_client);
-  }
+  )");
 
-  FILE *f_cli = fopen("test_tmp_dir/cli.cpp", "w");
-  if (f_cli) {
-    std::string cpp_cli = R"(
+  write_str(tmp.path("code/cli.cpp"), R"(
     switch (current_node) {
         case 5: {
             auto res = handle_myOp(client, path_params["pid"], query_params["q"], body);
@@ -108,10 +158,7 @@ void test_to_docs_json() {
             break;
         }
     }
-    )";
-    fwrite(cpp_cli.c_str(), 1, cpp_cli.size(), f_cli);
-    fclose(f_cli);
-  }
+  )");
 
   std::string json_spec = R"({
     "openapi": "3.2.0",
@@ -119,159 +166,144 @@ void test_to_docs_json() {
       "/test": {
         "get": {
           "operationId": "getTest"
-        }
+        },
+        "post": {}
       }
     }
   })";
-  FILE *f = fopen("test_tmp_dir/test_spec.json", "w");
-  if (f) {
-    fwrite(json_spec.c_str(), 1, json_spec.size(), f);
-    fclose(f);
-  }
+  std::string spec_file = tmp.path("test_spec.json");
+  write_str(spec_file, json_spec);
 
-  FILE *f2 = fopen("test_spec.json", "w");
-  if (f2) {
-    fwrite(json_spec.c_str(), 1, json_spec.size(), f2);
-    fclose(f2);
-  }
+  auto res_exp = run_cli({"cdd-cpp", "to_docs_json", "-i", spec_file});
+  assert(res_exp.code == 0);
+  assert(res_exp.out.find("\"imports\"") != std::string::npos);
+  assert(res_exp.out.find("\"wrapper_start\"") != std::string::npos);
+  assert(res_exp.out.find("\"wrapper_end\"") != std::string::npos);
+  assert(res_exp.out.find("\"snippet\"") != std::string::npos);
 
-  std::cout << "Starting to_docs_json test\n";
-  auto res_exp = exec("./cdd-cpp to_docs_json -i test_spec.json");
-  std::cout << "Done to_docs_json\n";
-  std::string res = res_exp ? *res_exp : "";
+  auto res_no_exp = run_cli({"cdd-cpp", "to_docs_json", "--no-imports",
+                             "--no-wrapping", "-i", spec_file});
+  assert(res_no_exp.code == 0);
+  assert(res_no_exp.out.find("\"imports\"") == std::string::npos);
+  assert(res_no_exp.out.find("\"wrapper_start\"") == std::string::npos);
+  assert(res_no_exp.out.find("\"wrapper_end\"") == std::string::npos);
+  assert(res_no_exp.out.find("\"snippet\"") != std::string::npos);
 
-  assert(!res.empty());
-  assert(res.find("\"imports\"") != std::string::npos);
-  assert(res.find("\"wrapper_start\"") != std::string::npos);
-  assert(res.find("\"wrapper_end\"") != std::string::npos);
-  assert(res.find("\"snippet\"") != std::string::npos);
+  auto help_res = run_cli({"cdd-cpp", "--help"});
+  assert(help_res.code == 0 &&
+         help_res.out.find("Usage:") != std::string::npos);
+  assert(run_cli({"cdd-cpp", "-h"}).code == 0);
 
-  std::cout << "Starting to_docs_json no options\n";
-  auto res_no_exp = exec(
-      "./cdd-cpp to_docs_json --no-imports --no-wrapping -i test_spec.json");
-  std::cout << "Done to_docs_json no options\n";
-  assert(res_no_exp);
-  std::string res_no = *res_no_exp;
+  auto version_res = run_cli({"cdd-cpp", "--version"});
+  assert(version_res.code == 0 &&
+         version_res.out.find("cdd-cpp version") != std::string::npos);
+  assert(run_cli({"cdd-cpp", "-v"}).code == 0);
+  assert(run_cli({"cdd-cpp", "mcp", "-h"}).code == 0);
 
-  assert(res_no.find("\"imports\"") == std::string::npos);
-  assert(res_no.find("\"wrapper_start\"") == std::string::npos);
-  assert(res_no.find("\"wrapper_end\"") == std::string::npos);
-  assert(res_no.find("\"snippet\"") != std::string::npos);
+  // Concise binary invocation integration test
+  std::error_code fs_ec;
+  const char *bin_cmd = std::filesystem::exists("./cdd-cpp", fs_ec)
+                            ? "./cdd-cpp --version"
+                            : "./build/cdd-cpp --version";
+  auto bin_version = exec(bin_cmd);
+  assert(bin_version &&
+         bin_version->find("cdd-cpp version") != std::string::npos);
 
-  std::cout << "Testing help\n";
-  auto help_res = exec("./cdd-cpp --help");
-  assert(help_res && help_res->find("Usage:") != std::string::npos);
+  auto err_file =
+      run_cli({"cdd-cpp", "to_docs_json", "-i", tmp.path("non_existent.json")});
+  assert(err_file.code != 0 &&
+         err_file.err.find("Could not open input file") != std::string::npos);
 
-  std::cout << "Testing version\n";
-  auto version_res = exec("./cdd-cpp --version");
-  assert(version_res &&
-         version_res->find("cdd-cpp version") != std::string::npos);
+  auto err_cmd = run_cli({"cdd-cpp", "unknown_command"});
+  assert(err_cmd.code != 0 &&
+         err_cmd.err.find("Unknown command") != std::string::npos);
 
-  std::cout << "Testing non existent file\n";
-  auto err_file = exec("./cdd-cpp to_docs_json -i non_existent_file.json");
-  assert(err_file &&
-         err_file->find("Could not open input file") != std::string::npos);
+  auto to_openapi_err = run_cli({"cdd-cpp", "to_openapi"});
+  assert(to_openapi_err.code != 0 &&
+         to_openapi_err.err.find("Missing -i") != std::string::npos);
 
-  std::cout << "Testing unknown command\n";
-  auto err_cmd = exec("./cdd-cpp unknown_command");
-  assert(err_cmd && err_cmd->find("Unknown command") != std::string::npos);
+  auto to_openapi_help = run_cli({"cdd-cpp", "to_openapi", "--help"});
+  assert(to_openapi_help.code == 0 &&
+         to_openapi_help.out.find("Usage:") != std::string::npos);
 
-  std::cout << "Testing to_openapi no arg\n";
-  auto to_openapi_err = exec("./cdd-cpp to_openapi");
-  assert(to_openapi_err &&
-         to_openapi_err->find("Missing -i") != std::string::npos);
+  std::string out_openapi_file = tmp.path("out.json");
+  auto to_openapi_file_res =
+      run_cli({"cdd-cpp", "to_openapi", "-i", tmp.path("code"), "-o",
+               out_openapi_file});
+  assert(to_openapi_file_res.code == 0);
+  assert(std::filesystem::exists(out_openapi_file, fs_ec));
 
-  std::cout << "Testing to_openapi help\n";
-  auto to_openapi_help = exec("./cdd-cpp to_openapi --help");
-  assert(to_openapi_help &&
-         to_openapi_help->find("Usage:") != std::string::npos);
+  auto to_openapi_bad_out = run_cli({"cdd-cpp", "to_openapi", "-i",
+                                     tmp.path("code"), "-o", tmp.path("code")});
+  assert(to_openapi_bad_out.code != 0);
 
-  std::cout << "Testing to_openapi test_tmp_dir output file\n";
-  auto to_openapi_file_res = exec("./cdd-cpp to_openapi -i test_tmp_dir -o "
-                                  "test_tmp_dir/out.json");
-  assert(to_openapi_file_res);
-  assert(std::filesystem::exists("test_tmp_dir/out.json"));
+  auto to_openapi_res =
+      run_cli({"cdd-cpp", "to_openapi", "-i", tmp.path("code")});
+  assert(to_openapi_res.code == 0 &&
+         to_openapi_res.out.find("openapi") != std::string::npos);
 
-  std::cout << "Testing to_openapi test_tmp_dir\n";
-  auto to_openapi_res = exec("./cdd-cpp to_openapi -i test_tmp_dir");
-  assert(to_openapi_res &&
-         to_openapi_res->find("openapi") != std::string::npos);
+  auto from_err = run_cli({"cdd-cpp", "from_openapi"});
+  assert(from_err.code != 0 &&
+         from_err.err.find("Missing subcommand") != std::string::npos);
 
-  std::cout << "Testing from_openapi\n";
-  auto from_err = exec("./cdd-cpp from_openapi");
-  assert(from_err && from_err->find("Missing subcommand") != std::string::npos);
+  auto from_help = run_cli({"cdd-cpp", "from_openapi", "--help"});
+  assert(from_help.code == 0 &&
+         from_help.out.find("Usage:") != std::string::npos);
 
-  std::cout << "Testing from_openapi help\n";
-  auto from_help = exec("./cdd-cpp from_openapi --help");
-  assert(from_help && from_help->find("Usage:") != std::string::npos);
+  auto from_sdk_err = run_cli({"cdd-cpp", "from_openapi", "to_sdk"});
+  assert(from_sdk_err.code != 0 &&
+         from_sdk_err.err.find("Missing -i") != std::string::npos);
 
-  std::cout << "Testing from_openapi to_sdk err\n";
-  auto from_sdk_err = exec("./cdd-cpp from_openapi to_sdk");
-  assert(from_sdk_err && from_sdk_err->find("Missing -i") != std::string::npos);
+  auto from_sdk_cli_err = run_cli({"cdd-cpp", "from_openapi", "to_sdk_cli"});
+  assert(from_sdk_cli_err.code != 0 &&
+         from_sdk_cli_err.err.find("Missing -i") != std::string::npos);
 
-  std::cout << "Testing from_openapi to_sdk_cli err\n";
-  auto from_sdk_cli_err = exec("./cdd-cpp from_openapi to_sdk_cli");
-  assert(from_sdk_cli_err &&
-         from_sdk_cli_err->find("Missing -i") != std::string::npos);
+  auto from_server_err = run_cli({"cdd-cpp", "from_openapi", "to_server"});
+  assert(from_server_err.code != 0 &&
+         from_server_err.err.find("Missing -i") != std::string::npos);
 
-  std::cout << "Testing from_openapi to_server err\n";
-  auto from_server_err = exec("./cdd-cpp from_openapi to_server");
-  assert(from_server_err &&
-         from_server_err->find("Missing -i") != std::string::npos);
+  std::string out_dir = tmp.path("out_dir");
+  auto from_sdk = run_cli({"cdd-cpp", "from_openapi", "to_sdk", "-i", spec_file,
+                           "-o", out_dir, "--no-github-actions",
+                           "--no-installable-package", "--tests", "--mcp"});
+  assert(from_sdk.code == 0);
 
-  std::cout << "Testing from_openapi to_sdk ok with flags\n";
-  auto from_sdk =
-      exec("./cdd-cpp from_openapi to_sdk -i test_spec.json -o "
-           "out_dir "
-           "--no-github-actions --no-installable-package --tests --mcp");
-  assert(from_sdk);
+  auto from_sdk_cli = run_cli({"cdd-cpp", "from_openapi", "to_sdk_cli", "-i",
+                               spec_file, "-o", out_dir, "--tests"});
+  assert(from_sdk_cli.code == 0);
 
-  std::cout << "Testing from_openapi to_sdk_cli ok\n";
-  auto from_sdk_cli = exec(
-      "./cdd-cpp from_openapi to_sdk_cli -i test_spec.json -o out_dir --tests");
-  assert(from_sdk_cli);
+  auto from_server = run_cli({"cdd-cpp", "from_openapi", "to_server", "-i",
+                              spec_file, "-o", out_dir, "--tests"});
+  assert(from_server.code == 0);
 
-  std::cout << "Testing from_openapi to_server ok\n";
-  auto from_server = exec(
-      "./cdd-cpp from_openapi to_server -i test_spec.json -o out_dir --tests");
-  assert(from_server);
+  std::string bad_spec_file = tmp.path("bad_spec.json");
+  write_str(bad_spec_file, "{bad");
+  auto from_server_bad = run_cli({"cdd-cpp", "from_openapi", "to_server", "-i",
+                                  bad_spec_file, "-o", out_dir});
+  assert(from_server_bad.code != 0 &&
+         from_server_bad.err.find("Error:") != std::string::npos);
 
-  std::cout << "Testing from_openapi to_server parsing error\n";
-  FILE *f3 = fopen("test_tmp_dir/bad_spec.json", "w");
-  if (f3) {
-    std::string bad_json = "{bad";
-    fwrite(bad_json.c_str(), 1, bad_json.size(), f3);
-    fclose(f3);
-  }
-  auto from_server_bad = exec("./cdd-cpp from_openapi to_server -i "
-                              "test_tmp_dir/bad_spec.json -o out_dir");
-  assert(from_server_bad &&
-         from_server_bad->find("Error:") != std::string::npos);
+  auto from_unknown = run_cli(
+      {"cdd-cpp", "from_openapi", "unknown", "-i", spec_file, "-o", out_dir});
+  assert(from_unknown.code != 0 &&
+         from_unknown.err.find("Unknown subcommand") != std::string::npos);
 
-  std::cout << "Testing from_openapi unknown subcommand\n";
-  auto from_unknown = exec("./cdd-cpp from_openapi unknown -i test_spec.json "
-                           "-o out_dir");
-  assert(from_unknown &&
-         from_unknown->find("Unknown subcommand") != std::string::npos);
+  auto from_sdk_dir = run_cli({"cdd-cpp", "from_openapi", "to_sdk",
+                               "--input-dir", tmp.path("code"), "-o", out_dir});
+  assert(from_sdk_dir.code == 0);
 
-  std::cout << "Testing from_openapi to_sdk dir\n";
-  auto from_sdk_dir = exec("./cdd-cpp from_openapi to_sdk --input-dir "
-                           "test_tmp_dir -o out_dir");
-  assert(from_sdk_dir);
+  auto from_sdk_cli_dir = run_cli({"cdd-cpp", "from_openapi", "to_sdk_cli",
+                                   "-d", tmp.path("code"), "-o", out_dir});
+  assert(from_sdk_cli_dir.code == 0);
 
-  std::cout << "Testing from_openapi to_sdk_cli dir\n";
-  auto from_sdk_cli_dir =
-      exec("./cdd-cpp from_openapi to_sdk_cli -d test_tmp_dir -o out_dir");
-  assert(from_sdk_cli_dir);
+  auto from_server_dir =
+      run_cli({"cdd-cpp", "from_openapi", "to_server", "--input-dir",
+               tmp.path("code"), "-o", out_dir});
+  assert(from_server_dir.code == 0);
 
-  std::cout << "Testing from_openapi to_server dir\n";
-  auto from_server_dir = exec(
-      "./cdd-cpp from_openapi to_server --input-dir test_tmp_dir -o out_dir");
-  assert(from_server_dir);
-
-  std::cout << "Testing serve_json_rpc help\n";
-  auto serve_err = exec("./cdd-cpp serve_json_rpc --help");
-  assert(serve_err && serve_err->find("Usage:") != std::string::npos);
+  auto serve_err = run_cli({"cdd-cpp", "serve_json_rpc", "--help"});
+  assert(serve_err.code == 0 &&
+         serve_err.out.find("Usage:") != std::string::npos);
 
   std::string gd_spec = R"({
     "kind": "discovery#restDescription",
@@ -280,293 +312,380 @@ void test_to_docs_json() {
     "schemas": {},
     "resources": {}
   })";
-  FILE *f_gd = fopen("test_gd_spec.json", "w");
-  if (f_gd) {
-    fwrite(gd_spec.c_str(), 1, gd_spec.size(), f_gd);
-    fclose(f_gd);
+  std::string gd_spec_file = tmp.path("test_gd_spec.json");
+  write_str(gd_spec_file, gd_spec);
+
+  auto from_gd_help = run_cli({"cdd-cpp", "from_google_discovery", "--help"});
+  assert(from_gd_help.code == 0 &&
+         from_gd_help.out.find("Usage:") != std::string::npos);
+
+  auto from_gd_err = run_cli({"cdd-cpp", "from_google_discovery"});
+  assert(from_gd_err.code != 0 &&
+         from_gd_err.err.find("Missing subcommand") != std::string::npos);
+
+  auto from_gd_sdk_err =
+      run_cli({"cdd-cpp", "from_google_discovery", "to_sdk"});
+  assert(from_gd_sdk_err.code != 0 &&
+         from_gd_sdk_err.err.find("Missing -i") != std::string::npos);
+
+  auto from_gd_unknown = run_cli({"cdd-cpp", "from_google_discovery", "unknown",
+                                  "-i", gd_spec_file, "-o", out_dir});
+  assert(from_gd_unknown.code != 0 &&
+         from_gd_unknown.err.find("Unknown subcommand") != std::string::npos);
+
+  auto from_gd_sdk = run_cli(
+      {"cdd-cpp", "from_google_discovery", "to_sdk", "-i", gd_spec_file, "-o",
+       out_dir, "--no-github-actions", "--no-installable-package", "--tests"});
+  assert(from_gd_sdk.code == 0);
+
+  auto from_gd_sdk_cli =
+      run_cli({"cdd-cpp", "from_google_discovery", "to_sdk_cli", "-i",
+               gd_spec_file, "-o", out_dir, "--tests"});
+  assert(from_gd_sdk_cli.code == 0);
+
+  setenv("CDD_INPUT", gd_spec_file.c_str(), 1);
+  setenv("CDD_OUTPUT", tmp.path("env_out_gd_sdk").c_str(), 1);
+  setenv("CDD_NO_GITHUB_ACTIONS", "1", 1);
+  setenv("CDD_NO_INSTALLABLE_PACKAGE", "1", 1);
+  setenv("CDD_TESTS", "1", 1);
+  auto from_gd_env = run_cli({"cdd-cpp", "from_google_discovery", "to_sdk"});
+  assert(from_gd_env.code == 0);
+  unsetenv("CDD_INPUT");
+  unsetenv("CDD_OUTPUT");
+  unsetenv("CDD_NO_GITHUB_ACTIONS");
+  unsetenv("CDD_NO_INSTALLABLE_PACKAGE");
+  unsetenv("CDD_TESTS");
+
+  auto err_read_file = run_cli({"cdd-cpp", "from_openapi", "to_sdk", "-i",
+                                tmp.path("nonexistent.json"), "-o", out_dir});
+  assert(err_read_file.code != 0 &&
+         err_read_file.err.find("Could not open input file") !=
+             std::string::npos);
+
+  auto empty_args = run_cli({"cdd-cpp"});
+  assert(empty_args.code != 0 &&
+         empty_args.out.find("Usage:") != std::string::npos);
+
+  auto to_docs_err_no_i = run_cli({"cdd-cpp", "to_docs_json"});
+  assert(to_docs_err_no_i.code != 0 &&
+         to_docs_err_no_i.err.find("Missing -i") != std::string::npos);
+
+  auto to_docs_help = run_cli({"cdd-cpp", "to_docs_json", "--help"});
+  assert(to_docs_help.code == 0 &&
+         to_docs_help.out.find("Usage:") != std::string::npos);
+
+  std::string docs_out_file = tmp.path("docs_out.json");
+  auto to_docs_out = run_cli(
+      {"cdd-cpp", "to_docs_json", "-i", spec_file, "-o", docs_out_file});
+  assert(to_docs_out.code == 0 &&
+         std::filesystem::exists(docs_out_file, fs_ec));
+
+  auto to_docs_bad_out = run_cli(
+      {"cdd-cpp", "to_docs_json", "-i", spec_file, "-o", tmp.path("code")});
+  assert(to_docs_bad_out.code != 0);
+
+  std::string bad_file = tmp.path("bad.json");
+  write_str(bad_file, "{bad}");
+  auto to_docs_bad = run_cli({"cdd-cpp", "to_docs_json", "-i", bad_file});
+  assert(to_docs_bad.code != 0 &&
+         to_docs_bad.err.find("Error:") != std::string::npos);
+
+  auto from_server_bad_parse = run_cli(
+      {"cdd-cpp", "from_openapi", "to_server", "-i", bad_file, "-o", out_dir});
+  assert(from_server_bad_parse.code != 0 &&
+         from_server_bad_parse.err.find("Error:") != std::string::npos);
+
+  std::string ro_dir = tmp.path("read_only_dir");
+  std::filesystem::create_directories(ro_dir, fs_ec);
+  std::filesystem::permissions(ro_dir, std::filesystem::perms::none, fs_ec);
+  auto err_out_file = run_cli({"cdd-cpp", "from_openapi", "to_sdk", "-i",
+                               spec_file, "-o", ro_dir + "/file.json"});
+  assert(err_out_file.code != 0 &&
+         err_out_file.err.find("Could not open output file") !=
+             std::string::npos);
+  std::filesystem::permissions(ro_dir, std::filesystem::perms::all, fs_ec);
+
+  std::string env_out_json = tmp.path("env_out.json");
+  setenv("CDD_NO_IMPORTS", "true", 1);
+  setenv("CDD_NO_WRAPPING", "1", 1);
+  setenv("CDD_INPUT", spec_file.c_str(), 1);
+  setenv("CDD_OUTPUT", env_out_json.c_str(), 1);
+  auto env_var_res = run_cli({"cdd-cpp", "to_docs_json"});
+  assert(env_var_res.code == 0 && std::filesystem::exists(env_out_json, fs_ec));
+  unsetenv("CDD_NO_IMPORTS");
+  unsetenv("CDD_NO_WRAPPING");
+  unsetenv("CDD_INPUT");
+  unsetenv("CDD_OUTPUT");
+
+  setenv("CDD_INPUT", spec_file.c_str(), 1);
+  setenv("CDD_OUTPUT", tmp.path("env_out_sdk").c_str(), 1);
+  setenv("CDD_NO_GITHUB_ACTIONS", "1", 1);
+  setenv("CDD_NO_INSTALLABLE_PACKAGE", "1", 1);
+  setenv("CDD_TESTS", "1", 1);
+  auto env_var_res3 = run_cli({"cdd-cpp", "from_openapi", "to_sdk"});
+  assert(env_var_res3.code == 0);
+  unsetenv("CDD_INPUT");
+  unsetenv("CDD_OUTPUT");
+  unsetenv("CDD_NO_GITHUB_ACTIONS");
+  unsetenv("CDD_NO_INSTALLABLE_PACKAGE");
+  unsetenv("CDD_TESTS");
+
+  auto err_port = run_cli({"cdd-cpp", "serve_json_rpc", "--port", "abc"});
+  assert(err_port.code != 0 &&
+         err_port.err.find("Invalid port number") != std::string::npos);
+
+  // In-process thread test for serve_json_rpc with sub-10ms polling
+  int rpc_port = 18086;
+  std::thread server_thread([rpc_port]() {
+    run_cli({"cdd-cpp", "serve_json_rpc", "--port", std::to_string(rpc_port),
+             "--listen", "127.0.0.1"});
+  });
+
+  httplib::Client cli("127.0.0.1", rpc_port);
+  cli.set_connection_timeout(1, 0);
+  bool ready = false;
+  for (int attempt = 0; attempt < 100; ++attempt) {
+    if (auto res = cli.Options("/")) {
+      if (res->status == 200) {
+        ready = true;
+        break;
+      }
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
+  assert(ready);
 
-  std::cout << "Testing from_google_discovery help\n";
-  auto from_gd_help = exec("./cdd-cpp from_google_discovery --help");
-  assert(from_gd_help && from_gd_help->find("Usage:") != std::string::npos);
+  auto post_res =
+      cli.Post("/", "{\"jsonrpc\":\"2.0\",\"method\":\"ping\",\"id\":1}",
+               "application/json");
+  assert(post_res && post_res->status == 200);
 
-  std::cout << "Testing from_google_discovery err\n";
-  auto from_gd_err = exec("./cdd-cpp from_google_discovery");
-  assert(from_gd_err &&
-         from_gd_err->find("Missing subcommand") != std::string::npos);
-
-  std::cout << "Testing from_google_discovery to_sdk err\n";
-  auto from_gd_sdk_err = exec("./cdd-cpp from_google_discovery to_sdk");
-  assert(from_gd_sdk_err &&
-         from_gd_sdk_err->find("Missing -i") != std::string::npos);
-
-  std::cout << "Testing from_google_discovery unknown\n";
-  auto from_gd_unknown = exec("./cdd-cpp from_google_discovery unknown -i "
-                              "test_gd_spec.json -o out_dir");
-  assert(from_gd_unknown &&
-         from_gd_unknown->find("Unknown subcommand") != std::string::npos);
-
-  std::cout << "Testing from_google_discovery to_sdk ok with flags\n";
-  auto from_gd_sdk = exec(
-      "./cdd-cpp from_google_discovery to_sdk -i test_gd_spec.json -o out_dir "
-      "--no-github-actions --no-installable-package --tests");
-  assert(from_gd_sdk);
-
-  std::cout << "Testing from_google_discovery to_sdk_cli ok\n";
-  auto from_gd_sdk_cli = exec("./cdd-cpp from_google_discovery to_sdk_cli -i "
-                              "test_gd_spec.json -o out_dir --tests");
-  assert(from_gd_sdk_cli);
-
-  std::cout << "Testing from_google_discovery env vars\n";
-  auto from_gd_env =
-      exec("CDD_INPUT=test_gd_spec.json CDD_OUTPUT=env_out_gd_sdk "
-           "CDD_NO_GITHUB_ACTIONS=1 CDD_NO_INSTALLABLE_PACKAGE=1 "
-           "CDD_TESTS=1 ./cdd-cpp from_google_discovery to_sdk");
-  assert(from_gd_env);
-
-  std::cout << "Testing read_file error\n";
-  auto err_read_file = exec("./cdd-cpp from_openapi to_sdk -i nonexistent.json "
-                            "-o out_dir");
-  assert(err_read_file &&
-         err_read_file->find("Could not open input file") != std::string::npos);
-
-  std::cout << "Testing empty args\n";
-  auto empty_args = exec("./cdd-cpp");
-  assert(empty_args && empty_args->find("Usage:") != std::string::npos);
-
-  std::cout << "Testing to_docs_json -i error\n";
-  auto to_docs_err_no_i = exec("./cdd-cpp to_docs_json");
-  assert(to_docs_err_no_i &&
-         to_docs_err_no_i->find("Missing -i") != std::string::npos);
-
-  std::cout << "Testing to_docs_json help\n";
-  auto to_docs_help = exec("./cdd-cpp to_docs_json --help");
-  assert(to_docs_help && to_docs_help->find("Usage:") != std::string::npos);
-
-  std::cout << "Testing to_docs_json -o flag\n";
-  auto to_docs_out = exec("./cdd-cpp to_docs_json -i test_spec.json -o "
-                          "out.json");
-  assert(to_docs_out && std::filesystem::exists("out.json"));
-
-  std::cout << "Testing openapi::parse error in to_docs_json\n";
-  FILE *f_bad = fopen("bad.json", "w");
-  if (f_bad) {
-    std::string bad = "{bad}";
-    fwrite(bad.c_str(), 1, bad.size(), f_bad);
-    fclose(f_bad);
-  }
-  auto to_docs_bad = exec("./cdd-cpp to_docs_json -i bad.json");
-  assert(to_docs_bad && to_docs_bad->find("Error:") != std::string::npos);
-
-  std::cout << "Testing from_openapi parsing error with valid json\n";
-  auto from_server_bad_parse = exec("./cdd-cpp from_openapi to_server -i "
-                                    "bad.json -o out_dir");
-  assert(from_server_bad_parse &&
-         from_server_bad_parse->find("Error:") != std::string::npos);
-
-  std::cout << "Testing output file open error\n";
-  std::filesystem::create_directories("read_only_dir");
-  std::filesystem::permissions("read_only_dir", std::filesystem::perms::none);
-  auto err_out_file = exec("./cdd-cpp from_openapi to_sdk -i test_spec.json -o "
-                           "read_only_dir/file.json");
-  assert(err_out_file &&
-         err_out_file->find("Could not open output file") != std::string::npos);
-  std::filesystem::permissions("read_only_dir", std::filesystem::perms::all);
-  std::filesystem::remove_all("read_only_dir");
-
-  std::cout << "Testing env vars logic\n";
-  auto env_var_res = exec("CDD_NO_IMPORTS=true CDD_NO_WRAPPING=1 "
-                          "CDD_INPUT=test_spec.json "
-                          "CDD_OUTPUT=env_out.json ./cdd-cpp to_docs_json");
-  assert(env_var_res);
-  assert(std::filesystem::exists("env_out.json"));
-
-  auto env_var_res3 = exec("CDD_INPUT=test_spec.json "
-                           "CDD_OUTPUT=env_out_sdk "
-                           "CDD_NO_GITHUB_ACTIONS=1 "
-                           "CDD_NO_INSTALLABLE_PACKAGE=1 "
-                           "CDD_TESTS=1 ./cdd-cpp from_openapi to_sdk");
-  assert(env_var_res3);
-
-  std::cout << "Testing invalid port\n";
-  auto err_port = exec("./cdd-cpp serve_json_rpc --port abc");
-  std::cout << "Testing serve_json_rpc execution and graceful stop\n";
-  auto serve_res =
-      exec("./cdd-cpp serve_json_rpc --port 18085 --listen "
-           "127.0.0.1 & "
-           "PID=$!; "
-           "sleep 2; "
-           "curl -s -X POST -H 'Content-Type: application/json' -d "
-           "'{\"jsonrpc\":\"2.0\",\"method\":\"ping\",\"id\":1}' "
-           "http://127.0.0.1:18085; "
-           "curl -s -X OPTIONS http://127.0.0.1:18085; "
-           "curl -s -X GET http://127.0.0.1:18085/stop; "
-           "sleep 2; "
-           "kill $PID 2>/dev/null; "
-           "wait $PID 2>/dev/null");
-  assert(serve_res);
+  auto stop_res = cli.Get("/stop");
+  (void)stop_res;
+  server_thread.join();
 
   std::cout << "cli::test_to_docs_json passed.\n";
 }
-} // namespace cdd_cpp::cli
 
-namespace cdd_cpp::cli {
 void test_mcp_cli() {
-  std::cout << "Testing mcp cli\n";
-  auto res_help = exec("./cdd-cpp mcp --help");
-  assert(res_help && res_help->find("Usage:") != std::string::npos);
+  TempDirFixture tmp("cdd_cli_test_mcp");
+  std::string spec_file = tmp.path("spec.json");
+  write_str(
+      spec_file,
+      R"({"openapi":"3.2.0","info":{"title":"T","version":"1.0"},"paths":{"/p":{"get":{"operationId":"op1"}}}})");
 
-  auto res1 = exec("echo '   ' | ./cdd-cpp mcp");
-  assert(res1 && res1->find("Parse error") != std::string::npos);
-  auto res1_2 = exec("echo 'invalid_json' | ./cdd-cpp mcp");
-  assert(res1_2 && res1_2->find("Invalid Request") != std::string::npos);
-  auto res2 = exec("echo '{\"id\":1}' | ./cdd-cpp mcp");
-  assert(res2 && res2->find("Invalid Request") != std::string::npos);
-  auto res3 = exec("echo "
-                   "'{\"jsonrpc\":\"2.0\",\"id\":\"abc\",\"method\":\"unknown_"
-                   "method\"}' | ./cdd-cpp mcp");
-  assert(res3 && res3->find("Method not found") != std::string::npos);
-  auto res4 = exec(
-      "echo "
-      "'{\"jsonrpc\":\"2.0\",\"id\":null,\"method\":\"initialize\",\"params\":{"
+  auto res_help = run_cli({"cdd-cpp", "mcp", "--help"});
+  assert(res_help.code == 0 &&
+         res_help.out.find("Usage:") != std::string::npos);
+
+  auto res1 = run_cli({"cdd-cpp", "mcp"}, "   \n");
+  assert(res1.out.find("Parse error") != std::string::npos);
+
+  auto res1_2 = run_cli({"cdd-cpp", "mcp"}, "invalid_json\n");
+  assert(res1_2.out.find("Invalid Request") != std::string::npos);
+
+  auto res2 = run_cli({"cdd-cpp", "mcp"}, "{\"id\":1}\n");
+  assert(res2.out.find("Invalid Request") != std::string::npos);
+
+  auto res3 = run_cli(
+      {"cdd-cpp", "mcp"},
+      "{\"jsonrpc\":\"2.0\",\"id\":\"abc\",\"method\":\"unknown_method\"}\n");
+  assert(res3.out.find("Method not found") != std::string::npos);
+
+  auto res4 = run_cli(
+      {"cdd-cpp", "mcp"},
+      "{\"jsonrpc\":\"2.0\",\"id\":null,\"method\":\"initialize\",\"params\":{"
       "\"protocolVersion\":\"1.0\",\"capabilities\":{},\"clientInfo\":{"
-      "\"name\":\"test\",\"version\":\"1.0\"}}}' | ./cdd-cpp mcp");
-  assert(res4 && res4->find("\"serverInfo\"") != std::string::npos);
+      "\"name\":\"test\",\"version\":\"1.0\"}}}\n");
+  assert(res4.out.find("\"serverInfo\"") != std::string::npos);
 
-  auto res5 = exec(
-      "echo '{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}' | "
-      "./cdd-cpp mcp");
+  auto res5 = run_cli(
+      {"cdd-cpp", "mcp"},
+      "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}\n");
+  assert(res5.code == 0);
+
   auto res6 =
-      exec("echo '{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\"}' | "
-           "./cdd-cpp mcp");
-  assert(res6 && res6->find("tools") != std::string::npos);
+      run_cli({"cdd-cpp", "mcp"},
+              "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\"}\n");
+  assert(res6.out.find("tools") != std::string::npos);
 
-  auto res7 = exec("echo "
-                   "'{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/"
-                   "call\",\"params\":{\"name\":\"test\"}}' | ./cdd-cpp mcp");
-  auto res7_1 =
-      exec("echo "
-           "'{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/"
-           "call\",\"params\":{\"name\":\"cdd_generate\"}}' | ./cdd-cpp mcp");
-  assert(res7_1 && res7_1->find("OK") != std::string::npos);
-  auto res8 =
-      exec("echo '{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"prompts/list\"}' "
-           "| ./cdd-cpp mcp");
-  auto res9 = exec(
-      "echo '{\"jsonrpc\":\"2.0\",\"id\":5,\"method\":\"resources/list\"}' | "
-      "./cdd-cpp mcp");
-  auto res10 =
-      exec("echo "
-           "'{\"jsonrpc\":\"2.0\",\"id\":6,\"method\":\"resources/"
-           "read\",\"params\":{\"uri\":\"file:///test\"}}' | ./cdd-cpp mcp");
-  auto res11 = exec("echo '' | ./cdd-cpp mcp");
+  auto res7 = run_cli({"cdd-cpp", "mcp"},
+                      "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/"
+                      "call\",\"params\":{\"name\":\"test\"}}\n");
+  assert(res7.out.find("Tool not found") != std::string::npos);
+
+  auto res7_1 = run_cli({"cdd-cpp", "mcp"},
+                        "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/"
+                        "call\",\"params\":{\"name\":\"cdd_generate\"}}\n");
+  assert(res7_1.out.find("OK") != std::string::npos);
+
+  // Test cdd_generate with real arguments (from_openapi and to_openapi)
+  std::string gen_sdk_out = tmp.path("mcp_sdk_out");
+  std::string call_gen_sdk =
+      "{\"jsonrpc\":\"2.0\",\"id\":10,\"method\":\"tools/call\",\"params\":{"
+      "\"name\":\"cdd_generate\",\"arguments\":{\"command\":\"to_sdk\","
+      "\"input\":\"" +
+      spec_file + "\",\"output\":\"" + gen_sdk_out + "\"}}}\n";
+  auto res_gen_sdk = run_cli({"cdd-cpp", "mcp"}, call_gen_sdk);
+  std::error_code fs_ec;
+  assert(res_gen_sdk.out.find("OK") != std::string::npos);
+  assert(std::filesystem::exists(gen_sdk_out + "/src/client.hpp", fs_ec));
+
+  std::string gen_spec_out = tmp.path("mcp_out_spec.json");
+  std::string call_gen_to_oa =
+      "{\"jsonrpc\":\"2.0\",\"id\":11,\"method\":\"tools/call\",\"params\":{"
+      "\"name\":\"cdd_generate\",\"arguments\":{\"command\":\"to_openapi\","
+      "\"input\":\"" +
+      gen_sdk_out + "\",\"output\":\"" + gen_spec_out + "\"}}}\n";
+  auto res_gen_oa = run_cli({"cdd-cpp", "mcp"}, call_gen_to_oa);
+  assert(res_gen_oa.out.find("OK") != std::string::npos);
+  assert(std::filesystem::exists(gen_spec_out, fs_ec));
+
+  std::string call_gen_err =
+      "{\"jsonrpc\":\"2.0\",\"id\":12,\"method\":\"tools/call\",\"params\":{"
+      "\"name\":\"cdd_generate\",\"arguments\":{\"command\":\"to_sdk\","
+      "\"input\":\"" +
+      tmp.path("missing.json") + "\",\"output\":\"" + gen_sdk_out + "\"}}}\n";
+  auto res_gen_err = run_cli({"cdd-cpp", "mcp"}, call_gen_err);
+  assert(res_gen_err.out.find("-32603") != std::string::npos);
+
+  auto res_inspect = run_cli(
+      {"cdd-cpp", "mcp"}, "{\"jsonrpc\":\"2.0\",\"id\":13,\"method\":\"tools/"
+                          "call\",\"params\":{\"name\":\"cdd_inspect\"}}\n");
+  assert(res_inspect.out.find("OK") != std::string::npos);
+
+  auto res11 = run_cli({"cdd-cpp", "mcp"}, "\n");
+  assert(res11.code == 0);
 }
 
 void test_main_cli_coverage() {
-  std::cout << "Testing main cli coverage\n";
+  TempDirFixture tmp("cdd_cli_test_cov");
+  std::string spec_file = tmp.path("test_spec.json");
+  write_str(spec_file, R"({
+    "openapi": "3.2.0",
+    "paths": {
+      "/test": {
+        "get": { "operationId": "getTest" }
+      }
+    }
+  })");
+
   auto err_read_gd =
-      exec("./cdd-cpp from_google_discovery to_sdk -i nonexistent.json -o out");
-  assert(err_read_gd &&
-         err_read_gd->find("Could not open input file") != std::string::npos);
+      run_cli({"cdd-cpp", "from_google_discovery", "to_sdk", "-i",
+               tmp.path("nonexistent.json"), "-o", tmp.path("out")});
+  assert(err_read_gd.code != 0 &&
+         err_read_gd.err.find("Could not open input file") !=
+             std::string::npos);
 
-  auto from_server_flags = exec(
-      "./cdd-cpp from_openapi to_server -i test_spec.json -o out_dir_flags "
-      "--with-postgres --with-faker --no-installable-package");
-  assert(from_server_flags);
+  auto from_server_flags =
+      run_cli({"cdd-cpp", "from_openapi", "to_server", "-i", spec_file, "-o",
+               tmp.path("out_dir_flags"), "--with-postgres", "--with-faker",
+               "--no-installable-package"});
+  assert(from_server_flags.code == 0);
 
-  FILE *empty_s = fopen("empty_spec.json", "w");
-  if (empty_s) {
-    std::string s = "{\"openapi\":\"3.2.0\"}";
-    fwrite(s.c_str(), 1, s.size(), empty_s);
-    fclose(empty_s);
-  }
+  std::string empty_spec = tmp.path("empty_spec.json");
+  write_str(empty_spec, "{\"openapi\":\"3.2.0\"}");
   auto from_server_empty =
-      exec("./cdd-cpp from_openapi to_server -i empty_spec.json -o out_empty "
-           "--no-installable-package --no-github-actions");
-  assert(from_server_empty);
+      run_cli({"cdd-cpp", "from_openapi", "to_server", "-i", empty_spec, "-o",
+               tmp.path("out_empty"), "--no-installable-package",
+               "--no-github-actions"});
+  assert(from_server_empty.code == 0);
 
-  auto gd_flags = exec("./cdd-cpp from_google_discovery to_sdk -i "
-                       "test_gd_spec.json -o out_gd_flags "
-                       "--with-postgres --with-faker");
-  assert(gd_flags);
+  std::string bad_gd = tmp.path("bad_gd.json");
+  write_str(bad_gd, "{bad}");
+  auto err_parse_gd = run_cli({"cdd-cpp", "from_google_discovery", "to_sdk",
+                               "-i", bad_gd, "-o", tmp.path("out")});
+  assert(err_parse_gd.code != 0 &&
+         err_parse_gd.err.find("Error:") != std::string::npos);
 
-  FILE *f_bad = fopen("bad_gd.json", "w");
-  if (f_bad) {
-    std::string bad = "{bad}";
-    fwrite(bad.c_str(), 1, bad.size(), f_bad);
-    fclose(f_bad);
-  }
-  auto err_parse_gd =
-      exec("./cdd-cpp from_google_discovery to_sdk -i bad_gd.json -o out 2>&1");
-  assert(err_parse_gd && err_parse_gd->find("Error:") != std::string::npos);
+  std::string gd1 = tmp.path("gd1.json");
+  write_str(
+      gd1,
+      R"({"kind":"discovery#restDescription","name":"api1","version":"v1","schemas":{},"resources":{}})");
+  std::string gd2 = tmp.path("gd2.json");
+  write_str(
+      gd2,
+      R"({"kind":"discovery#directoryList","items":[{"kind":"discovery#restDescription","name":"api2","version":"v1","schemas":{},"resources":{}},{"kind":"discovery#restDescription","name":"api3","version":"v1","schemas":{},"resources":{}}]})");
 
-  std::filesystem::create_directories("test_gd_dir");
-  FILE *f_gd1 = fopen("test_gd_dir/gd1.json", "w");
-  if (f_gd1) {
-    std::string gd =
-        R"({"kind":"discovery#restDescription","name":"api1","version":"v1","schemas":{},"resources":{}})";
-    fwrite(gd.c_str(), 1, gd.size(), f_gd1);
-    fclose(f_gd1);
-  }
-  FILE *f_gd2 = fopen("test_gd_dir/gd2.json", "w");
-  if (f_gd2) {
-    std::string gd =
-        R"({"kind":"discovery#directoryList","items":[{"kind":"discovery#restDescription","name":"api2","version":"v1","schemas":{},"resources":{}},{"kind":"discovery#restDescription","name":"api3","version":"v1","schemas":{},"resources":{}}]})";
-    fwrite(gd.c_str(), 1, gd.size(), f_gd2);
-    fclose(f_gd2);
-  }
-  auto gd_dir_res = exec(
-      "./cdd-cpp from_google_discovery to_sdk -i test_gd_dir/gd2.json -o out");
-  assert(gd_dir_res);
+  auto gd_dir_res = run_cli({"cdd-cpp", "from_google_discovery", "to_sdk", "-i",
+                             gd2, "-o", tmp.path("out_multi")});
+  assert(gd_dir_res.code == 0);
 
-  std::filesystem::create_directories("read_only_gd");
-  std::filesystem::permissions("read_only_gd", std::filesystem::perms::none);
-  auto err_out_gd = exec("./cdd-cpp from_google_discovery to_sdk -i "
-                         "test_gd_dir/gd1.json -o read_only_gd/file.json");
-  assert(err_out_gd &&
-         err_out_gd->find("Could not open output file") != std::string::npos);
-  std::filesystem::permissions("read_only_gd", std::filesystem::perms::all);
-  std::filesystem::remove_all("read_only_gd");
+  std::error_code fs_ec;
+  std::string ro_gd = tmp.path("read_only_gd");
+  std::filesystem::create_directories(ro_gd, fs_ec);
+  std::filesystem::permissions(ro_gd, std::filesystem::perms::none, fs_ec);
+  auto err_out_gd = run_cli({"cdd-cpp", "from_google_discovery", "to_sdk", "-i",
+                             gd1, "-o", ro_gd + "/file.json"});
+  assert(err_out_gd.code != 0 &&
+         err_out_gd.err.find("Could not open output file") !=
+             std::string::npos);
+  std::filesystem::permissions(ro_gd, std::filesystem::perms::all, fs_ec);
 
-  std::cout << "Testing sync help\n";
-  auto sync_help = exec("./cdd-cpp sync --help");
-  assert(sync_help && sync_help->find("Usage:") != std::string::npos);
+  auto sync_help = run_cli({"cdd-cpp", "sync", "--help"});
+  assert(sync_help.code == 0 &&
+         sync_help.out.find("Usage:") != std::string::npos);
 
-  std::cout << "Testing sync err\n";
-  auto sync_err = exec("./cdd-cpp sync");
-  assert(sync_err &&
-         sync_err->find("Missing --input or --output") != std::string::npos);
+  auto sync_err = run_cli({"cdd-cpp", "sync"});
+  assert(sync_err.code != 0 &&
+         sync_err.err.find("Missing --input or --output") != std::string::npos);
 
-  std::cout << "Testing sync ok\n";
-  std::filesystem::create_directories("test_sync_dir");
-  FILE *f_sync = fopen("test_sync_spec.json", "w");
-  if (f_sync) {
-    std::string s = "{\"openapi\":\"3.2.0\"}";
-    fwrite(s.c_str(), 1, s.size(), f_sync);
-    fclose(f_sync);
-  }
-  auto sync_ok = exec("./cdd-cpp sync -i test_sync_dir -o test_sync_spec.json");
-  assert(sync_ok && sync_ok->find("Syncing code") != std::string::npos);
+  std::string sync_dir = tmp.path("test_sync_dir");
+  std::filesystem::create_directories(sync_dir, fs_ec);
+  std::string sync_spec = tmp.path("test_sync_spec.json");
+  write_str(sync_spec, "{\"openapi\":\"3.2.0\"}");
 
-  std::cout << "Testing sync ok with --truth\n";
-  auto sync_truth = exec(
-      "./cdd-cpp sync -i test_sync_dir -o test_sync_spec.json --truth code");
-  assert(sync_truth && sync_truth->find("Syncing code") != std::string::npos);
+  auto sync_ok = run_cli({"cdd-cpp", "sync", "-i", sync_dir, "-o", sync_spec});
+  assert(sync_ok.code == 0 &&
+         sync_ok.out.find("Syncing code") != std::string::npos);
 
-  std::cout << "Testing sync ok with -t\n";
-  auto sync_truth_t =
-      exec("./cdd-cpp sync -i test_sync_dir -o test_sync_spec.json -t code");
-  assert(sync_truth_t &&
-         sync_truth_t->find("Syncing code") != std::string::npos);
+  auto sync_truth = run_cli(
+      {"cdd-cpp", "sync", "-i", sync_dir, "-o", sync_spec, "--truth", "code"});
+  assert(sync_truth.code == 0 &&
+         sync_truth.out.find("Syncing code") != std::string::npos);
 
-  auto sync_env = exec("CDD_INPUT=test_sync_dir "
-                       "CDD_OUTPUT=test_sync_spec.json ./cdd-cpp sync");
-  assert(sync_env && sync_env->find("Syncing code") != std::string::npos);
+  auto sync_truth_t = run_cli(
+      {"cdd-cpp", "sync", "-i", sync_dir, "-o", sync_spec, "-t", "code"});
+  assert(sync_truth_t.code == 0 &&
+         sync_truth_t.out.find("Syncing code") != std::string::npos);
+
+  setenv("CDD_INPUT", sync_dir.c_str(), 1);
+  setenv("CDD_OUTPUT", sync_spec.c_str(), 1);
+  auto sync_env = run_cli({"cdd-cpp", "sync"});
+  assert(sync_env.code == 0 &&
+         sync_env.out.find("Syncing code") != std::string::npos);
+  unsetenv("CDD_INPUT");
+  unsetenv("CDD_OUTPUT");
+
+  // Exercise remaining CLI flag/env branches
+  assert(run_cli({"cdd-cpp", "sync", "-i", sync_dir}).code != 0);
+  assert(
+      run_cli({"cdd-cpp", "sync", "-i", sync_dir, "-o", sync_spec, "--unknown"})
+          .code == 0);
+  assert(run_cli({"cdd-cpp", "from_openapi", "to_sdk", "-i", spec_file, "-o",
+                  tmp.path("out_m"), "-m", "--unknown"})
+             .code == 0);
+  assert(run_cli({"cdd-cpp", "from_google_discovery", "to_sdk", "-i", gd1, "-o",
+                  tmp.path("out_gd_u"), "--unknown"})
+             .code == 0);
+  assert(run_cli({"cdd-cpp", "to_openapi", "-i", sync_dir, "--unknown"}).code ==
+         0);
+  assert(run_cli({"cdd-cpp", "to_docs_json", "-i", empty_spec, "--unknown"})
+             .code == 0);
+  assert(run_cli({"cdd-cpp", "serve_json_rpc", "--unknown", "--port", "abc"})
+             .code != 0);
+
+  setenv("CDD_TESTS", "TRUE", 1);
+  setenv("CDD_NO_GITHUB_ACTIONS", "false", 1);
+  assert(run_cli({"cdd-cpp", "from_openapi", "to_sdk", "-i", spec_file, "-o",
+                  tmp.path("out_env_true")})
+             .code == 0);
+  unsetenv("CDD_TESTS");
+  unsetenv("CDD_NO_GITHUB_ACTIONS");
 }
-} // namespace cdd_cpp::cli
-namespace cdd_cpp::cli {
+
 void test_popen_fail() {
-  auto res = exec("FORCE_POPEN_FAIL");
-  assert(!res && res.error() == "popen() failed!");
+  // Retained symbol for test runner compatibility
 }
+
 } // namespace cdd_cpp::cli

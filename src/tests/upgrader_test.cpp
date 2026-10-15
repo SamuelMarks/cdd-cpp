@@ -6,7 +6,7 @@
 namespace cdd_cpp::openapi::upgraders {
 void test_upgraders() {
   std::string oas_1_2 =
-      R"({"swaggerVersion": "1.2", "apis": [{"path": "/a", "operations": [{"method": "GET", "nickname": "getA"}]}], "info": {"title": "Test 1.2", "description": "d"}})";
+      R"({"swaggerVersion": "1.2", "apis": [{"path": "/a", "operations": [{"method": "GET", "nickname": "getA"}, {"method": "POST"}]}, {"path": "/no_ops"}], "info": {"title": "Test 1.2", "description": "d"}})";
   auto res_1_2_res = upgrade_to_latest(oas_1_2);
   assert(res_1_2_res.has_value());
   std::string res_1_2 = *res_1_2_res;
@@ -21,13 +21,13 @@ void test_upgraders() {
   assert(res_1_2_no_info.find("\"Upgraded from 1.2\"") != std::string::npos);
 
   std::string oas_2_0_fallback =
-      R"({"swagger": "2.0", "info": {"title": "Fallback Test"}, "paths": {"/b": {"post": {"parameters": [{"in": "body", "name": "b", "schema": {"type": "object"}}], "responses": {"200": {"description": "OK"}}}}}})";
+      R"({"swagger": "2.0", "paths": {"/b": {"x-path-ext": true, "post": {"parameters": [{"in": "body", "name": "b", "schema": {"type": "object"}}], "responses": {"200": {"description": "OK"}}}, "get": {"responses": {"200": {"description": "OK"}}}}}})";
   auto res_2_0_fb = upgrade_to_latest(oas_2_0_fallback);
   assert(res_2_0_fb.has_value());
   assert(res_2_0_fb->find("\"application/json\"") != std::string::npos);
 
   std::string oas_2_0 =
-      R"({"swagger": "2.0", "host": "api.example.com", "basePath": "/v1", "schemes": ["http"], "consumes": ["text/plain"], "produces": ["application/xml"], "info": {"title": "Test 2.0"}, "tags": [{"name": "A"}], "security": [], "definitions": {"D": {"type": "string"}}, "parameters": {"P": {"type": "string", "maxLength": 10, "pattern": "a", "minItems": 1, "uniqueItems": true, "enum": ["a"], "multipleOf": 2}}, "responses": {"R": {"schema": {"type": "string"}, "description": "desc"}}, "securityDefinitions": {"S": {"type": "oauth2", "flow": "implicit", "authorizationUrl": "url"}, "B": {"type": "basic"}, "A": {"type": "apiKey", "in": "header", "name": "X-Auth"}}, "paths": {"/a": {"parameters": [{"in": "query", "name": "p1", "type": "string"}], "$ref": "pathRef", "get": {"consumes": ["application/json", "multipart/form-data"], "produces": ["application/json"], "summary": "Sum", "parameters": [{"in": "formData", "name": "f1", "type": "string", "required": true}, {"$ref": "#/parameters/P"}], "responses": {"200": {"description": "desc", "schema": {"type": "string"}}}}}}})";
+      R"({"swagger": "2.0", "host": "api.example.com", "basePath": "/v1", "schemes": ["http"], "consumes": ["text/plain"], "produces": ["application/xml"], "info": {"title": "Test 2.0"}, "tags": [{"name": "A"}], "security": [], "definitions": {"D": {"type": "string"}}, "parameters": {"P": {"name": "P", "in": "query", "type": "string", "maxLength": 10, "pattern": "a", "minItems": 1, "uniqueItems": true, "enum": ["a"], "multipleOf": 2}}, "responses": {"R": {"schema": {"type": "string"}, "description": "desc"}}, "securityDefinitions": {"S": {"type": "oauth2", "flow": "implicit", "authorizationUrl": "url"}, "B": {"type": "basic"}, "A": {"type": "apiKey", "in": "header", "name": "X-Auth"}}, "paths": {"/a": {"parameters": [{"in": "query", "name": "p1", "type": "string"}], "$ref": "pathRef", "get": {"consumes": ["application/json", "multipart/form-data"], "produces": ["application/json"], "summary": "Sum", "parameters": [{"in": "formData", "name": "f1", "type": "string", "required": true}, {"$ref": "#/parameters/P"}], "responses": {"200": {"description": "desc", "schema": {"type": "string"}}}}}}})";
   auto res_2_0_res = upgrade_to_latest(oas_2_0);
   assert(res_2_0_res.has_value());
   std::string res_2_0 = *res_2_0_res;

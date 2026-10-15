@@ -21,7 +21,8 @@ void test_parse() {
                    "/// @xml.attribute true\n"
                    "/// @xml.wrapped true\n"
                    "/// @discriminator.propertyName prop\n"
-                   "/// @discriminator.mapping k1:v1\n";
+                   "/// @discriminator.mapping k1:v1\n"
+                   "/// @discriminator.mapping k2:v2\n";
 
   cls1.fields.push_back({"int", "f_int", "/// @description field int"});
   cls1.fields.push_back({"double", "f_double", ""});
@@ -384,6 +385,13 @@ void test_emit() {
   openapi::OpenAPI empty_spec;
   auto empty_files = emit_modular(empty_spec);
   assert(empty_files.empty());
+  assert(emit(empty_spec).find("namespace cdd_models") != std::string::npos);
+
+  openapi::OpenAPI comp_no_schemas;
+  comp_no_schemas.components = openapi::Components{};
+  assert(emit_modular(comp_no_schemas).empty());
+  assert(emit(comp_no_schemas).find("namespace cdd_models") !=
+         std::string::npos);
 
   openapi::OpenAPI non_obj_spec;
   non_obj_spec.components = openapi::Components{};
@@ -394,11 +402,18 @@ void test_emit() {
 
   openapi::Schema kw_schema;
   kw_schema.type = "object";
+  kw_schema.externalDocs =
+      openapi::ExternalDocumentation{std::nullopt, "https://docs"};
+  kw_schema.xml = openapi::XML{};
+  kw_schema.discriminator = openapi::Discriminator{"type", std::nullopt};
   kw_schema.properties =
       std::make_shared<std::map<std::string, openapi::Schema>>();
   openapi::Schema p_class_kw;
   p_class_kw.type = "string";
   kw_schema.properties->insert({"class", p_class_kw});
+  openapi::Schema p_self_ref;
+  p_self_ref.ref = openapi::Reference{"#/components/schemas/KwSchema"};
+  kw_schema.properties->insert({"self", p_self_ref});
   kw_schema.required = std::vector<std::string>{"class"};
   non_obj_spec.components->schemas->insert({"KwSchema", kw_schema});
 
@@ -407,6 +422,7 @@ void test_emit() {
   assert(non_obj_files.count("src/models/KwSchema.hpp"));
   assert(non_obj_files["src/models/KwSchema.hpp"].find("class_") !=
          std::string::npos);
+  assert(emit(non_obj_spec).find("KwSchema") != std::string::npos);
 
   std::cout << "models::test_emit passed.\n";
 }
