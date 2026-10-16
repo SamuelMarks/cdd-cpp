@@ -1,21 +1,34 @@
 import re
 import sys
+import urllib.parse
+
+
+def format_badge_value(cov):
+    raw = urllib.parse.unquote(str(cov).strip())
+    raw = re.sub(r"%+$", "%", raw)
+    if "%" not in raw:
+        raw = f"{raw}%"
+    escaped = raw.replace("-", "--").replace("_", "__")
+    return urllib.parse.quote(escaped, safe="")
 
 
 def update_readme(test_cov, doc_cov):
     with open("README.md", "r") as f:
         content = f.read()
 
-    test_badge = f"![Test Coverage](https://img.shields.io/badge/coverage-{test_cov}%25-brightgreen.svg)"
-    doc_badge = f"![Doc Coverage](https://img.shields.io/badge/docs-{doc_cov}%25-brightgreen.svg)"
+    encoded_test_cov = format_badge_value(test_cov)
+    encoded_doc_cov = format_badge_value(doc_cov)
+
+    test_badge = f"![Test Coverage](https://img.shields.io/badge/coverage-{encoded_test_cov}-brightgreen.svg)"
+    doc_badge = f"![Doc Coverage](https://img.shields.io/badge/docs-{encoded_doc_cov}-brightgreen.svg)"
 
     content = re.sub(r"!\[Test Coverage\]\([^)]+\)", test_badge, content)
     content = re.sub(r"!\[Doc Coverage\]\([^)]+\)", doc_badge, content)
 
     if test_badge not in content:
         content = re.sub(
-            r"(cdd-cpp\n=======\n)",
-            r"\1\n" + test_badge + "\n" + doc_badge + "\n",
+            r"(cdd-cpp\n=+\n)",
+            r"\1\n" + f"[{test_badge}](#)\n[{doc_badge}](#)\n",
             content,
         )
 

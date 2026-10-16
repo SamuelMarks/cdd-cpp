@@ -55,8 +55,12 @@ void test_cpp_parser() {
   std::expected<std::string, std::string> handle_cliOp(cdd_cli::Client& client) noexcept {
       return "";
   }
+  /// @route POST /cli_route_unique
+  std::expected<std::string, std::string> handle_cliOpUnique(cdd_cli::Client& client) noexcept {
+      return "";
+  }
   void run_cli(cdd_cli::Client& client) {
-      auto r = handle_cliOp(client);
+      auto r = handle_cliOpUnique(client);
       auto r2 = handle_unparsed(client, query_params, path_params["id"], body);
   }
   void setup_svr(httplib::Server& svr) {
