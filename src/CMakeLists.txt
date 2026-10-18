@@ -25,5 +25,8 @@ set(CDD_LIB_SRCS
     src/orm/emit.cpp
     src/mcp/parse.cpp
     src/mcp/emit.cpp
+    src/arazzo/expressions.cpp
+    src/arazzo/parse.cpp
+    src/arazzo/emit.cpp
     PARENT_SCOPE
 )

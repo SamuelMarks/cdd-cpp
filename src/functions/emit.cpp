@@ -62,4 +62,44 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   return ss.str();
 }
 
+/// @brief Internal helper or implementation for `emit_arazzo`.
+std::string emit_arazzo(const arazzo::Arazzo &spec) noexcept {
+  if (spec.workflows.empty()) {
+    return "{}";
+  }
+
+  std::ostringstream ss;
+  ss << "#pragma once\n#include <expected>\n#include <optional>\n#include "
+        "<string>\n\n";
+  ss << docstrings::emit_arazzo_docstrings(spec);
+  ss << "namespace cdd_functions {\n";
+
+  for (const auto &wf : spec.workflows) {
+    ss << docstrings::emit_workflow_docstrings(wf);
+    ss << "    std::expected<std::string, std::string> " << wf.workflowId
+       << "(";
+    bool first = true;
+    if (wf.inputs.has_value()) {
+      for (const auto &[pname, pschema] : *wf.inputs->properties) {
+        if (!first)
+          ss << ", ";
+        first = false;
+        std::string ctype = "std::string";
+        std::string stype = pschema.type.value_or("string");
+        if (stype == "integer")
+          ctype = "int";
+        else if (stype == "number")
+          ctype = "double";
+        else if (stype == "boolean")
+          ctype = "bool";
+        ss << ctype << " " << pname;
+      }
+    }
+    ss << ") noexcept;\n";
+  }
+
+  ss << "}\n";
+  return ss.str();
+}
+
 } // namespace cdd_cpp::functions

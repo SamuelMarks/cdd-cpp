@@ -2,6 +2,8 @@
 /// @brief Implementation of CLI subcommand handlers and bidirectional C++
 /// project / OpenAPI synchronization.
 
+#include "../arazzo/emit.hpp"
+#include "../arazzo/parse.hpp"
 #include "../client_sdk/emit.hpp"
 #include "../client_sdk_cli/emit.hpp"
 #include "../google_discovery/parse.hpp"
@@ -98,7 +100,7 @@ static void print_help(std::ostream &out) noexcept {
 /// @brief Print CLI version information.
 /// @param out Output stream for version text.
 static void print_version(std::ostream &out) noexcept {
-  out << "cdd-cpp version 0.0.3\n";
+  out << "cdd-cpp version 0.0.4\n";
 }
 
 /// @brief Read file contents into a string.
@@ -345,6 +347,71 @@ int to_openapi(const ToOpenApiConfig &config, std::ostream &out,
   }
   auto spec = utils::parse_cpp_project(config.input);
   std::string spec_str = openapi::emit(spec);
+  if (config.output.empty()) {
+    out << spec_str << "\n";
+  } else {
+    std::ofstream fs(config.output);
+    if (!fs.is_open()) {
+      err << "Error: "
+          << utils::Error(utils::ErrorCode::FileWriteError,
+                          "Could not open output file: " + config.output,
+                          config.output)
+          << "\n";
+      return 1;
+    }
+    fs << spec_str << "\n";
+  }
+  return 0;
+}
+
+int from_arazzo(const FromArazzoConfig &config, std::ostream &out,
+                std::ostream &err) noexcept {
+  if (config.input.empty()) {
+    err << "Missing -i <spec.arazzo.json>\n";
+    return 1;
+  }
+
+  auto content_res = read_file(config.input);
+  if (!content_res) {
+    err << "Error: " << content_res.error() << "\n";
+    return 1;
+  }
+
+  auto spec_res = arazzo::parse(*content_res);
+  if (!spec_res) {
+    err << "Error: " << spec_res.error() << "\n";
+    return 1;
+  }
+  const auto &spec = *spec_res;
+
+  std::map<std::string, std::string> multiple_files;
+  if (config.subcommand == "to_sdk") {
+    multiple_files = client_sdk::emit_arazzo_client(
+        spec, std::nullopt, config.no_github_actions,
+        config.no_installable_package, config.tests);
+  } else if (config.subcommand == "to_sdk_cli") {
+    multiple_files = client_sdk_cli::emit_arazzo_cli(
+        spec, std::nullopt, config.no_github_actions,
+        config.no_installable_package, config.tests);
+  } else if (config.subcommand == "to_server") {
+    multiple_files = server::emit_arazzo_modular(
+        spec, config.no_installable_package, config.tests);
+  } else {
+    err << "Unknown subcommand: " << config.subcommand << "\n";
+    return 1;
+  }
+
+  return write_generated_files(multiple_files, config.output, out, err);
+}
+
+int to_arazzo(const ToArazzoConfig &config, std::ostream &out,
+              std::ostream &err) noexcept {
+  if (config.input.empty()) {
+    err << "Missing -i <path/to/code>\n";
+    return 1;
+  }
+  auto spec = utils::parse_cpp_project_arazzo(config.input);
+  std::string spec_str = arazzo::emit(spec);
   if (config.output.empty()) {
     out << spec_str << "\n";
   } else {
@@ -733,6 +800,63 @@ int run_to_openapi(int argc, char **argv, std::ostream &out,
   return to_openapi(config, out, err);
 }
 
+int run_from_arazzo(int argc, char **argv, std::ostream &out,
+                    std::ostream &err) noexcept {
+  if (has_help_flag(argc, argv)) {
+    out << "Usage:\n"
+        << "  cdd-cpp from_arazzo to_sdk -i <spec.arazzo.json> -o "
+           "<target_directory> [--no-github-actions] "
+           "[--no-installable-package] [--tests]\n"
+        << "  cdd-cpp from_arazzo to_sdk_cli -i <spec.arazzo.json> -o "
+           "<target_directory> [--no-github-actions] "
+           "[--no-installable-package] [--tests]\n"
+        << "  cdd-cpp from_arazzo to_server -i <spec.arazzo.json> -o "
+           "<target_directory> [--no-installable-package] [--tests]\n";
+    return 0;
+  }
+  if (argc < 3) {
+    err << "Missing subcommand for from_arazzo\n";
+    return 1;
+  }
+  FromArazzoConfig config;
+  config.subcommand = argv[2];
+  config.output = "";
+  for (int i = 3; i < argc; ++i) {
+    std::string_view arg = argv[i];
+    if (match_opt(arg, "-i", "--input", i, argc, argv, config.input)) {
+    } else if (match_opt(arg, "-o", "--output", i, argc, argv, config.output)) {
+    } else if (arg == "--no-github-actions") {
+      config.no_github_actions = true;
+    } else if (arg == "--no-installable-package") {
+      config.no_installable_package = true;
+    } else if (arg == "--tests") {
+      config.tests = true;
+    }
+  }
+  config.input = get_arg_or_env(config.input, "CDD_INPUT");
+  config.output = get_arg_or_env(config.output, "CDD_OUTPUT", ".");
+  return from_arazzo(config, out, err);
+}
+
+int run_to_arazzo(int argc, char **argv, std::ostream &out,
+                  std::ostream &err) noexcept {
+  if (has_help_flag(argc, argv)) {
+    out << "Usage:\n  cdd-cpp to_arazzo -i <path/to/code> [-o "
+           "<spec.arazzo.json>]\n";
+    return 0;
+  }
+  ToArazzoConfig config;
+  for (int i = 2; i < argc; ++i) {
+    std::string_view arg = argv[i];
+    if (match_opt(arg, "-i", "--input", i, argc, argv, config.input)) {
+    } else if (match_opt(arg, "-o", "--output", i, argc, argv, config.output)) {
+    }
+  }
+  config.input = get_arg_or_env(config.input, "CDD_INPUT");
+  config.output = get_arg_or_env(config.output, "CDD_OUTPUT");
+  return to_arazzo(config, out, err);
+}
+
 int run_to_docs_json(int argc, char **argv, std::ostream &out,
                      std::ostream &err) noexcept {
   if (has_help_flag(argc, argv)) {
@@ -834,6 +958,12 @@ int main_impl(int argc, char **argv, std::ostream &out, std::ostream &err,
   }
   if (command == "to_openapi") {
     return run_to_openapi(argc, argv, out, err);
+  }
+  if (command == "from_arazzo") {
+    return run_from_arazzo(argc, argv, out, err);
+  }
+  if (command == "to_arazzo") {
+    return run_to_arazzo(argc, argv, out, err);
   }
   if (command == "to_docs_json") {
     return run_to_docs_json(argc, argv, out, err);

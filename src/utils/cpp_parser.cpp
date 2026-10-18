@@ -5,11 +5,14 @@
 #include "cpp_parser.hpp"
 #include "../client_sdk/parse.hpp"
 #include "../client_sdk_cli/parse.hpp"
+#include "../functions/parse.hpp"
+#include "../mocks/parse.hpp"
 #include "../server/parse.hpp"
 #include "cpp_ast.hpp"
 #include <cctype>
 #include <filesystem>
 #include <fstream>
+#include <set>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -307,7 +310,7 @@ try_parse_cpp_project(const std::string &folder_path) noexcept {
   openapi::OpenAPI spec;
   spec.openapi = "3.2.0";
   spec.info.title = "Generated API from C++";
-  spec.info.version = "0.0.3";
+  spec.info.version = "0.0.4";
   spec.components = openapi::Components{};
   spec.components->schemas = std::map<std::string, openapi::Schema>{};
   spec.paths = std::map<std::string, openapi::PathItem>{};
@@ -350,10 +353,95 @@ openapi::OpenAPI parse_cpp_project(const std::string &folder_path) noexcept {
   openapi::OpenAPI fallback;
   fallback.openapi = "3.2.0";
   fallback.info.title = "Generated API from C++";
-  fallback.info.version = "0.0.3";
+  fallback.info.version = "0.0.4";
   fallback.components = openapi::Components{};
   fallback.components->schemas = std::map<std::string, openapi::Schema>{};
   fallback.paths = std::map<std::string, openapi::PathItem>{};
+  return fallback;
+}
+
+/// @brief Merge workflows from a candidate Arazzo spec into a destination
+/// Arazzo spec without duplicating `workflowId`s.
+/// @param dest Destination Arazzo specification.
+/// @param src Source Arazzo specification.
+/// @param seen_ids Set of already-added workflowIds.
+static void merge_arazzo_workflows(arazzo::Arazzo &dest,
+                                   const arazzo::Arazzo &src,
+                                   std::set<std::string> &seen_ids) noexcept {
+  if (!src.info.title.starts_with("Parsed ")) {
+    dest.info = src.info;
+    dest.sourceDescriptions = src.sourceDescriptions;
+    dest.components = src.components;
+    dest.extensions = src.extensions;
+  }
+  for (const auto &wf : src.workflows) {
+    if (seen_ids.insert(wf.workflowId).second) {
+      dest.workflows.push_back(wf);
+    }
+  }
+}
+
+Result<arazzo::Arazzo>
+try_parse_cpp_project_arazzo(const std::string &folder_path) noexcept {
+  std::error_code ec;
+  fs::recursive_directory_iterator it(folder_path, ec);
+  if (ec) {
+    return make_error(ErrorCode::DirectoryIterationError, ec.message(),
+                      folder_path);
+  }
+
+  arazzo::Arazzo spec;
+  spec.arazzo = "1.1.0";
+  spec.info.title = "Generated Arazzo from C++";
+  spec.info.version = "0.0.4";
+  arazzo::SourceDescription sd;
+  sd.name = "default";
+  sd.url = "./openapi.json";
+  sd.type = arazzo::SourceDescriptionType::OpenApi;
+  spec.sourceDescriptions.push_back(std::move(sd));
+
+  std::set<std::string> seen_ids;
+  for (fs::recursive_directory_iterator end; it != end; it.increment(ec)) {
+    if (it->is_regular_file(ec)) {
+      std::string path = it->path().string();
+      if (path.ends_with(".hpp") || path.ends_with(".cpp")) {
+        std::ifstream fs(path);
+        std::string content((std::istreambuf_iterator<char>(fs)),
+                            std::istreambuf_iterator<char>());
+        if (auto r1 = client_sdk::parse_arazzo(content); r1.has_value()) {
+          merge_arazzo_workflows(spec, *r1, seen_ids);
+        }
+        if (auto r2 = client_sdk_cli::parse_arazzo(content); r2.has_value()) {
+          merge_arazzo_workflows(spec, *r2, seen_ids);
+        }
+        if (auto r3 = server::parse_arazzo(content); r3.has_value()) {
+          merge_arazzo_workflows(spec, *r3, seen_ids);
+        }
+        if (auto r4 = mocks::parse_arazzo(content); r4.has_value()) {
+          merge_arazzo_workflows(spec, *r4, seen_ids);
+        }
+      }
+    }
+  }
+
+  return spec;
+}
+
+arazzo::Arazzo
+parse_cpp_project_arazzo(const std::string &folder_path) noexcept {
+  auto res = try_parse_cpp_project_arazzo(folder_path);
+  if (res.has_value()) {
+    return *res;
+  }
+  arazzo::Arazzo fallback;
+  fallback.arazzo = "1.1.0";
+  fallback.info.title = "Generated Arazzo from C++";
+  fallback.info.version = "0.0.4";
+  arazzo::SourceDescription sd;
+  sd.name = "default";
+  sd.url = "./openapi.json";
+  sd.type = arazzo::SourceDescriptionType::OpenApi;
+  fallback.sourceDescriptions.push_back(std::move(sd));
   return fallback;
 }
 

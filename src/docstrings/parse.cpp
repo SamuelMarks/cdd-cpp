@@ -2,6 +2,7 @@
 /// @brief Implementation of Doxygen docstring parsers for OpenAPI models.
 
 #include "parse.hpp"
+#include "../arazzo/parse.hpp"
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -390,6 +391,42 @@ void parse_schema_docstrings(const std::string &docstring,
       schema.discriminator->mapping->insert({tokens[0], tokens[1]});
     }
   }
+}
+
+/// @brief Internal helper or implementation for `parse_arazzo_docstrings`.
+void parse_arazzo_docstrings(const std::string &docstring,
+                             arazzo::Arazzo &spec) noexcept {
+  auto full_json = extract_tag(docstring, "arazzo_spec_json");
+  if (full_json.has_value()) {
+    auto parsed = arazzo::parse(*full_json);
+    if (parsed.has_value()) {
+      spec = std::move(*parsed);
+      return;
+    }
+  }
+  auto v_arazzo = extract_tag(docstring, "arazzo");
+  if (v_arazzo.has_value())
+    spec.arazzo = *v_arazzo;
+  auto v_title = extract_tag(docstring, "arazzo_title");
+  if (v_title.has_value())
+    spec.info.title = *v_title;
+  auto v_ver = extract_tag(docstring, "arazzo_version");
+  if (v_ver.has_value())
+    spec.info.version = *v_ver;
+}
+
+/// @brief Internal helper or implementation for `parse_workflow_docstrings`.
+void parse_workflow_docstrings(const std::string &docstring,
+                               arazzo::Workflow &wf) noexcept {
+  auto v_id = extract_tag(docstring, "workflowId");
+  if (v_id.has_value())
+    wf.workflowId = *v_id;
+  auto v_sum = extract_tag(docstring, "summary");
+  if (v_sum.has_value())
+    wf.summary = *v_sum;
+  auto v_desc = extract_tag(docstring, "description");
+  if (v_desc.has_value())
+    wf.description = *v_desc;
 }
 
 /// @brief Internal helper or implementation for `parse`.

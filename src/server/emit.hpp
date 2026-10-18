@@ -2,6 +2,7 @@
 /// @brief C++ HTTP server and JSON-RPC code generator declarations.
 
 #pragma once
+#include "../arazzo/models.hpp"
 #include "../openapi/models.hpp"
 #include <map>
 #include <string>
@@ -15,6 +16,12 @@ namespace cdd_cpp::server {
 /// @return Generated C++ server header/source string.
 std::string emit(const openapi::OpenAPI &spec) noexcept;
 
+/// @brief Emit C++ server workflow engine to string from an Arazzo 1.1.0
+/// specification.
+/// @param spec The Arazzo 1.1.0 specification model.
+/// @return Generated C++ server `WorkflowEngine` header/source string.
+std::string emit_arazzo(const arazzo::Arazzo &spec) noexcept;
+
 /// @brief Emit modular C++ server files (Routes + Main + CMake + Tests).
 /// @param spec The OpenAPI specification model.
 /// @param no_installable_package If true, omits `CMakeLists.txt`.
@@ -26,6 +33,17 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
                                                 bool no_installable_package,
                                                 bool tests, bool with_postgres,
                                                 bool with_faker) noexcept;
+
+/// @brief Emit modular C++ server workflow orchestration files from an Arazzo
+/// 1.1.0 specification.
+/// @param spec The Arazzo 1.1.0 specification model.
+/// @param no_installable_package If true, omits `CMakeLists.txt`.
+/// @param tests If true, emits GoogleTest unit tests under `tests/`.
+/// @return Map of relative file paths to generated file contents.
+std::map<std::string, std::string>
+emit_arazzo_modular(const arazzo::Arazzo &spec,
+                    bool no_installable_package = false,
+                    bool tests = false) noexcept;
 
 /// @brief Serve a single JSON-RPC 2.0 request over `cdd-cpp` core generators.
 /// @param request Raw JSON-RPC 2.0 request payload string.

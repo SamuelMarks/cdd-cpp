@@ -30,7 +30,17 @@ enum class ErrorCode {
   JsonRpcInvalidRequest,    ///< Malformed JSON-RPC 2.0 request envelope.
   JsonRpcMethodNotFound,    ///< Requested JSON-RPC method or tool not found.
   JsonRpcInvalidParams,     ///< Invalid or missing JSON-RPC method parameters.
-  McpProtocolError          ///< Model Context Protocol domain error.
+  McpProtocolError,         ///< Model Context Protocol domain error.
+  InvalidArazzoDocument, ///< The document is not a valid Arazzo 1.1.0 object.
+  InvalidRuntimeExpression,     ///< Malformed Arazzo runtime expression syntax.
+  UnresolvedSourceDescription,  ///< Referenced sourceDescription or operation
+                                ///< could not be resolved.
+  UnresolvedComponentReference, ///< Referenced $components entry could not be
+                                ///< resolved.
+  CircularWorkflowDependency,   ///< Cyclic dependency detected in dependsOn or
+                                ///< step/workflow chain.
+  WorkflowExecutionFailed ///< Runtime execution of an Arazzo workflow step
+                          ///< failed.
 };
 
 /// @brief Convert an ErrorCode enumerator to its human-readable string name.
@@ -72,6 +82,18 @@ constexpr std::string_view error_code_to_string(ErrorCode code) noexcept {
     return "JsonRpcInvalidParams";
   case ErrorCode::McpProtocolError:
     return "McpProtocolError";
+  case ErrorCode::InvalidArazzoDocument:
+    return "InvalidArazzoDocument";
+  case ErrorCode::InvalidRuntimeExpression:
+    return "InvalidRuntimeExpression";
+  case ErrorCode::UnresolvedSourceDescription:
+    return "UnresolvedSourceDescription";
+  case ErrorCode::UnresolvedComponentReference:
+    return "UnresolvedComponentReference";
+  case ErrorCode::CircularWorkflowDependency:
+    return "CircularWorkflowDependency";
+  case ErrorCode::WorkflowExecutionFailed:
+    return "WorkflowExecutionFailed";
   }
   return "UnknownError";
 }

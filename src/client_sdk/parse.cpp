@@ -113,4 +113,46 @@ Result<openapi::OpenAPI> parse(const std::string &input) noexcept {
   return spec;
 }
 
+/// @brief Internal helper or implementation for `parse_arazzo`.
+Result<arazzo::Arazzo> parse_arazzo(const std::string &input) noexcept {
+  if (input.empty()) {
+    return utils::make_error(utils::ErrorCode::CppAstParseError,
+                             "Empty client SDK workflow input");
+  }
+
+  arazzo::Arazzo spec;
+  spec.arazzo = "1.1.0";
+  spec.info.title = "Parsed SDK Workflows";
+  spec.info.version = "1.0.0";
+
+  docstrings::parse_arazzo_docstrings(input, spec);
+  if (!spec.workflows.empty()) {
+    return spec;
+  }
+
+  arazzo::SourceDescription sd;
+  sd.name = "default";
+  sd.url = "./openapi.json";
+  sd.type = arazzo::SourceDescriptionType::OpenApi;
+  spec.sourceDescriptions.push_back(std::move(sd));
+
+  if (input.find("class Workflows") == std::string::npos) {
+    return spec;
+  }
+
+  utils::CppAST ast = utils::parse_cpp(input);
+  for (const auto &fn : ast.functions) {
+    arazzo::Workflow wf;
+    wf.workflowId = fn.name;
+    docstrings::parse_workflow_docstrings(fn.docstring, wf);
+    arazzo::Step st;
+    st.stepId = "step_1";
+    st.operationId = fn.name;
+    wf.steps.push_back(std::move(st));
+    spec.workflows.push_back(std::move(wf));
+  }
+
+  return spec;
+}
+
 } // namespace cdd_cpp::client_sdk

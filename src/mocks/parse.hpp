@@ -2,6 +2,7 @@
 /// @brief GoogleMock C++ mock client parser declarations.
 
 #pragma once
+#include "../arazzo/models.hpp"
 #include "../openapi/models.hpp"
 #include "../utils/error.hpp"
 #include <string>
@@ -17,5 +18,12 @@ template <typename T> using Result = utils::Result<T>;
 /// @return Result containing the extracted OpenAPI specification or a typed
 /// Error.
 Result<openapi::OpenAPI> parse(const std::string &input) noexcept;
+
+/// @brief Parse GoogleMock `MOCK_METHOD` and `IWorkflows` declarations into an
+/// Arazzo specification.
+/// @param input The C++ mock workflow header source code to parse.
+/// @return Result containing the extracted Arazzo specification or a typed
+/// Error.
+Result<arazzo::Arazzo> parse_arazzo(const std::string &input) noexcept;
 
 } // namespace cdd_cpp::mocks

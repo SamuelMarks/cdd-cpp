@@ -72,6 +72,9 @@ void test_sync() noexcept;
 namespace cdd_cpp::openapi::upgraders {
 void test_upgraders() noexcept;
 }
+namespace cdd_cpp::arazzo {
+void test_arazzo() noexcept;
+}
 
 #include <iostream>
 
@@ -152,6 +155,7 @@ int main() {
   test_mcp_resources();
   test_mcp_remaining();
   test_mcp_logging_progress();
+  cdd_cpp::arazzo::test_arazzo();
 
   std::cout << "All tests passed with 100% simulated coverage.\n";
   return 0;

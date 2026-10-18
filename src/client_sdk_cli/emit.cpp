@@ -2,6 +2,7 @@
 /// @brief Implementation of C++ CLI application generator from OpenAPI 3.2.0
 /// specs.
 
+#include "../client_sdk/emit.hpp"
 #include "../docstrings/emit.hpp"
 #include "../mocks/emit.hpp"
 #include "emit.hpp"
@@ -900,6 +901,70 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
     }
     result[".github/workflows/ci.yml"] = ci_content;
   }
+
+  return result;
+}
+
+/// @brief Emit a C++ CLI application reusing the Client SDK `Workflows`
+/// orchestrator from an Arazzo 1.1.0 specification.
+std::map<std::string, std::string>
+emit_arazzo_cli(const arazzo::Arazzo &spec,
+                const std::optional<openapi::OpenAPI> &openapi_spec,
+                bool no_github_actions, bool no_installable_package,
+                bool tests) noexcept {
+  openapi::OpenAPI base_oa = openapi_spec.value_or(openapi::OpenAPI{});
+  if (base_oa.info.title.empty()) {
+    base_oa.info.title = spec.info.title;
+    base_oa.info.version = spec.info.version;
+  }
+  auto result =
+      emit_cli(base_oa, no_github_actions, no_installable_package, tests);
+  auto sdk_files = client_sdk::emit_arazzo_client(
+      spec, openapi_spec, no_github_actions, no_installable_package, tests);
+  result["src/models.hpp"] = sdk_files["src/models.hpp"];
+  result["src/client.hpp"] = sdk_files["src/client.hpp"];
+  result["src/client.cpp"] = sdk_files["src/client.cpp"];
+
+  std::stringstream ch_ss;
+  ch_ss << result["src/cli.hpp"] << "\n";
+  ch_ss << docstrings::emit_arazzo_docstrings(spec);
+  ch_ss << "namespace cdd_cli {\n";
+  for (const auto &wf : spec.workflows) {
+    ch_ss << docstrings::emit_workflow_docstrings(wf);
+    ch_ss
+        << "    std::expected<std::string, std::string> handle_workflow_"
+        << wf.workflowId
+        << "(cdd_client::Workflows& workflows, const std::vector<std::string>& "
+           "args) noexcept;\n";
+  }
+  ch_ss << "} // namespace cdd_cli\n";
+  result["src/cli.hpp"] = ch_ss.str();
+
+  std::stringstream cc_ss;
+  cc_ss << result["src/cli.cpp"] << "\nnamespace cdd_cli {\n";
+  for (const auto &wf : spec.workflows) {
+    cc_ss
+        << "    std::expected<std::string, std::string> handle_workflow_"
+        << wf.workflowId
+        << "(cdd_client::Workflows& workflows, const std::vector<std::string>& "
+           "args) noexcept {\n";
+    cc_ss << "        cdd_models::" << wf.workflowId << "Inputs inputs;\n";
+    cc_ss << "        for (const auto& arg : args) {\n";
+    cc_ss << "            (void)arg;\n";
+    if (wf.inputs.has_value()) {
+      for (const auto &[pname, _] : *wf.inputs->properties) {
+        cc_ss << "            // --" << pname << "\n";
+      }
+    }
+    cc_ss << "        }\n";
+    cc_ss << "        auto res = workflows." << wf.workflowId << "(inputs);\n";
+    cc_ss << "        if (!res.has_value()) return "
+             "std::unexpected(res.error());\n";
+    cc_ss << "        return res->raw_json;\n";
+    cc_ss << "    }\n";
+  }
+  cc_ss << "} // namespace cdd_cli\n";
+  result["src/cli.cpp"] = cc_ss.str();
 
   return result;
 }

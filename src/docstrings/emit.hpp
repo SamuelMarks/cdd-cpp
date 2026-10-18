@@ -3,13 +3,14 @@
 /// utilities.
 
 #pragma once
+#include "../arazzo/models.hpp"
 #include "../openapi/parse.hpp"
 #include <sstream>
 #include <string>
 
 /// @namespace cdd_cpp::docstrings
-/// @brief Docstring emitters and parsers for round-tripping OpenAPI metadata in
-/// C++ comments.
+/// @brief Docstring emitters and parsers for round-tripping OpenAPI and Arazzo
+/// metadata in C++ comments.
 namespace cdd_cpp::docstrings {
 
 /// @brief Format a potentially multi-line string with a consistent indentation
@@ -46,5 +47,17 @@ std::string emit_operation_docstrings(const openapi::Operation &op) noexcept;
 /// @param pi The OpenAPI PathItem model.
 /// @return Formatted C++ Doxygen block for a PathItem.
 std::string emit_path_docstrings(const openapi::PathItem &pi) noexcept;
+
+/// @brief Emit Arazzo document-level docstrings (`@arazzo`, `@arazzo_title`,
+/// `@arazzo_version`, `@sourceDescription`, `@arazzo_spec_json`).
+/// @param spec The Arazzo 1.1.0 specification model.
+/// @return Formatted C++ Doxygen block for the `Workflows` class or file.
+std::string emit_arazzo_docstrings(const arazzo::Arazzo &spec) noexcept;
+
+/// @brief Emit Arazzo workflow-level docstrings (`@workflowId`, `@summary`,
+/// `@description`, `@dependsOn`, `@workflow_json`).
+/// @param wf The Arazzo Workflow model.
+/// @return Formatted C++ Doxygen block for a workflow method or handler.
+std::string emit_workflow_docstrings(const arazzo::Workflow &wf) noexcept;
 
 } // namespace cdd_cpp::docstrings

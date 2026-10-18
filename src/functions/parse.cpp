@@ -73,4 +73,59 @@ Result<openapi::OpenAPI> parse(const std::string &input) noexcept {
   return spec;
 }
 
+/// @brief Internal helper or implementation for `parse_arazzo`.
+Result<arazzo::Arazzo> parse_arazzo(const std::string &input) noexcept {
+  if (input.empty()) {
+    return utils::make_error(utils::ErrorCode::CppAstParseError,
+                             "Empty function source input");
+  }
+
+  arazzo::Arazzo spec;
+  spec.arazzo = "1.1.0";
+  spec.info.title = "Parsed Workflows";
+  spec.info.version = "1.0.0";
+
+  docstrings::parse_arazzo_docstrings(input, spec);
+  if (!spec.workflows.empty()) {
+    return spec;
+  }
+
+  arazzo::SourceDescription sd;
+  sd.name = "default";
+  sd.url = "./openapi.json";
+  sd.type = arazzo::SourceDescriptionType::OpenApi;
+  spec.sourceDescriptions.push_back(std::move(sd));
+
+  utils::CppAST ast = utils::parse_cpp(input);
+  for (const auto &fn : ast.functions) {
+    arazzo::Workflow wf;
+    wf.workflowId = fn.name;
+    docstrings::parse_workflow_docstrings(fn.docstring, wf);
+    openapi::Schema in_schema;
+    in_schema.type = "object";
+    in_schema.properties =
+        std::make_shared<std::map<std::string, openapi::Schema>>();
+    for (const auto &p : fn.params) {
+      openapi::Schema ps;
+      if (p.type == "int")
+        ps.type = "integer";
+      else if (p.type == "double")
+        ps.type = "number";
+      else if (p.type == "bool")
+        ps.type = "boolean";
+      else
+        ps.type = "string";
+      (*in_schema.properties)[p.name] = std::move(ps);
+    }
+    wf.inputs = std::move(in_schema);
+    arazzo::Step st;
+    st.stepId = "step_1";
+    st.operationId = fn.name;
+    wf.steps.push_back(std::move(st));
+    spec.workflows.push_back(std::move(wf));
+  }
+
+  return spec;
+}
+
 } // namespace cdd_cpp::functions

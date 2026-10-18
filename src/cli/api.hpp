@@ -44,6 +44,23 @@ struct ToOpenApiConfig {
   std::string truth;  ///< Source of truth ("code" or "spec").
 };
 
+/// @brief Configuration for generating code from an Arazzo 1.1.0 specification.
+struct FromArazzoConfig {
+  std::string input;                   ///< Input Arazzo JSON file path.
+  std::string output = ".";            ///< Output directory path.
+  bool no_github_actions = false;      ///< Omit `.github/workflows/ci.yml`.
+  bool no_installable_package = false; ///< Omit `CMakeLists.txt`.
+  bool tests = false;                  ///< Generate GoogleTest unit test suite.
+  std::string subcommand =
+      "to_sdk"; ///< Subcommand ("to_sdk", "to_sdk_cli", "to_server").
+};
+
+/// @brief Configuration for generating Arazzo 1.1.0 from C++ source code.
+struct ToArazzoConfig {
+  std::string input;  ///< Input C++ file or directory path.
+  std::string output; ///< Output Arazzo JSON file path.
+};
+
 /// @brief Configuration for generating docs JSON.
 struct DocsJsonConfig {
   std::string input;        ///< Input OpenAPI specification path or URL.
@@ -103,6 +120,22 @@ int from_google_discovery(const FromGoogleDiscoveryConfig &config,
 int to_openapi(const ToOpenApiConfig &config, std::ostream &out = std::cout,
                std::ostream &err = std::cerr) noexcept;
 
+/// @brief Generate C++ code from an Arazzo 1.1.0 specification.
+/// @param config Configuration parameters for Arazzo code generation.
+/// @param out Output stream for progress messages.
+/// @param err Error stream for diagnostic messages.
+/// @return Exit code (0 on success, non-zero on error).
+int from_arazzo(const FromArazzoConfig &config, std::ostream &out = std::cout,
+                std::ostream &err = std::cerr) noexcept;
+
+/// @brief Generate an Arazzo 1.1.0 specification from C++ source code.
+/// @param config Configuration parameters for Arazzo extraction.
+/// @param out Output stream for progress messages.
+/// @param err Error stream for diagnostic messages.
+/// @return Exit code (0 on success, non-zero on error).
+int to_arazzo(const ToArazzoConfig &config, std::ostream &out = std::cout,
+              std::ostream &err = std::cerr) noexcept;
+
 /// @brief Generate JSON documentation with code snippets for an OpenAPI
 /// specification.
 /// @param config Configuration parameters for documentation generation.
@@ -154,6 +187,24 @@ int run_to_openapi(int argc, char **argv, std::ostream &out,
 /// @return Exit code (0 on success, non-zero on error).
 int run_from_openapi(int argc, char **argv, std::ostream &out,
                      std::ostream &err) noexcept;
+
+/// @brief Parse and execute CLI subcommand `from_arazzo`.
+/// @param argc Argument count.
+/// @param argv Argument vector.
+/// @param out Standard output stream.
+/// @param err Standard error stream.
+/// @return Exit code (0 on success, non-zero on error).
+int run_from_arazzo(int argc, char **argv, std::ostream &out,
+                    std::ostream &err) noexcept;
+
+/// @brief Parse and execute CLI subcommand `to_arazzo`.
+/// @param argc Argument count.
+/// @param argv Argument vector.
+/// @param out Standard output stream.
+/// @param err Standard error stream.
+/// @return Exit code (0 on success, non-zero on error).
+int run_to_arazzo(int argc, char **argv, std::ostream &out,
+                  std::ostream &err) noexcept;
 
 /// @brief Parse and execute CLI subcommand `from_google_discovery`.
 /// @param argc Argument count.

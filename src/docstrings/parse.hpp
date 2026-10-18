@@ -3,6 +3,7 @@
 /// comments.
 
 #pragma once
+#include "../arazzo/models.hpp"
 #include "../openapi/models.hpp"
 #include <optional>
 #include <string>
@@ -44,6 +45,21 @@ void parse_path_docstrings(const std::string &docstring,
 /// @param schema The OpenAPI Schema object to populate.
 void parse_schema_docstrings(const std::string &docstring,
                              openapi::Schema &schema) noexcept;
+
+/// @brief Parse Arazzo document-level metadata (`@arazzo`, `@arazzo_title`,
+/// `@arazzo_version`, `@sourceDescription`, `@arazzo_spec_json`) into an Arazzo
+/// object.
+/// @param docstring The top-level or class-level Doxygen docstring.
+/// @param spec The Arazzo specification object to populate.
+void parse_arazzo_docstrings(const std::string &docstring,
+                             arazzo::Arazzo &spec) noexcept;
+
+/// @brief Parse Arazzo workflow-level metadata (`@workflowId`, `@summary`,
+/// `@description`, `@dependsOn`, `@workflow_json`) into a Workflow object.
+/// @param docstring The workflow method or function Doxygen docstring.
+/// @param wf The Arazzo Workflow object to populate.
+void parse_workflow_docstrings(const std::string &docstring,
+                               arazzo::Workflow &wf) noexcept;
 
 /// @brief Parse an arbitrary docstring and return an OpenAPI object populated
 /// with any extracted metadata.

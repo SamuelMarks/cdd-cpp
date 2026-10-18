@@ -189,7 +189,7 @@ std::string serve_json_rpc(const std::string &request) noexcept {
     init_res.protocolVersion = "2024-11-05";
     init_res.capabilities.tools = mcp::ServerCapabilitiesTools{};
     init_res.serverInfo.name = "cdd-cli-mcp";
-    init_res.serverInfo.version = "0.0.3";
+    init_res.serverInfo.version = "0.0.4";
     utils::JsonWriter jw;
     mcp::emit_initialize_result(init_res, jw);
     return make_ok(id_str, jw.str());
@@ -249,6 +249,16 @@ std::string serve_json_rpc(const std::string &request) noexcept {
           cfg.input = in_arg;
           cfg.output = out_arg;
           cli::to_openapi(cfg, out_ss, err_ss);
+        } else if (cmd_arg == "to_arazzo") {
+          cli::ToArazzoConfig cfg;
+          cfg.input = in_arg;
+          cfg.output = out_arg;
+          cli::to_arazzo(cfg, out_ss, err_ss);
+        } else if (cmd_arg == "from_arazzo") {
+          cli::FromArazzoConfig cfg;
+          cfg.input = in_arg;
+          cfg.output = out_arg;
+          cli::from_arazzo(cfg, out_ss, err_ss);
         } else {
           cli::FromOpenApiConfig cfg;
           cfg.input = in_arg;
@@ -455,6 +465,100 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
     files["tests/CMakeLists.txt"] = tc_ss.str();
   }
 
+  return files;
+}
+
+/// @brief Emit C++ server workflow engine to string from an Arazzo 1.1.0
+/// specification.
+std::string emit_arazzo(const arazzo::Arazzo &spec) noexcept {
+  std::stringstream ss;
+  ss << "#pragma once\n";
+  ss << "#include <expected>\n";
+  ss << "#include <functional>\n";
+  ss << "#include <map>\n";
+  ss << "#include <optional>\n";
+  ss << "#include <string>\n\n";
+  ss << docstrings::emit_arazzo_docstrings(spec);
+  ss << "namespace cdd_server {\n\n";
+  ss << "    class WorkflowEngine {\n";
+  ss << "    public:\n";
+  ss << "        using WorkflowHandler = "
+        "std::function<std::expected<std::string, std::string>(const "
+        "std::string&)>;\n\n";
+  for (const auto &wf : spec.workflows) {
+    ss << docstrings::emit_workflow_docstrings(wf);
+    ss << "        void on_workflow_" << wf.workflowId
+       << "(WorkflowHandler handler) noexcept {\n";
+    ss << "            workflows[\"" << wf.workflowId
+       << "\"] = std::move(handler);\n";
+    ss << "        }\n\n";
+    ss << "        std::expected<std::string, std::string> execute_"
+       << wf.workflowId
+       << "(const std::string& inputs_json) const noexcept {\n";
+    ss << "            auto it = workflows.find(\"" << wf.workflowId
+       << "\");\n";
+    ss << "            if (it != workflows.end() && it->second) {\n";
+    ss << "                return it->second(inputs_json);\n";
+    ss << "            }\n";
+    ss << "            return std::string(\"{}\");\n";
+    ss << "        }\n\n";
+  }
+  ss << "    private:\n";
+  ss << "        std::map<std::string, WorkflowHandler> workflows;\n";
+  ss << "    };\n";
+  ss << "} // namespace cdd_server\n";
+  return ss.str();
+}
+
+/// @brief Emit modular C++ server workflow orchestration files from an Arazzo
+/// 1.1.0 specification.
+std::map<std::string, std::string>
+emit_arazzo_modular(const arazzo::Arazzo &spec, bool no_installable_package,
+                    bool tests) noexcept {
+  std::map<std::string, std::string> files;
+  files["src/WorkflowEngine.hpp"] = emit_arazzo(spec);
+
+  std::stringstream s_ss;
+  s_ss << "#include <httplib.h>\n";
+  s_ss << "#include \"WorkflowEngine.hpp\"\n\n";
+  s_ss << "int main() noexcept {\n";
+  s_ss << "    cdd_server::WorkflowEngine engine;\n";
+  s_ss << "    httplib::Server svr;\n";
+  for (const auto &wf : spec.workflows) {
+    s_ss << "    svr.Post(\"/workflows/" << wf.workflowId
+         << "\", [&](const httplib::Request& req, httplib::Response& res) {\n";
+    s_ss << "        auto out = engine.execute_" << wf.workflowId
+         << "(req.body);\n";
+    s_ss << "        if (out.has_value()) res.set_content(*out, "
+            "\"application/json\");\n";
+    s_ss << "        else { res.status = 500; res.set_content(out.error(), "
+            "\"text/plain\"); }\n";
+    s_ss << "    });\n";
+  }
+  s_ss << "    svr.listen(\"0.0.0.0\", 8080);\n";
+  s_ss << "    return 0;\n";
+  s_ss << "}\n";
+  files["src/workflow_server.cpp"] = s_ss.str();
+
+  if (!no_installable_package) {
+    files["CMakeLists.txt"] =
+        "cmake_minimum_required(VERSION 3.15)\nproject(workflow_server "
+        "LANGUAGES CXX)\nset(CMAKE_CXX_STANDARD 26)\n";
+  }
+  if (tests) {
+    std::stringstream t_ss;
+    t_ss
+        << "#include <gtest/gtest.h>\n#include \"../src/WorkflowEngine.hpp\"\n";
+    for (const auto &wf : spec.workflows) {
+      t_ss << "TEST(WorkflowEngineTest, " << wf.workflowId << ") {\n";
+      t_ss << "    cdd_server::WorkflowEngine engine;\n";
+      t_ss << "    auto res = engine.execute_" << wf.workflowId
+           << "(\"{}\");\n";
+      t_ss << "    EXPECT_TRUE(res.has_value());\n";
+      t_ss << "}\n";
+    }
+    files["tests/WorkflowEngineTest.cpp"] = t_ss.str();
+  }
   return files;
 }
 

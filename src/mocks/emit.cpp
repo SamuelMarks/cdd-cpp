@@ -2,6 +2,7 @@
 /// @brief Implementation of GoogleMock C++ mock client emitter.
 
 #include "emit.hpp"
+#include "../docstrings/emit.hpp"
 #include <sstream>
 
 namespace cdd_cpp::mocks {
@@ -68,6 +69,37 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
 
   ss << "}\n";
 
+  return ss.str();
+}
+
+/// @brief Internal helper or implementation for `emit_arazzo`.
+std::string emit_arazzo(const arazzo::Arazzo &spec) noexcept {
+  std::stringstream ss;
+  ss << "#pragma once\n";
+  ss << "#include <expected>\n";
+  ss << "#include <optional>\n";
+  ss << "#include <string>\n";
+  ss << "#include <gmock/gmock.h>\n\n";
+  ss << docstrings::emit_arazzo_docstrings(spec);
+  ss << "namespace cdd_mock_workflows {\n\n";
+  ss << "    class IWorkflows {\n";
+  ss << "    public:\n";
+  ss << "        virtual ~IWorkflows() = default;\n";
+  for (const auto &wf : spec.workflows) {
+    ss << docstrings::emit_workflow_docstrings(wf);
+    ss << "        virtual std::expected<std::string, std::string> "
+       << wf.workflowId << "(const std::string& inputs_json) noexcept = 0;\n";
+  }
+  ss << "    };\n\n";
+  ss << "    class MockWorkflows : public IWorkflows {\n";
+  ss << "    public:\n";
+  for (const auto &wf : spec.workflows) {
+    ss << "        MOCK_METHOD((std::expected<std::string, std::string>), "
+       << wf.workflowId
+       << ", (const std::string& inputs_json), (noexcept, override));\n";
+  }
+  ss << "    };\n\n";
+  ss << "}\n";
   return ss.str();
 }
 

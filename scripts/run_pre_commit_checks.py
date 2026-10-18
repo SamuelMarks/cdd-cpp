@@ -375,6 +375,22 @@ def wait_for_url(url, timeout=150):
     print(f"Timeout waiting for {url}")
     return False
 
+def verify_ml_framework_snapshots_grounding(cdd_cpp_bin):
+    snapshots_dir = os.path.abspath(os.path.join("..", "ml-framework-snapshots"))
+    print(f"Checking explicit grounding via {snapshots_dir}...")
+    if not os.path.exists(snapshots_dir):
+        print(f"Note: {snapshots_dir} not present on disk; skipping external snapshot directory walk.")
+        return
+    for root, _, files in os.walk(snapshots_dir):
+        for f in files:
+            if f.endswith(".arazzo.json"):
+                spec_path = os.path.join(root, f)
+                out_dir = os.path.abspath(os.path.join("build", "snapshot_grounding_tmp"))
+                if os.path.exists(out_dir):
+                    shutil.rmtree(out_dir)
+                run_cmd([cdd_cpp_bin, "from_arazzo", "to_sdk", "-i", spec_path, "-o", out_dir])
+                shutil.rmtree(out_dir, ignore_errors=True)
+
 def main():
     try:
         build_project()
@@ -410,6 +426,8 @@ def main():
         else:
             cdd_cpp_bin = os.path.abspath(os.path.join("build", "cdd-cpp"))
             
+        verify_ml_framework_snapshots_grounding(cdd_cpp_bin)
+
         # Swagger 2.0 Petstore test
         print("Running Swagger 2.0 Petstore test...")
         v2_out_dir = os.path.abspath(os.path.join("..", "cdd-cpp-client-v2"))

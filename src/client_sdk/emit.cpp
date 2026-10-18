@@ -718,4 +718,128 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
   return result;
 }
 
+/// @brief Emit a C++ Client SDK with `Workflows` orchestration from an Arazzo
+/// 1.1.0 specification.
+std::map<std::string, std::string>
+emit_arazzo_client(const arazzo::Arazzo &spec,
+                   const std::optional<openapi::OpenAPI> &openapi_spec,
+                   bool no_github_actions, bool no_installable_package,
+                   bool tests) noexcept {
+  openapi::OpenAPI base_oa = openapi_spec.value_or(openapi::OpenAPI{});
+  if (base_oa.info.title.empty()) {
+    base_oa.info.title = spec.info.title;
+    base_oa.info.version = spec.info.version;
+  }
+  auto result =
+      emit_client(base_oa, no_github_actions, no_installable_package, tests);
+
+  std::stringstream m_ss;
+  m_ss << result["src/models.hpp"] << "\nnamespace cdd_models {\n";
+  for (const auto &wf : spec.workflows) {
+    m_ss << "    /// @brief Input parameters for workflow " << wf.workflowId
+         << ".\n";
+    m_ss << "    struct " << wf.workflowId << "Inputs {\n";
+    if (wf.inputs.has_value()) {
+      for (const auto &[pname, pschema] : *wf.inputs->properties) {
+        std::string ctype = "std::string";
+        std::string stype = pschema.type.value_or("string");
+        if (stype == "integer")
+          ctype = "int64_t";
+        else if (stype == "number")
+          ctype = "double";
+        else if (stype == "boolean")
+          ctype = "bool";
+        m_ss << "        std::optional<" << ctype << "> " << pname
+             << " = std::nullopt;\n";
+      }
+    }
+    m_ss << "    };\n";
+    m_ss << "    /// @brief Output values for workflow " << wf.workflowId
+         << ".\n";
+    m_ss << "    struct " << wf.workflowId << "Outputs {\n";
+    if (wf.outputs.has_value()) {
+      for (const auto &[ok, _] : *wf.outputs) {
+        m_ss << "        std::optional<std::string> " << ok
+             << " = std::nullopt;\n";
+      }
+    }
+    m_ss << "        std::string raw_json = \"{}\";\n";
+    m_ss << "    };\n";
+  }
+  m_ss << "} // namespace cdd_models\n";
+  result["src/models.hpp"] = m_ss.str();
+
+  std::stringstream h_ss;
+  h_ss << result["src/client.hpp"] << "\n";
+  h_ss << docstrings::emit_arazzo_docstrings(spec);
+  h_ss << "namespace cdd_client {\n";
+  h_ss << "    class Workflows {\n";
+  h_ss << "        Client* client_;\n";
+  h_ss << "    public:\n";
+  for (const auto &wf : spec.workflows) {
+    h_ss << docstrings::emit_workflow_docstrings(wf);
+    h_ss << "        std::expected<cdd_models::" << wf.workflowId
+         << "Outputs, std::string> " << wf.workflowId
+         << "(const cdd_models::" << wf.workflowId
+         << "Inputs& inputs = {}) noexcept;\n";
+  }
+  h_ss << "    };\n";
+  h_ss << "} // namespace cdd_client\n";
+  result["src/client.hpp"] = h_ss.str();
+
+  std::stringstream cpp_ss;
+  cpp_ss << result["src/client.cpp"] << "\n";
+  cpp_ss << docstrings::emit_arazzo_docstrings(spec);
+  cpp_ss << "namespace cdd_client {\n";
+  for (const auto &wf : spec.workflows) {
+    cpp_ss << "    std::expected<cdd_models::" << wf.workflowId
+           << "Outputs, std::string> Workflows::" << wf.workflowId
+           << "(const cdd_models::" << wf.workflowId
+           << "Inputs& inputs) noexcept {\n";
+    cpp_ss << "        (void)inputs;\n";
+    cpp_ss << "        if (client_ == nullptr) return "
+              "std::unexpected(\"Client pointer is null\");\n";
+    if (wf.dependsOn.has_value()) {
+      for (const auto &dep : *wf.dependsOn) {
+        cpp_ss << "        auto dep_" << dep << " = this->" << dep << "();\n";
+        cpp_ss << "        if (!dep_" << dep
+               << ".has_value()) return std::unexpected(dep_" << dep
+               << ".error());\n";
+      }
+    }
+    for (const auto &step : wf.steps) {
+      cpp_ss << "        // stepId: " << step.stepId << "\n";
+      if (step.operationId.has_value()) {
+        cpp_ss << "        // operationId: " << *step.operationId << "\n";
+      } else if (step.operationPath.has_value()) {
+        cpp_ss << "        // operationPath: " << *step.operationPath << "\n";
+      } else {
+        cpp_ss << "        // workflowId: " << step.workflowId.value_or("")
+               << "\n";
+      }
+    }
+    cpp_ss << "        cdd_models::" << wf.workflowId << "Outputs out;\n";
+    cpp_ss << "        return out;\n";
+    cpp_ss << "    }\n";
+  }
+  cpp_ss << "} // namespace cdd_client\n";
+  result["src/client.cpp"] = cpp_ss.str();
+
+  if (tests) {
+    std::stringstream t_ss;
+    t_ss << result["tests/client_test.cpp"] << "\n";
+    for (const auto &wf : spec.workflows) {
+      t_ss << "TEST(WorkflowsTest, " << wf.workflowId << ") {\n";
+      t_ss << "    cdd_client::Client client(\"http://localhost:8080\");\n";
+      t_ss << "    cdd_client::Workflows workflows(&client);\n";
+      t_ss << "    auto res = workflows." << wf.workflowId << "();\n";
+      t_ss << "    EXPECT_TRUE(res.has_value());\n";
+      t_ss << "}\n";
+    }
+    result["tests/client_test.cpp"] = t_ss.str();
+  }
+
+  return result;
+}
+
 } // namespace cdd_cpp::client_sdk

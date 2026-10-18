@@ -2,6 +2,7 @@
 /// @brief Implementation of OpenAPI to C++ Doxygen docstring emitters.
 
 #include "emit.hpp"
+#include "../arazzo/emit.hpp"
 #include <sstream>
 
 namespace cdd_cpp::docstrings {
@@ -162,6 +163,31 @@ std::string emit_operation_docstrings(const openapi::Operation &op) noexcept {
         }
       }
     }
+  }
+  return ss.str();
+}
+
+/// @brief Internal helper or implementation for `emit_arazzo_docstrings`.
+std::string emit_arazzo_docstrings(const arazzo::Arazzo &spec) noexcept {
+  std::stringstream ss;
+  ss << "/// @arazzo " << spec.arazzo << "\n";
+  ss << "/// @arazzo_title " << spec.info.title << "\n";
+  ss << "/// @arazzo_version " << spec.info.version << "\n";
+  ss << "/// @arazzo_spec_json " << arazzo::emit(spec) << "\n";
+  return ss.str();
+}
+
+/// @brief Internal helper or implementation for `emit_workflow_docstrings`.
+std::string emit_workflow_docstrings(const arazzo::Workflow &wf) noexcept {
+  std::stringstream ss;
+  ss << "        /// @workflowId " << wf.workflowId << "\n";
+  if (wf.summary.has_value()) {
+    ss << "        /// @summary " << format_multi("        /// ", *wf.summary)
+       << "\n";
+  }
+  if (wf.description.has_value()) {
+    ss << "        /// @description "
+       << format_multi("        /// ", *wf.description) << "\n";
   }
   return ss.str();
 }

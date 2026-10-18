@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(cdd_cpp VERSION 0.0.3)
+project(cdd_cpp VERSION 0.0.4)
 
 if(POLICY CMP0135)
   cmake_policy(SET CMP0135 NEW)
@@ -177,6 +177,9 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Ems
 
     list(APPEND CDD_TEST_SRCS src/tests/sync_test.cpp)
     target_sources(cdd-tests PRIVATE src/tests/sync_test.cpp)
+
+    list(APPEND CDD_TEST_SRCS src/tests/arazzo_test.cpp)
+    target_sources(cdd-tests PRIVATE src/tests/arazzo_test.cpp)
 endif()
 
 if(EMSCRIPTEN)
