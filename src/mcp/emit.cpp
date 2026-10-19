@@ -7,7 +7,7 @@
 
 namespace cdd_cpp::mcp {
 
-/// @brief Internal helper or implementation for `emit_annotated`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_annotated`.
 void emit_annotated(const Annotated &annotated,
                     utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -25,7 +25,7 @@ void emit_annotated(const Annotated &annotated,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_blob_resource_contents`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_blob_resource_contents`.
 void emit_blob_resource_contents(const BlobResourceContents &blob,
                                  utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -37,7 +37,7 @@ void emit_blob_resource_contents(const BlobResourceContents &blob,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_call_tool_request`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_call_tool_request`.
 void emit_call_tool_request(const CallToolRequest &req,
                             utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -53,7 +53,7 @@ void emit_call_tool_request(const CallToolRequest &req,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_annotations`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_annotations`.
 void emit_annotations(const std::optional<Annotations> &annotations,
                       utils::JsonWriter &jw) noexcept {
   if (annotations.has_value()) {
@@ -69,7 +69,7 @@ void emit_annotations(const std::optional<Annotations> &annotations,
   }
 }
 
-/// @brief Internal helper or implementation for `emit_text_content`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_text_content`.
 void emit_text_content(const TextContent &text,
                        utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -79,7 +79,7 @@ void emit_text_content(const TextContent &text,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_image_content`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_image_content`.
 void emit_image_content(const ImageContent &image,
                         utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -90,7 +90,7 @@ void emit_image_content(const ImageContent &image,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_text_resource_contents`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_text_resource_contents`.
 void emit_text_resource_contents(const TextResourceContents &text,
                                  utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -101,7 +101,7 @@ void emit_text_resource_contents(const TextResourceContents &text,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_embedded_resource`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_embedded_resource`.
 void emit_embedded_resource(const EmbeddedResource &embed,
                             utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -112,7 +112,7 @@ void emit_embedded_resource(const EmbeddedResource &embed,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_call_tool_result`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_call_tool_result`.
 void emit_call_tool_result(const CallToolResult &res,
                            utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -128,7 +128,7 @@ void emit_call_tool_result(const CallToolResult &res,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_cancelled_notification`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_cancelled_notification`.
 void emit_cancelled_notification(const CancelledNotification &notif,
                                  utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -155,7 +155,7 @@ void emit_cancelled_notification(const CancelledNotification &notif,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_client_capabilities`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_client_capabilities`.
 void emit_client_capabilities(const ClientCapabilities &caps,
                               utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -178,7 +178,7 @@ void emit_client_capabilities(const ClientCapabilities &caps,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_complete_request`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_complete_request`.
 void emit_complete_request(const CompleteRequest &req,
                            utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -199,7 +199,7 @@ void emit_complete_request(const CompleteRequest &req,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_complete_result`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_complete_result`.
 void emit_complete_result(const CompleteResult &res,
                           utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -226,7 +226,7 @@ void emit_complete_result(const CompleteResult &res,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_model_hint`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_model_hint`.
 void emit_model_hint(const ModelHint &hint, utils::JsonWriter &jw) noexcept {
   jw.start_object();
   if (hint.name.has_value())
@@ -234,7 +234,7 @@ void emit_model_hint(const ModelHint &hint, utils::JsonWriter &jw) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_model_preferences`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_model_preferences`.
 void emit_model_preferences(const ModelPreferences &prefs,
                             utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -256,7 +256,7 @@ void emit_model_preferences(const ModelPreferences &prefs,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_create_message_request`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_create_message_request`.
 void emit_create_message_request(const CreateMessageRequest &req,
                                  utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -300,7 +300,7 @@ void emit_create_message_request(const CreateMessageRequest &req,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_create_message_result`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_create_message_result`.
 void emit_create_message_result(const CreateMessageResult &res,
                                 utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -321,7 +321,7 @@ void emit_create_message_result(const CreateMessageResult &res,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_tool`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_tool`.
 void emit_tool(const Tool &tool, utils::JsonWriter &jw) noexcept {
   jw.start_object();
   jw.key_value("name", tool.name);
@@ -347,7 +347,7 @@ void emit_tool(const Tool &tool, utils::JsonWriter &jw) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for
+/// @brief Serialize MCP JSON-RPC payload via
 /// `emit_tool_list_changed_notification`.
 void emit_tool_list_changed_notification(
     const ToolListChangedNotification &notif, utils::JsonWriter &jw) noexcept {
@@ -365,7 +365,7 @@ void emit_tool_list_changed_notification(
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_paginated_request`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_paginated_request`.
 void emit_paginated_request(const PaginatedRequest &req,
                             utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -379,7 +379,7 @@ void emit_paginated_request(const PaginatedRequest &req,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_paginated_result`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_paginated_result`.
 void emit_paginated_result(const PaginatedResult &res,
                            utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -393,7 +393,7 @@ void emit_paginated_result(const PaginatedResult &res,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_implementation`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_implementation`.
 void emit_implementation(const Implementation &impl,
                          utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -402,7 +402,7 @@ void emit_implementation(const Implementation &impl,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_initialize_request`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_initialize_request`.
 void emit_initialize_request(const InitializeRequest &req,
                              utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -423,7 +423,7 @@ void emit_initialize_request(const InitializeRequest &req,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_server_capabilities`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_server_capabilities`.
 void emit_server_capabilities(const ServerCapabilities &caps,
                               utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -462,7 +462,7 @@ void emit_server_capabilities(const ServerCapabilities &caps,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_initialize_result`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_initialize_result`.
 void emit_initialize_result(const InitializeResult &res,
                             utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -484,7 +484,7 @@ void emit_initialize_result(const InitializeResult &res,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for
+/// @brief Serialize MCP JSON-RPC payload via
 /// `emit_initialized_notification`.
 void emit_initialized_notification(const InitializedNotification &notif,
                                    utils::JsonWriter &jw) noexcept {
@@ -502,7 +502,7 @@ void emit_initialized_notification(const InitializedNotification &notif,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_jsonrpc_error`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_jsonrpc_error`.
 void emit_jsonrpc_error(const JSONRPCError &err,
                         utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -521,7 +521,7 @@ void emit_jsonrpc_error(const JSONRPCError &err,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_jsonrpc_notification`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_jsonrpc_notification`.
 void emit_jsonrpc_notification(const JSONRPCNotification &notif,
                                utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -543,7 +543,7 @@ void emit_jsonrpc_notification(const JSONRPCNotification &notif,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_jsonrpc_request`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_jsonrpc_request`.
 void emit_jsonrpc_request(const JSONRPCRequest &req,
                           utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -567,7 +567,7 @@ void emit_jsonrpc_request(const JSONRPCRequest &req,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_jsonrpc_response`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_jsonrpc_response`.
 void emit_jsonrpc_response(const JSONRPCResponse &res,
                            utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -579,7 +579,7 @@ void emit_jsonrpc_response(const JSONRPCResponse &res,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_list_prompts_request`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_list_prompts_request`.
 void emit_list_prompts_request(const ListPromptsRequest &req,
                                utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -595,7 +595,7 @@ void emit_list_prompts_request(const ListPromptsRequest &req,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_prompt_argument`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_prompt_argument`.
 void emit_prompt_argument(const PromptArgument &arg,
                           utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -607,7 +607,7 @@ void emit_prompt_argument(const PromptArgument &arg,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_prompt`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_prompt`.
 void emit_prompt(const Prompt &p, utils::JsonWriter &jw) noexcept {
   jw.start_object();
   jw.key_value("name", p.name);
@@ -624,7 +624,7 @@ void emit_prompt(const Prompt &p, utils::JsonWriter &jw) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_list_prompts_result`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_list_prompts_result`.
 void emit_list_prompts_result(const ListPromptsResult &res,
                               utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -644,7 +644,7 @@ void emit_list_prompts_result(const ListPromptsResult &res,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_get_prompt_request`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_get_prompt_request`.
 void emit_get_prompt_request(const GetPromptRequest &req,
                              utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -660,7 +660,7 @@ void emit_get_prompt_request(const GetPromptRequest &req,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_get_prompt_result`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_get_prompt_result`.
 void emit_get_prompt_result(const GetPromptResult &res,
                             utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -684,7 +684,7 @@ void emit_get_prompt_result(const GetPromptResult &res,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for
+/// @brief Serialize MCP JSON-RPC payload via
 /// `emit_prompt_list_changed_notification`.
 void emit_prompt_list_changed_notification(
     const PromptListChangedNotification &notif,
@@ -703,7 +703,7 @@ void emit_prompt_list_changed_notification(
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_prompt_reference`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_prompt_reference`.
 void emit_prompt_reference(const PromptReference &ref,
                            utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -712,7 +712,7 @@ void emit_prompt_reference(const PromptReference &ref,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_list_resources_request`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_list_resources_request`.
 void emit_list_resources_request(const ListResourcesRequest &req,
                                  utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -727,7 +727,7 @@ void emit_list_resources_request(const ListResourcesRequest &req,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_resource`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_resource`.
 void emit_resource(const Resource &res, utils::JsonWriter &jw) noexcept {
   jw.start_object();
   jw.key_value("uri", res.uri);
@@ -740,7 +740,7 @@ void emit_resource(const Resource &res, utils::JsonWriter &jw) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_list_resources_result`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_list_resources_result`.
 void emit_list_resources_result(const ListResourcesResult &res,
                                 utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -758,7 +758,7 @@ void emit_list_resources_result(const ListResourcesResult &res,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for
+/// @brief Serialize MCP JSON-RPC payload via
 /// `emit_list_resource_templates_request`.
 void emit_list_resource_templates_request(
     const ListResourceTemplatesRequest &req, utils::JsonWriter &jw) noexcept {
@@ -774,7 +774,7 @@ void emit_list_resource_templates_request(
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_resource_template`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_resource_template`.
 void emit_resource_template(const ResourceTemplate &rt,
                             utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -788,7 +788,7 @@ void emit_resource_template(const ResourceTemplate &rt,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for
+/// @brief Serialize MCP JSON-RPC payload via
 /// `emit_list_resource_templates_result`.
 void emit_list_resource_templates_result(const ListResourceTemplatesResult &res,
                                          utils::JsonWriter &jw) noexcept {
@@ -807,7 +807,7 @@ void emit_list_resource_templates_result(const ListResourceTemplatesResult &res,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_read_resource_request`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_read_resource_request`.
 void emit_read_resource_request(const ReadResourceRequest &req,
                                 utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -819,7 +819,7 @@ void emit_read_resource_request(const ReadResourceRequest &req,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_read_resource_result`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_read_resource_result`.
 void emit_read_resource_result(const ReadResourceResult &res,
                                utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -835,7 +835,7 @@ void emit_read_resource_result(const ReadResourceResult &res,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for
+/// @brief Serialize MCP JSON-RPC payload via
 /// `emit_resource_updated_notification`.
 void emit_resource_updated_notification(
     const ResourceUpdatedNotification &notif, utils::JsonWriter &jw) noexcept {
@@ -848,7 +848,7 @@ void emit_resource_updated_notification(
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for
+/// @brief Serialize MCP JSON-RPC payload via
 /// `emit_resource_list_changed_notification`.
 void emit_resource_list_changed_notification(
     const ResourceListChangedNotification &notif,
@@ -867,7 +867,7 @@ void emit_resource_list_changed_notification(
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_resource_reference`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_resource_reference`.
 void emit_resource_reference(const ResourceReference &ref,
                              utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -876,7 +876,7 @@ void emit_resource_reference(const ResourceReference &ref,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_result`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_result`.
 void emit_result(const Result &res, utils::JsonWriter &jw) noexcept {
   jw.start_object();
   if (res._meta.has_value()) {
@@ -886,7 +886,7 @@ void emit_result(const Result &res, utils::JsonWriter &jw) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_root`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_root`.
 void emit_root(const Root &root, utils::JsonWriter &jw) noexcept {
   jw.start_object();
   jw.key_value("uri", root.uri);
@@ -895,7 +895,7 @@ void emit_root(const Root &root, utils::JsonWriter &jw) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for
+/// @brief Serialize MCP JSON-RPC payload via
 /// `emit_roots_list_changed_notification`.
 void emit_roots_list_changed_notification(
     const RootsListChangedNotification &notif, utils::JsonWriter &jw) noexcept {
@@ -913,7 +913,7 @@ void emit_roots_list_changed_notification(
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_list_roots_request`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_list_roots_request`.
 void emit_list_roots_request(const ListRootsRequest &req,
                              utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -930,7 +930,7 @@ void emit_list_roots_request(const ListRootsRequest &req,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_list_roots_result`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_list_roots_result`.
 void emit_list_roots_result(const ListRootsResult &res,
                             utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -946,7 +946,7 @@ void emit_list_roots_result(const ListRootsResult &res,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_set_level_request`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_set_level_request`.
 void emit_set_level_request(const SetLevelRequest &req,
                             utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -958,7 +958,7 @@ void emit_set_level_request(const SetLevelRequest &req,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for
+/// @brief Serialize MCP JSON-RPC payload via
 /// `emit_logging_message_notification`.
 void emit_logging_message_notification(const LoggingMessageNotification &notif,
                                        utils::JsonWriter &jw) noexcept {
@@ -976,7 +976,7 @@ void emit_logging_message_notification(const LoggingMessageNotification &notif,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_progress_notification`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_progress_notification`.
 void emit_progress_notification(const ProgressNotification &notif,
                                 utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -993,7 +993,7 @@ void emit_progress_notification(const ProgressNotification &notif,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_empty_result`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_empty_result`.
 void emit_empty_result(const EmptyResult &res, utils::JsonWriter &jw) noexcept {
   jw.start_object();
   if (res._meta.has_value()) {
@@ -1003,7 +1003,7 @@ void emit_empty_result(const EmptyResult &res, utils::JsonWriter &jw) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_sampling_message`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_sampling_message`.
 void emit_sampling_message(const SamplingMessage &msg,
                            utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -1013,7 +1013,7 @@ void emit_sampling_message(const SamplingMessage &msg,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_ping_request`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_ping_request`.
 void emit_ping_request(const PingRequest &req, utils::JsonWriter &jw) noexcept {
   jw.start_object();
   jw.key_value("method", req.method);
@@ -1029,7 +1029,7 @@ void emit_ping_request(const PingRequest &req, utils::JsonWriter &jw) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_subscribe_request`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_subscribe_request`.
 void emit_subscribe_request(const SubscribeRequest &req,
                             utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -1041,7 +1041,7 @@ void emit_subscribe_request(const SubscribeRequest &req,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_unsubscribe_request`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_unsubscribe_request`.
 void emit_unsubscribe_request(const UnsubscribeRequest &req,
                               utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -1053,7 +1053,7 @@ void emit_unsubscribe_request(const UnsubscribeRequest &req,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_list_tools_request`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_list_tools_request`.
 void emit_list_tools_request(const ListToolsRequest &req,
                              utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -1069,7 +1069,7 @@ void emit_list_tools_request(const ListToolsRequest &req,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_list_tools_result`.
+/// @brief Serialize MCP JSON-RPC payload via `emit_list_tools_result`.
 void emit_list_tools_result(const ListToolsResult &res,
                             utils::JsonWriter &jw) noexcept {
   jw.start_object();

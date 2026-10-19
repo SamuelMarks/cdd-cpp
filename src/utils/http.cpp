@@ -37,7 +37,7 @@ static size_t WriteCallback(void *contents, size_t size, size_t nmemb,
   return size * nmemb;
 }
 
-/// @brief Internal helper or implementation for `http_get`.
+/// @brief Execute HTTP client operation via `http_get`.
 Result<std::string> http_get(const std::string &url) noexcept {
   (void)CurlGlobalInitializer::ensure_initialized();
   CURL *curl = curl_easy_init();
@@ -69,7 +69,7 @@ CurlGlobalInitializer::ensure_initialized() noexcept {
   return instance;
 }
 
-/// @brief Internal helper or implementation for `http_get`.
+/// @brief Execute HTTP client operation via `http_get`.
 Result<std::string> http_get(const std::string &url) noexcept {
   (void)CurlGlobalInitializer::ensure_initialized();
   return make_error(ErrorCode::WasiUnsupportedOperation,

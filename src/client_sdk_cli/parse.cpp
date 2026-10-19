@@ -13,25 +13,6 @@
 
 namespace cdd_cpp::client_sdk_cli {
 
-/// @brief Strip leading whitespace and `///` or `//` markers from a line.
-/// @param line Raw line string view.
-/// @return Trimmed line content after comment markers.
-static std::string strip_line_comment(std::string_view line) noexcept {
-  size_t first = line.find_first_not_of(" \t");
-  if (first == std::string_view::npos)
-    return "";
-  std::string_view rem = line.substr(first);
-  if (rem.starts_with("///"))
-    rem.remove_prefix(3);
-  else if (rem.starts_with("//"))
-    rem.remove_prefix(2);
-  else
-    return "";
-  size_t s = rem.find_first_not_of(" \t");
-  size_t e = rem.find_last_not_of(" \t\r\n");
-  return std::string(rem.substr(s, e - s + 1));
-}
-
 /// @brief Parse `@param`, `@param_example`, and `@param_deprecated` tags from a
 /// docstring or comment block.
 /// @param block Source docstring or comment block.
@@ -45,7 +26,7 @@ static void parse_param_tags(const std::string &block,
   std::istringstream iss(block);
   std::string line;
   while (std::getline(iss, line)) {
-    std::string content = strip_line_comment(line);
+    std::string content = docstrings::strip_comment_line_prefix(line);
     if (content.starts_with("@param ")) {
       std::string rest = content.substr(7);
       size_t s1 = rest.find_first_not_of(" \t");
@@ -71,7 +52,7 @@ static void parse_param_tags(const std::string &block,
   }
 }
 
-/// @brief Internal helper or implementation for `parse`.
+/// @brief Parse C++ CLI client SDK source code for `parse`.
 Result<openapi::OpenAPI> parse(const std::string &input) noexcept {
   openapi::OpenAPI spec;
   spec.openapi = "3.2.0";
@@ -165,8 +146,8 @@ Result<openapi::OpenAPI> parse(const std::string &input) noexcept {
     std::istringstream bss(body);
     std::string bline;
     while (std::getline(bss, bline)) {
-      std::string cmt = strip_line_comment(bline);
-      if (!cmt.empty()) {
+      if (bline.find("//") != std::string::npos) {
+        std::string cmt = docstrings::strip_comment_line_prefix(bline);
         op.summary = cmt;
         op.description = cmt;
         break;
@@ -217,7 +198,7 @@ Result<openapi::OpenAPI> parse(const std::string &input) noexcept {
   return spec;
 }
 
-/// @brief Internal helper or implementation for `parse_arazzo`.
+/// @brief Parse C++ CLI client SDK source code for `parse_arazzo`.
 Result<arazzo::Arazzo> parse_arazzo(const std::string &source) noexcept {
   if (source.empty()) {
     return utils::make_error(utils::ErrorCode::CppAstParseError,

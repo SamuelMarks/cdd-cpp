@@ -12,7 +12,7 @@
 
 namespace cdd_cpp::server {
 
-/// @brief Internal helper or implementation for `parse`.
+/// @brief Parse C++ HTTP server route definitions for `parse`.
 Result<openapi::OpenAPI> parse(const std::string &input) noexcept {
   openapi::OpenAPI spec;
   spec.openapi = "3.2.0";
@@ -86,14 +86,7 @@ Result<openapi::OpenAPI> parse(const std::string &input) noexcept {
                          : "query";
           param.required = (param.in == "path");
           param.schema = openapi::Schema{};
-          if (type_str == "int")
-            param.schema->type = "integer";
-          else if (type_str == "double")
-            param.schema->type = "number";
-          else if (type_str == "bool")
-            param.schema->type = "boolean";
-          else
-            param.schema->type = "string";
+          param.schema->type = openapi::cpp_type_to_openapi(type_str);
 
           op.parameters->push_back(param);
         }
@@ -121,7 +114,7 @@ Result<openapi::OpenAPI> parse(const std::string &input) noexcept {
   return spec;
 }
 
-/// @brief Internal helper or implementation for `parse_arazzo`.
+/// @brief Parse C++ HTTP server route definitions for `parse_arazzo`.
 Result<arazzo::Arazzo> parse_arazzo(const std::string &input) noexcept {
   if (input.empty()) {
     return utils::make_error(utils::ErrorCode::CppAstParseError,

@@ -90,7 +90,7 @@ void emit_docstrings(std::stringstream &ss, const openapi::Schema &schema,
   }
 }
 
-/// @brief Internal helper or implementation for `emit`.
+/// @brief Emit C++ model struct definitions for `emit`.
 std::string emit(const openapi::OpenAPI &spec) noexcept {
   std::stringstream ss;
   ss << "#pragma once\n";

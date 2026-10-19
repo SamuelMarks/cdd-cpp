@@ -7,7 +7,7 @@
 
 namespace cdd_cpp::docstrings {
 
-/// @brief Internal helper or implementation for `emit_api_docstrings`.
+/// @brief Emit formatted Doxygen docstring block for `emit_api_docstrings`.
 std::string emit_api_docstrings(const openapi::OpenAPI &spec) noexcept {
   std::stringstream ss;
   ss << "/// @title " << spec.info.title << "\n";
@@ -92,7 +92,7 @@ std::string emit_api_docstrings(const openapi::OpenAPI &spec) noexcept {
   return ss.str();
 }
 
-/// @brief Internal helper or implementation for `emit_path_docstrings`.
+/// @brief Emit formatted Doxygen docstring block for `emit_path_docstrings`.
 std::string emit_path_docstrings(const openapi::PathItem &pi) noexcept {
   std::stringstream ss;
   if (pi.summary)
@@ -104,7 +104,8 @@ std::string emit_path_docstrings(const openapi::PathItem &pi) noexcept {
   return ss.str();
 }
 
-/// @brief Internal helper or implementation for `emit_operation_docstrings`.
+/// @brief Emit formatted Doxygen docstring block for
+/// `emit_operation_docstrings`.
 std::string emit_operation_docstrings(const openapi::Operation &op) noexcept {
   std::stringstream ss;
   if (op.summary)
@@ -167,17 +168,19 @@ std::string emit_operation_docstrings(const openapi::Operation &op) noexcept {
   return ss.str();
 }
 
-/// @brief Internal helper or implementation for `emit_arazzo_docstrings`.
 std::string emit_arazzo_docstrings(const arazzo::Arazzo &spec) noexcept {
   std::stringstream ss;
   ss << "/// @arazzo " << spec.arazzo << "\n";
   ss << "/// @arazzo_title " << spec.info.title << "\n";
   ss << "/// @arazzo_version " << spec.info.version << "\n";
+  for (const auto &sd : spec.sourceDescriptions) {
+    ss << "/// @sourceDescription " << sd.name << " " << sd.url << "\n";
+  }
   ss << "/// @arazzo_spec_json " << arazzo::emit(spec) << "\n";
   return ss.str();
 }
 
-/// @brief Internal helper or implementation for `emit_workflow_docstrings`.
+/// @brief Emit Doxygen docstrings for a single Arazzo Workflow.
 std::string emit_workflow_docstrings(const arazzo::Workflow &wf) noexcept {
   std::stringstream ss;
   ss << "        /// @workflowId " << wf.workflowId << "\n";
@@ -188,6 +191,9 @@ std::string emit_workflow_docstrings(const arazzo::Workflow &wf) noexcept {
   if (wf.description.has_value()) {
     ss << "        /// @description "
        << format_multi("        /// ", *wf.description) << "\n";
+  }
+  for (const auto &st : wf.steps) {
+    ss << "        /// @step " << st.stepId << "\n";
   }
   return ss.str();
 }

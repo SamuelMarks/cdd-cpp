@@ -377,9 +377,13 @@ void test_emit() {
   assert(code.find("int id, std::string name, double score, bool active, "
                    "std::string other, std::string requestBody") !=
          std::string::npos);
-  // assert(code.find("routes[\"GET /api/v1/test\"] = handler;") !=
-  // std::string::npos);
+  assert(code.find("routes[\"GET /api/v1/test\"]") != std::string::npos);
   assert(code.find("on_GET_handler") != std::string::npos);
+
+  auto round_trip_spec = parse(code);
+  assert(round_trip_spec.has_value());
+  assert(round_trip_spec->paths->contains("/api/v1/test"));
+  assert(round_trip_spec->paths->at("/api/v1/test").get.has_value());
 
   std::cout << "routes::test_emit passed.\n";
 }

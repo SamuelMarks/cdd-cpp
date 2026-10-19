@@ -573,7 +573,7 @@ int main() {
 
 | Project | Target Language | Bidirectional Targets |
 | :--- | :--- | :--- |
-| **[cdd-c](https://github.com/offscale/cdd-c)** | C (C11 / C23) | Server, Client SDK, CLI, Models, ORM, Mocks |
+| **[cdd-c](https://github.com/offscale/cdd-c)** | C (C89 up to C29) | Server, Client SDK, CLI, Models, ORM, Mocks |
 | **[cdd-cpp](https://github.com/offscale/cdd-cpp)** | C++ (C++23) | Server, Client SDK, CLI, Models, ORM, Mocks |
 | **[cdd-csharp](https://github.com/offscale/cdd-csharp)** | C# (.NET) | ASP.NET Minimal APIs, HttpClient SDK, CLI, EF Core |
 | **[cdd-go](https://github.com/offscale/cdd-go)** | Go | `net/http` / Gin / Echo, Client SDK, CLI, GORM |

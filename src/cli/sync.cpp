@@ -264,7 +264,7 @@ int from_openapi(const FromOpenApiConfig &config, std::ostream &out,
     }
     content = *content_res;
   } else {
-    content = "{\"openapi\": \"3.2.0\"}";
+    content = openapi::emit(utils::parse_cpp_project(config.input_dir));
   }
 
   auto upgraded_spec_res = openapi::upgraders::upgrade_to_latest(content);
@@ -517,6 +517,10 @@ int to_docs_json(const DocsJsonConfig &config, std::ostream &out,
       add_op("PUT", pi.put);
       add_op("DELETE", pi.delete_op);
       add_op("PATCH", pi.patch);
+      add_op("OPTIONS", pi.options);
+      add_op("HEAD", pi.head);
+      add_op("TRACE", pi.trace);
+      add_op("QUERY", pi.query);
     }
   }
 

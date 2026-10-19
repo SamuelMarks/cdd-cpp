@@ -7,7 +7,7 @@
 
 namespace cdd_cpp::functions {
 
-/// @brief Internal helper or implementation for `emit`.
+/// @brief Emit standalone C++ function declarations for `emit`.
 std::string emit(const openapi::OpenAPI &spec) noexcept {
   if (!spec.paths.has_value() || spec.paths->empty()) {
     return "{}";
@@ -31,15 +31,10 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
           if (!first)
             ss << ", ";
           first = false;
-          std::string ctype = "std::string";
-          if (p.schema.has_value() && p.schema->type.has_value()) {
-            if (*p.schema->type == "integer")
-              ctype = "int";
-            else if (*p.schema->type == "number")
-              ctype = "double";
-            else if (*p.schema->type == "boolean")
-              ctype = "bool";
-          }
+          std::string ctype =
+              (p.schema.has_value() && p.schema->type.has_value())
+                  ? openapi::openapi_type_to_cpp(*p.schema->type)
+                  : "std::string";
           ss << ctype << " " << p.name;
         }
       }
@@ -56,13 +51,17 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
     emit_fn("PUT", item.put);
     emit_fn("DELETE", item.delete_op);
     emit_fn("PATCH", item.patch);
+    emit_fn("OPTIONS", item.options);
+    emit_fn("HEAD", item.head);
+    emit_fn("TRACE", item.trace);
+    emit_fn("QUERY", item.query);
   }
 
   ss << "}\n";
   return ss.str();
 }
 
-/// @brief Internal helper or implementation for `emit_arazzo`.
+/// @brief Emit standalone C++ function declarations for `emit_arazzo`.
 std::string emit_arazzo(const arazzo::Arazzo &spec) noexcept {
   if (spec.workflows.empty()) {
     return "{}";
@@ -84,14 +83,8 @@ std::string emit_arazzo(const arazzo::Arazzo &spec) noexcept {
         if (!first)
           ss << ", ";
         first = false;
-        std::string ctype = "std::string";
-        std::string stype = pschema.type.value_or("string");
-        if (stype == "integer")
-          ctype = "int";
-        else if (stype == "number")
-          ctype = "double";
-        else if (stype == "boolean")
-          ctype = "bool";
+        std::string ctype =
+            openapi::openapi_type_to_cpp(pschema.type.value_or("string"));
         ss << ctype << " " << pname;
       }
     }

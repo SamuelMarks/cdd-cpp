@@ -507,32 +507,7 @@ struct Step {
 /// @return True if both schemas have identical values.
 inline bool schemas_equal(const openapi::Schema &a,
                           const openapi::Schema &b) noexcept {
-  if (a.type != b.type || a.title != b.title ||
-      a.description != b.description || a.format != b.format ||
-      a.default_value != b.default_value || a.required != b.required) {
-    return false;
-  }
-  if ((a.properties == nullptr) != (b.properties == nullptr)) {
-    return false;
-  }
-  if (a.properties != nullptr) {
-    if (a.properties->size() != b.properties->size()) {
-      return false;
-    }
-    for (const auto &[k, va] : *a.properties) {
-      auto it = b.properties->find(k);
-      if (it == b.properties->end() || !schemas_equal(va, it->second)) {
-        return false;
-      }
-    }
-  }
-  if ((a.items == nullptr) != (b.items == nullptr)) {
-    return false;
-  }
-  if (a.items != nullptr && !schemas_equal(*a.items, *b.items)) {
-    return false;
-  }
-  return true;
+  return a == b;
 }
 
 /// @brief An orchestrated multi-step API workflow (`Workflow Object`).
@@ -566,19 +541,7 @@ struct Workflow {
   /// @brief Equality comparison operator.
   /// @param other The other Workflow object to compare against.
   /// @return True if all fields are equal.
-  bool operator==(const Workflow &other) const noexcept {
-    if (inputs.has_value() != other.inputs.has_value()) {
-      return false;
-    }
-    if (inputs.has_value() && !schemas_equal(*inputs, *other.inputs)) {
-      return false;
-    }
-    return workflowId == other.workflowId && summary == other.summary &&
-           description == other.description && dependsOn == other.dependsOn &&
-           steps == other.steps && successActions == other.successActions &&
-           failureActions == other.failureActions && outputs == other.outputs &&
-           parameters == other.parameters && extensions == other.extensions;
-  }
+  bool operator==(const Workflow &other) const noexcept = default;
 };
 
 /// @brief Reusable Arazzo components (`Components Object`).
@@ -597,26 +560,7 @@ struct Components {
   /// @brief Equality comparison operator.
   /// @param other The other Components object to compare against.
   /// @return True if all fields are equal.
-  bool operator==(const Components &other) const noexcept {
-    if (inputs.has_value() != other.inputs.has_value()) {
-      return false;
-    }
-    if (inputs.has_value()) {
-      if (inputs->size() != other.inputs->size()) {
-        return false;
-      }
-      for (const auto &[k, va] : *inputs) {
-        auto it = other.inputs->find(k);
-        if (it == other.inputs->end() || !schemas_equal(va, it->second)) {
-          return false;
-        }
-      }
-    }
-    return parameters == other.parameters &&
-           successActions == other.successActions &&
-           failureActions == other.failureActions &&
-           extensions == other.extensions;
-  }
+  bool operator==(const Components &other) const noexcept = default;
 };
 
 /// @brief Root Arazzo Specification 1.1.0 Document (`Arazzo Object`).

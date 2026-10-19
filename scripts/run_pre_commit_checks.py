@@ -6,12 +6,14 @@ import urllib.request
 import shutil
 import platform
 import tarfile
+import tempfile
 import zipfile
 import atexit
 
 
 def run_cmd(cmd, cwd=None, env=None, capture_output=False, check=True):
-    with open("pre_commit_debug.log", "a") as dbg:
+    log_path = os.path.join(tempfile.gettempdir(), "cdd_cpp_pre_commit_debug.log")
+    with open(log_path, "a") as dbg:
         dbg.write(f"Running: {cmd if isinstance(cmd, str) else ' '.join(cmd)}\n")
 
     print(f"Running: {cmd if isinstance(cmd, str) else ' '.join(cmd)}", flush=True)

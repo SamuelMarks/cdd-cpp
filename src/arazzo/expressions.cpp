@@ -720,6 +720,104 @@ static std::string_view trim_ws(std::string_view sv) noexcept {
   return sv;
 }
 
+/// @brief Match a single regex atom (`[a-z]`, `\d`, `\w`, `\s`, `.`, or
+/// literal) against `c`.
+/// @param atom The regex atom slice.
+/// @param c The character to test.
+/// @return True if `c` matches `atom`.
+static bool match_regex_atom(std::string_view atom, char c) noexcept {
+  if (atom.front() == '.') {
+    return true;
+  }
+  if (atom.front() == '\\') {
+    char esc = atom[1];
+    if (esc == 'd')
+      return std::isdigit(static_cast<unsigned char>(c)) != 0;
+    if (esc == 'w')
+      return std::isalnum(static_cast<unsigned char>(c)) != 0 || c == '_';
+    if (esc == 's')
+      return std::isspace(static_cast<unsigned char>(c)) != 0;
+    return c == esc;
+  }
+  if (atom.front() == '[') {
+    std::string_view cls = atom.substr(1, atom.size() - 2);
+    bool negate = cls.starts_with('^');
+    if (negate)
+      cls.remove_prefix(1);
+    bool matched = false;
+    for (size_t k = 0; k < cls.size(); ++k) {
+      if (k + 2 < cls.size() && cls[k + 1] == '-') {
+        if (c >= cls[k] && c <= cls[k + 2])
+          matched = true;
+        k += 2;
+      } else if (c == cls[k]) {
+        matched = true;
+      }
+    }
+    return negate ? !matched : matched;
+  }
+  return c == atom.front();
+}
+
+/// @brief Match a regex pattern anchored at the beginning of `text`.
+/// @param pat Remaining regex pattern.
+/// @param text Remaining input text.
+/// @return True if `pat` matches a prefix of `text`.
+static bool match_regex_here(std::string_view pat,
+                             std::string_view text) noexcept {
+  if (pat.empty())
+    return true;
+  if (pat == "$")
+    return text.empty();
+
+  size_t atom_len = 1;
+  if (pat.front() == '\\') {
+    atom_len = 2;
+  } else if (pat.front() == '[') {
+    atom_len = pat.find(']') + 1;
+  }
+
+  std::string_view atom = pat.substr(0, atom_len);
+  char quant = (atom_len < pat.size()) ? pat[atom_len] : '\0';
+  if (quant == '*' || quant == '+' || quant == '?') {
+    std::string_view rest_pat = pat.substr(atom_len + 1);
+    size_t min_rep = (quant == '+') ? 1 : 0;
+    size_t max_rep = (quant == '?') ? 1 : text.size();
+    for (size_t i = 0; i <= max_rep; ++i) {
+      if (i >= min_rep && match_regex_here(rest_pat, text.substr(i)))
+        return true;
+      if (i >= text.size() || !match_regex_atom(atom, text[i]))
+        break;
+    }
+    return false;
+  }
+
+  return !text.empty() && match_regex_atom(atom, text.front()) &&
+         match_regex_here(pat.substr(atom_len), text.substr(1));
+}
+
+/// @brief Evaluate a regular expression pattern against `text` without
+/// exceptions.
+/// @param pattern The regular expression string.
+/// @param text The target string to test.
+/// @return True if `pattern` matches `text`.
+static bool match_regex(std::string_view pattern,
+                        std::string_view text) noexcept {
+  size_t pipe = pattern.find('|');
+  if (pipe != std::string_view::npos) {
+    return match_regex(pattern.substr(0, pipe), text) ||
+           match_regex(pattern.substr(pipe + 1), text);
+  }
+  if (pattern.starts_with('^')) {
+    return match_regex_here(pattern.substr(1), text);
+  }
+  for (size_t i = 0; i <= text.size(); ++i) {
+    if (match_regex_here(pattern, text.substr(i)))
+      return true;
+  }
+  return false;
+}
+
 /// @brief Resolve a token (either `$...` runtime expression or literal) to
 /// string for comparison.
 /// @param token The token string view.
@@ -796,12 +894,41 @@ evaluate_criterion(const Criterion &criterion,
 
   if (eff_type == CriterionType::Regex) {
     std::string target = ctx_str.value_or("");
-    return target.find(cond) != std::string::npos;
+    return match_regex(cond, target);
   }
 
   if (eff_type == CriterionType::XPath) {
     std::string target = ctx_str.value_or("");
     return !target.empty() && cond.starts_with('/');
+  }
+
+  // Compound logical conditions (`||` and `&&`)
+  auto or_pos = cond.find(" || ");
+  if (or_pos != std::string_view::npos) {
+    Criterion left_c = criterion;
+    left_c.condition = std::string(cond.substr(0, or_pos));
+    auto l_res = evaluate_criterion(left_c, ctx);
+    if (!l_res.has_value())
+      return std::unexpected(l_res.error());
+    if (*l_res)
+      return true;
+    Criterion right_c = criterion;
+    right_c.condition = std::string(cond.substr(or_pos + 4));
+    return evaluate_criterion(right_c, ctx);
+  }
+
+  auto and_pos = cond.find(" && ");
+  if (and_pos != std::string_view::npos) {
+    Criterion left_c = criterion;
+    left_c.condition = std::string(cond.substr(0, and_pos));
+    auto l_res = evaluate_criterion(left_c, ctx);
+    if (!l_res.has_value())
+      return std::unexpected(l_res.error());
+    if (!*l_res)
+      return false;
+    Criterion right_c = criterion;
+    right_c.condition = std::string(cond.substr(and_pos + 4));
+    return evaluate_criterion(right_c, ctx);
   }
 
   // Simple condition evaluation: support ==, !=, >=, <=, >, <

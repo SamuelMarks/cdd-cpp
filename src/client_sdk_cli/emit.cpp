@@ -5,6 +5,7 @@
 #include "../client_sdk/emit.hpp"
 #include "../docstrings/emit.hpp"
 #include "../mocks/emit.hpp"
+#include "../utils/json_writer.hpp"
 #include "emit.hpp"
 #include <algorithm>
 #include <iostream>
@@ -33,28 +34,11 @@ struct CliNode {
   }
 };
 
-/// @brief Internal helper or implementation for `sanitize_string`.
+/// @brief Replace hyphens and spaces with underscores in a C++ identifier.
+/// @param str String to sanitize in place.
 static void sanitize_string(std::string &str) noexcept {
   std::replace(str.begin(), str.end(), '-', '_');
   std::replace(str.begin(), str.end(), ' ', '_');
-}
-
-/// @brief Internal helper or implementation for `escape_string`.
-static std::string escape_string(const std::string &s) noexcept {
-  std::string out;
-  for (char c : s) {
-    if (c == '"')
-      out += "\\\"";
-    else if (c == '\\')
-      out += "\\\\";
-    else if (c == '\n')
-      out += "\\n";
-    else if (c == '\r')
-      out += "\\r";
-    else
-      out += c;
-  }
-  return out;
 }
 
 std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
@@ -112,7 +96,8 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
   ss << "            }\n";
   ss << "        };\n\n";
   ss << "        Client(const std::string& url = \""
-     << escape_string(default_url) << "\") noexcept : base_url(url) {\n";
+     << utils::escape_json_string(default_url)
+     << "\") noexcept : base_url(url) {\n";
   ss << "            (void)CurlGlobalInit::instance();\n";
   ss << "            curl = curl_easy_init();\n";
   ss << "        }\n\n";
@@ -232,16 +217,18 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
     if (n->op.has_value()) {
       if (n->op->summary.has_value()) {
         ss << "            std::cout << \"Summary: "
-           << escape_string(n->op->summary.operator*()) << "\\n\";\n";
+           << utils::escape_json_string(n->op->summary.operator*())
+           << "\\n\";\n";
       }
       if (n->op->description.has_value()) {
         ss << "            std::cout << \"Description: "
-           << escape_string(n->op->description.operator*()) << "\\n\";\n";
+           << utils::escape_json_string(n->op->description.operator*())
+           << "\\n\";\n";
       }
       if (n->op->parameters.has_value()) {
         for (const auto &p : n->op->parameters.operator*()) {
-          ss << "            std::cout << \"  --" << escape_string(p.name)
-             << "\\n\";\n";
+          ss << "            std::cout << \"  --"
+             << utils::escape_json_string(p.name) << "\\n\";\n";
         }
       }
       if (n->op->requestBody.has_value()) {
@@ -251,7 +238,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
     if (!n->children.empty()) {
       ss << "            std::cout << \"Commands:\\n\";\n";
       for (auto &[name, child] : n->children) {
-        ss << "            std::cout << \"  " << escape_string(name)
+        ss << "            std::cout << \"  " << utils::escape_json_string(name)
            << "\\n\";\n";
       }
     }
@@ -276,19 +263,19 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
 
       ss << docstrings::emit_operation_docstrings(n->op.operator*());
       ss << "/// @route " << n->method.operator*() << " "
-         << escape_string(n->path.operator*()) << "\n";
+         << utils::escape_json_string(n->path.operator*()) << "\n";
 
       if (n->op->parameters.has_value()) {
         for (const auto &p : n->op->parameters.operator*()) {
           if (p.description.has_value()) {
             ss << "/// @param " << p.name << " "
-               << escape_string(p.description.operator*()) << "\n";
+               << utils::escape_json_string(p.description.operator*()) << "\n";
           } else {
             ss << "/// @param " << p.name << " " << p.in << " parameter\n";
           }
           if (p.example.has_value()) {
             ss << "/// @param_example " << p.name << " "
-               << escape_string(p.example.operator*()) << "\n";
+               << utils::escape_json_string(p.example.operator*()) << "\n";
           }
           if (p.deprecated) {
             ss << "/// @param_deprecated " << p.name << "\n";
@@ -311,8 +298,8 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
       }
       ss << ") noexcept {\n";
 
-      ss << "    std::string path = \"" << escape_string(n->path.operator*())
-         << "\";\n";
+      ss << "    std::string path = \""
+         << utils::escape_json_string(n->path.operator*()) << "\";\n";
       ss << "    std::string qs = \"\";\n";
       ss << "    std::map<std::string, std::string> extra_headers;\n";
 
@@ -322,8 +309,8 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
           sanitize_string(pname);
           if (p.in == "path") {
             ss << "    {\n";
-            ss << "        size_t pos = path.find(\"{" << escape_string(p.name)
-               << "}\");\n";
+            ss << "        size_t pos = path.find(\"{"
+               << utils::escape_json_string(p.name) << "}\");\n";
             ss << "        if (pos != std::string::npos) {\n";
             ss << "            path.replace(pos, " << p.name.size() + 2
                << ", client.url_encode(" << pname << "));\n";
@@ -332,20 +319,22 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
           } else if (p.in == "query") {
             ss << "    if (!" << pname << ".empty()) {\n";
             ss << "        qs += (qs.empty() ? \"?\" : \"&\") + std::string(\""
-               << escape_string(p.name) << "=\") + client.url_encode(" << pname
-               << ");\n";
+               << utils::escape_json_string(p.name)
+               << "=\") + client.url_encode(" << pname << ");\n";
             ss << "    }\n";
           } else if (p.in == "header") {
             ss << "    if (!" << pname << ".empty()) {\n";
-            ss << "        extra_headers[\"" << escape_string(p.name)
-               << "\"] = " << pname << ";\n";
+            ss << "        extra_headers[\""
+               << utils::escape_json_string(p.name) << "\"] = " << pname
+               << ";\n";
             ss << "    }\n";
           } else if (p.in == "cookie") {
             ss << "    if (!" << pname << ".empty()) {\n";
             ss << "        extra_headers[\"Cookie\"] += "
                   "(extra_headers[\"Cookie\"].empty() ? \"\" : \"; \") + "
                   "std::string(\""
-               << escape_string(p.name) << "=\") + " << pname << ";\n";
+               << utils::escape_json_string(p.name) << "=\") + " << pname
+               << ";\n";
             ss << "    }\n";
           }
         }
@@ -353,7 +342,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
 
       ss << "    path += qs;\n";
       ss << "    return client.request(\""
-         << escape_string(n->method.operator*()) << "\", path, "
+         << utils::escape_json_string(n->method.operator*()) << "\", path, "
          << (has_body ? "body" : "\"\"") << ", extra_headers);\n";
       ss << "}\n\n";
     }
@@ -420,7 +409,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
       }
       if (!first)
         ss << " else ";
-      ss << "if (arg == \"" << escape_string(name) << "\") {\n";
+      ss << "if (arg == \"" << utils::escape_json_string(name) << "\") {\n";
       ss << "                    current_node = " << node_ids[child.get()]
          << ";\n";
       ss << "                }";
@@ -433,7 +422,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
       else
         ss << "{\n";
       ss << "                    path_params[\""
-         << escape_string(param_child_name) << "\"] = arg;\n";
+         << utils::escape_json_string(param_child_name) << "\"] = arg;\n";
       ss << "                    current_node = " << param_child_id << ";\n";
       ss << "                }\n";
     } else {
@@ -590,9 +579,9 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
             desc = op_id;
 
           ss << "                    std::cout << \"{\\\"name\\\":\\\"\" << \""
-             << escape_string(op_id)
+             << utils::escape_json_string(op_id)
              << "\" << \"\\\",\\\"description\\\":\\\"\" << \""
-             << escape_string(desc)
+             << utils::escape_json_string(desc)
              << "\" << "
                 "\"\\\",\\\"inputSchema\\\":{\\\"type\\\":\\\"object\\\","
                 "\\\"properties\\\":{\";\n";
@@ -604,11 +593,11 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
                 ss << "                        std::cout << \",\";\n";
               first_param = false;
               ss << "                        std::cout << \"\\\"\" << \""
-                 << escape_string(p.name)
+                 << utils::escape_json_string(p.name)
                  << "\" << "
                     "\"\\\":{\\\"type\\\":\\\"string\\\",\\\"description\\\":"
                     "\\\"\" << \""
-                 << escape_string(p.description.value_or(""))
+                 << utils::escape_json_string(p.description.value_or(""))
                  << "\" << \"\\\"}\";\n";
             }
           }
@@ -631,7 +620,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
                   ss << "                        std::cout << \",\";\n";
                 first_req = false;
                 ss << "                        std::cout << \"\\\"\" << \""
-                   << escape_string(p.name) << "\" << \"\\\"\";\n";
+                   << utils::escape_json_string(p.name) << "\" << \"\\\"\";\n";
               }
             }
           }
@@ -671,7 +660,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
           sanitize_string(op_id);
 
           ss << "                    if (tool_name == \""
-             << escape_string(op_id) << "\") {\n";
+             << utils::escape_json_string(op_id) << "\") {\n";
 
           if (cn->op->parameters.has_value()) {
             for (const auto &p : cn->op->parameters.operator*()) {
@@ -683,7 +672,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
               ss << "                            simdjson::ondemand::value "
                     "pval;\n";
               ss << "                            if (!args_val[\""
-                 << escape_string(p.name) << "\"].get(pval)) {\n";
+                 << utils::escape_json_string(p.name) << "\"].get(pval)) {\n";
               ss << "                                std::string_view sv;\n";
               ss << "                                if (!pval.get(sv)) arg_"
                  << pname << " = sv;\n";
@@ -772,9 +761,11 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
           std::string pname = p.name;
           sanitize_string(pname);
           if (p.in == "path") {
-            ss << ", path_params[\"" << escape_string(p.name) << "\"]";
+            ss << ", path_params[\"" << utils::escape_json_string(p.name)
+               << "\"]";
           } else if (p.in == "query" || p.in == "header" || p.in == "cookie") {
-            ss << ", query_params[\"" << escape_string(p.name) << "\"]";
+            ss << ", query_params[\"" << utils::escape_json_string(p.name)
+               << "\"]";
           } else {
             ss << ", \"\"";
           }
@@ -949,11 +940,26 @@ emit_arazzo_cli(const arazzo::Arazzo &spec,
         << "(cdd_client::Workflows& workflows, const std::vector<std::string>& "
            "args) noexcept {\n";
     cc_ss << "        cdd_models::" << wf.workflowId << "Inputs inputs;\n";
-    cc_ss << "        for (const auto& arg : args) {\n";
-    cc_ss << "            (void)arg;\n";
+    cc_ss << "        for (size_t i = 0; i + 1 < args.size(); ++i) {\n";
+    cc_ss << "            const auto& arg = args[i];\n";
+    cc_ss << "            const auto& val = args[i + 1];\n";
+    cc_ss << "            (void)arg; (void)val;\n";
     if (wf.inputs.has_value()) {
-      for (const auto &[pname, _] : *wf.inputs->properties) {
-        cc_ss << "            // --" << pname << "\n";
+      for (const auto &[pname, pschema] : *wf.inputs->properties) {
+        std::string stype = pschema.type.value_or("string");
+        cc_ss << "            if (arg == \"--" << pname << "\") {\n";
+        if (stype == "integer") {
+          cc_ss << "                inputs." << pname
+                << " = std::stoll(val);\n";
+        } else if (stype == "number") {
+          cc_ss << "                inputs." << pname << " = std::stod(val);\n";
+        } else if (stype == "boolean") {
+          cc_ss << "                inputs." << pname
+                << " = (val == \"true\" || val == \"1\");\n";
+        } else {
+          cc_ss << "                inputs." << pname << " = val;\n";
+        }
+        cc_ss << "            }\n";
       }
     }
     cc_ss << "        }\n";

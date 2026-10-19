@@ -15,12 +15,7 @@ namespace cdd_cpp::client_sdk {
 /// @return C++ type string ("int", "bool", "double", or "std::string").
 static std::string param_cpp_type(const openapi::Parameter &p) noexcept {
   if (p.schema && p.schema->type) {
-    if (*p.schema->type == "integer")
-      return "int";
-    if (*p.schema->type == "boolean")
-      return "bool";
-    if (*p.schema->type == "number")
-      return "double";
+    return openapi::openapi_type_to_cpp(*p.schema->type);
   }
   return "std::string";
 }
@@ -69,6 +64,8 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
   c_hpp << docstrings::emit_api_docstrings(spec);
   c_hpp << "    class Client {\n";
   c_hpp << "        std::string base_url;\n";
+  c_hpp << "        std::string api_key_ = \"special-key\";\n";
+  c_hpp << "        std::string bearer_token_ = \"special-key\";\n";
   c_hpp << "        CURL* curl;\n\n";
   c_hpp << "        static size_t WriteCallback(void* contents, size_t size, "
            "size_t nmemb, void* userp) noexcept;\n\n";
@@ -80,7 +77,11 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
   }
   c_hpp << "        Client(const std::string& url = \"" << default_url
         << "\") noexcept;\n";
-  c_hpp << "        ~Client() noexcept;\n\n";
+  c_hpp << "        ~Client() noexcept;\n";
+  c_hpp << "        void set_api_key(const std::string& key) noexcept { "
+           "api_key_ = key; }\n";
+  c_hpp << "        void set_bearer_token(const std::string& token) noexcept { "
+           "bearer_token_ = token; }\n\n";
   c_hpp << "        struct McpAdapter {\n";
   c_hpp << "            Client* client;\n";
   c_hpp << "            std::string get_tools() const noexcept;\n";
@@ -126,6 +127,10 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
       emit_method_decl(item.put);
       emit_method_decl(item.delete_op);
       emit_method_decl(item.patch);
+      emit_method_decl(item.options);
+      emit_method_decl(item.head);
+      emit_method_decl(item.trace);
+      emit_method_decl(item.query);
     }
   }
 
@@ -206,10 +211,12 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
               << "\";\n";
 
         c_cpp << "        struct curl_slist *headers = NULL;\n";
-        c_cpp << "        headers = curl_slist_append(headers, \"api_key: "
-                 "special-key\");\n";
-        c_cpp << "        headers = curl_slist_append(headers, "
-                 "\"Authorization: Bearer special-key\");\n";
+        c_cpp << "        if (!api_key_.empty()) headers = "
+                 "curl_slist_append(headers, (\"api_key: \" + "
+                 "api_key_).c_str());\n";
+        c_cpp << "        if (!bearer_token_.empty()) headers = "
+                 "curl_slist_append(headers, (\"Authorization: Bearer \" + "
+                 "bearer_token_).c_str());\n";
 
         for (const auto &p : all_params) {
           std::string to_str = p.name;
@@ -291,6 +298,10 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
       emit_method_impl("PUT", item.put);
       emit_method_impl("DELETE", item.delete_op);
       emit_method_impl("PATCH", item.patch);
+      emit_method_impl("OPTIONS", item.options);
+      emit_method_impl("HEAD", item.head);
+      emit_method_impl("TRACE", item.trace);
+      emit_method_impl("QUERY", item.query);
     }
   }
 
@@ -810,12 +821,19 @@ emit_arazzo_client(const arazzo::Arazzo &spec,
     for (const auto &step : wf.steps) {
       cpp_ss << "        // stepId: " << step.stepId << "\n";
       if (step.operationId.has_value()) {
-        cpp_ss << "        // operationId: " << *step.operationId << "\n";
+        cpp_ss << "        std::string step_" << step.stepId << "_op = \""
+               << *step.operationId << "\"; (void)step_" << step.stepId
+               << "_op;\n";
       } else if (step.operationPath.has_value()) {
-        cpp_ss << "        // operationPath: " << *step.operationPath << "\n";
+        cpp_ss << "        std::string step_" << step.stepId << "_path = \""
+               << *step.operationPath << "\"; (void)step_" << step.stepId
+               << "_path;\n";
       } else {
-        cpp_ss << "        // workflowId: " << step.workflowId.value_or("")
-               << "\n";
+        cpp_ss << "        auto step_" << step.stepId << "_res = this->"
+               << step.workflowId.value_or("") << "();\n";
+        cpp_ss << "        if (!step_" << step.stepId
+               << "_res.has_value()) return std::unexpected(step_"
+               << step.stepId << "_res.error());\n";
       }
     }
     cpp_ss << "        cdd_models::" << wf.workflowId << "Outputs out;\n";

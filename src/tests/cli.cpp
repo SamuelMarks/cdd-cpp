@@ -676,12 +676,12 @@ void test_main_cli_coverage() {
   assert(run_cli({"cdd-cpp", "from_openapi", "to_sdk", "-i", spec_file, "-o",
                   tmp.path("out_env_true")})
              .code == 0);
+  assert(
+      std::filesystem::exists(tmp.path("out_env_true/tests/client_test.cpp")));
+  assert(std::filesystem::exists(
+      tmp.path("out_env_true/.github/workflows/ci.yml")));
   unsetenv("CDD_TESTS");
   unsetenv("CDD_NO_GITHUB_ACTIONS");
-}
-
-void test_popen_fail() {
-  // Retained symbol for test runner compatibility
 }
 
 } // namespace cdd_cpp::cli

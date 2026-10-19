@@ -10,7 +10,7 @@
 
 namespace cdd_cpp::utils {
 
-/// @brief Internal helper or implementation for `parse_schemas`.
+/// @brief Parse C++ AST struct definitions via `parse_schemas`.
 void parse_schemas(const CppAST &ast, openapi::OpenAPI &spec) noexcept {
   for (const auto &cls : ast.classes) {
     if (cls.name == "Client" || cls.name == "Router")
@@ -27,72 +27,7 @@ void parse_schemas(const CppAST &ast, openapi::OpenAPI &spec) noexcept {
         std::make_shared<std::map<std::string, openapi::Schema>>();
     std::vector<std::string> required;
 
-    if (auto v = docstrings::extract_tag(cls.docstring, "description"))
-      schema.description = *v;
-    if (auto v = docstrings::extract_tag(cls.docstring, "example"))
-      schema.example = *v;
-
-    if (auto vd = docstrings::extract_tag(cls.docstring,
-                                          "externalDocs.description")) {
-      schema.externalDocs = openapi::ExternalDocumentation{};
-      schema.externalDocs->description = *vd;
-    }
-    if (auto vu = docstrings::extract_tag(cls.docstring, "externalDocs.url")) {
-      if (!schema.externalDocs.has_value())
-        schema.externalDocs = openapi::ExternalDocumentation{};
-      schema.externalDocs->url = *vu;
-    }
-
-    if (auto vn = docstrings::extract_tag(cls.docstring, "xml.name")) {
-      schema.xml = openapi::XML{};
-      schema.xml->name = *vn;
-    }
-    if (auto vns =
-            docstrings::extract_tag(cls.docstring, "xml.namespace_url")) {
-      if (!schema.xml.has_value())
-        schema.xml = openapi::XML{};
-      schema.xml->namespace_url = *vns;
-    }
-    if (auto vp = docstrings::extract_tag(cls.docstring, "xml.prefix")) {
-      if (!schema.xml.has_value())
-        schema.xml = openapi::XML{};
-      schema.xml->prefix = *vp;
-    }
-    if (auto va = docstrings::extract_tag(cls.docstring, "xml.attribute")) {
-      if (!schema.xml.has_value())
-        schema.xml = openapi::XML{};
-      schema.xml->attribute = (*va == "true");
-    }
-    if (auto vw = docstrings::extract_tag(cls.docstring, "xml.wrapped")) {
-      if (!schema.xml.has_value())
-        schema.xml = openapi::XML{};
-      schema.xml->wrapped = (*vw == "true");
-    }
-
-    if (auto vdp = docstrings::extract_tag(cls.docstring,
-                                           "discriminator.propertyName")) {
-      schema.discriminator = openapi::Discriminator{};
-      schema.discriminator->propertyName = *vdp;
-    }
-
-    size_t dm_pos = 0;
-    for (;;) {
-      size_t idx = cls.docstring.find("@discriminator.mapping", dm_pos);
-      if (idx == std::string::npos)
-        break;
-      size_t after = idx + 22;
-      size_t s = cls.docstring.find_first_not_of(" \t", after);
-      size_t e = cls.docstring.find_first_of(" \t\r\n", s);
-      std::string token = cls.docstring.substr(s, e - s);
-      size_t colon = token.find(':');
-      if (!schema.discriminator.has_value())
-        schema.discriminator = openapi::Discriminator{};
-      if (!schema.discriminator->mapping.has_value())
-        schema.discriminator->mapping = std::map<std::string, std::string>{};
-      schema.discriminator->mapping->insert(
-          {token.substr(0, colon), token.substr(colon + 1)});
-      dm_pos = e;
-    }
+    docstrings::parse_schema_docstrings(cls.docstring, schema);
 
     for (const auto &field : cls.fields) {
       openapi::Schema prop;
@@ -108,17 +43,28 @@ void parse_schemas(const CppAST &ast, openapi::OpenAPI &spec) noexcept {
       if (!is_optional)
         required.push_back(prop_name);
 
-      if (ftype == "int") {
+      if (ftype == "int" || ftype == "int32_t" || ftype == "short") {
         prop.type = "integer";
+        if (ftype != "int")
+          prop.format = "int32";
+      } else if (ftype == "long" || ftype == "int64_t") {
+        prop.type = "integer";
+        prop.format = "int64";
+      } else if (ftype == "float") {
+        prop.type = "number";
+        prop.format = "float";
       } else if (ftype == "double") {
         prop.type = "number";
-      } else if (ftype == "bool") {
+      } else if (ftype == "bool" || ftype == "boolean") {
         prop.type = "boolean";
-      } else if (ftype == "std::string") {
+      } else if (ftype == "std::string" || ftype == "string") {
         prop.type = "string";
-      } else if (ftype.starts_with("std::vector<")) {
+      } else if (ftype.starts_with("std::vector<") ||
+                 ftype.starts_with("vector<")) {
         prop.type = "array";
-        std::string item_type = ftype.substr(12, ftype.length() - 13);
+        size_t prefix_len = ftype.starts_with("std::vector<") ? 12 : 7;
+        std::string item_type =
+            ftype.substr(prefix_len, ftype.length() - prefix_len - 1);
         openapi::Schema item_schema;
         if (item_type == "int") {
           item_schema.type = "integer";
@@ -138,8 +84,11 @@ void parse_schemas(const CppAST &ast, openapi::OpenAPI &spec) noexcept {
                                       std::nullopt, std::nullopt};
       }
 
-      if (auto v = docstrings::extract_tag(field.docstring, "description"))
+      if (auto v = docstrings::extract_tag(field.docstring, "description")) {
         prop.description = *v;
+      } else if (!field.docstring.empty()) {
+        prop.description = field.docstring;
+      }
 
       schema.properties->insert({prop_name, prop});
     }

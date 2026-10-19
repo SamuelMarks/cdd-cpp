@@ -55,8 +55,10 @@ void test_emit() {
   assert(rf_code_no_pg.find("RepositoryFactory() noexcept {}") !=
          std::string::npos);
 
-  std::string empty = emit(*spec);
-  assert(empty.empty());
+  std::string combined = emit(*spec);
+  assert(combined.find("ConcreteUserDao") != std::string::npos);
+  assert(combined.find("PQntuples") != std::string::npos);
+  assert(combined.find("PQgetvalue") != std::string::npos);
 
   openapi::OpenAPI comp_no_schemas;
   comp_no_schemas.components = openapi::Components{};

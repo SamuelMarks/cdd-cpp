@@ -392,9 +392,86 @@ static void test_arazzo_expressions() noexcept {
 
   Criterion c_regex;
   c_regex.context = "$url";
-  c_regex.condition = "example.com";
+  c_regex.condition = "^https?://[_ab-z0-9.]+\\.com/p.ts$";
   c_regex.type = CriterionType::Regex;
   assert(evaluate_criterion(c_regex, ctx).value() == true);
+
+  Criterion c_regex_space_digit;
+  c_regex_space_digit.context = "$request.header.Authorization";
+  c_regex_space_digit.condition = "^Bearer\\s+\\w+$";
+  c_regex_space_digit.type = CriterionType::Regex;
+  assert(evaluate_criterion(c_regex_space_digit, ctx).value() == true);
+
+  Criterion c_regex_digits;
+  c_regex_digits.context = "$statusCode";
+  c_regex_digits.condition = "^\\d+$";
+  c_regex_digits.type = CriterionType::Regex;
+  assert(evaluate_criterion(c_regex_digits, ctx).value() == true);
+
+  Criterion c_regex_alt;
+  c_regex_alt.context = "$method";
+  c_regex_alt.condition = "^GET|O*ST|^OTHER$";
+  c_regex_alt.type = CriterionType::Regex;
+  assert(evaluate_criterion(c_regex_alt, ctx).value() == true);
+
+  Criterion c_regex_alt_fail;
+  c_regex_alt_fail.context = "$url";
+  c_regex_alt_fail.condition =
+      "^https$|^ht?X$|^https://api\\.example\\.com/pets_extra$";
+  c_regex_alt_fail.type = CriterionType::Regex;
+  assert(evaluate_criterion(c_regex_alt_fail, ctx).value() == false);
+
+  Criterion c_regex_neg;
+  c_regex_neg.context = "$response.body#/a~1b~0c";
+  c_regex_neg.condition = "^[^0-9]+\\w+_[X]?$";
+  c_regex_neg.type = CriterionType::Regex;
+  ctx.response_body =
+      openapi::JsonValue(std::map<std::string, openapi::JsonValue>{
+          {"id", openapi::JsonValue(99)},
+          {"active", openapi::JsonValue(true)},
+          {"score", openapi::JsonValue(9.5)},
+          {"empty", openapi::JsonValue(nullptr)},
+          {"a/b~c", openapi::JsonValue("esc_aped~")},
+          {"tags",
+           openapi::JsonValue(std::vector<openapi::JsonValue>{
+               openapi::JsonValue("first"), openapi::JsonValue("second")})}});
+  assert(evaluate_criterion(c_regex_neg, ctx).value() == false);
+
+  Criterion c_regex_word_underscore;
+  c_regex_word_underscore.context = "$response.body#/a~1b~0c";
+  c_regex_word_underscore.condition = "^[a-z]+_\\w+~$";
+  c_regex_word_underscore.type = CriterionType::Regex;
+  assert(evaluate_criterion(c_regex_word_underscore, ctx).value() == true);
+
+  Criterion c_regex_plus_fail;
+  c_regex_plus_fail.context = "$method";
+  c_regex_plus_fail.condition = "\\d+";
+  c_regex_plus_fail.type = CriterionType::Regex;
+  assert(evaluate_criterion(c_regex_plus_fail, ctx).value() == false);
+
+  Criterion c_and_ok;
+  c_and_ok.condition = "$statusCode == 201 && $method == 'POST'";
+  assert(evaluate_criterion(c_and_ok, ctx).value() == true);
+
+  Criterion c_and_short;
+  c_and_short.condition = "$statusCode == 404 && $method == 'POST'";
+  assert(evaluate_criterion(c_and_short, ctx).value() == false);
+
+  Criterion c_and_err;
+  c_and_err.condition = "$invalid_expr && $statusCode == 201";
+  assert(!evaluate_criterion(c_and_err, ctx).has_value());
+
+  Criterion c_or_short;
+  c_or_short.condition = "$statusCode == 201 || $statusCode == 200";
+  assert(evaluate_criterion(c_or_short, ctx).value() == true);
+
+  Criterion c_or_second;
+  c_or_second.condition = "$statusCode == 404 || $statusCode == 201";
+  assert(evaluate_criterion(c_or_second, ctx).value() == true);
+
+  Criterion c_or_err;
+  c_or_err.condition = "$invalid_expr || $statusCode == 201";
+  assert(!evaluate_criterion(c_or_err, ctx).has_value());
 
   Criterion c_jp;
   c_jp.context = "$response.body";

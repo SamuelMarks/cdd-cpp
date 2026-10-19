@@ -7,7 +7,7 @@
 
 namespace cdd_cpp::mocks {
 
-/// @brief Internal helper or implementation for `emit`.
+/// @brief Emit GoogleMock interface and mock class definitions for `emit`.
 std::string emit(const openapi::OpenAPI &spec) noexcept {
   std::stringstream ss;
 
@@ -40,6 +40,10 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
       emit_interface_method(item.put);
       emit_interface_method(item.delete_op);
       emit_interface_method(item.patch);
+      emit_interface_method(item.options);
+      emit_interface_method(item.head);
+      emit_interface_method(item.trace);
+      emit_interface_method(item.query);
     }
   }
   ss << "    };\n\n";
@@ -63,6 +67,10 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
       emit_mock_method(item.put);
       emit_mock_method(item.delete_op);
       emit_mock_method(item.patch);
+      emit_mock_method(item.options);
+      emit_mock_method(item.head);
+      emit_mock_method(item.trace);
+      emit_mock_method(item.query);
     }
   }
   ss << "    };\n\n";
@@ -72,7 +80,8 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   return ss.str();
 }
 
-/// @brief Internal helper or implementation for `emit_arazzo`.
+/// @brief Emit GoogleMock interface and mock class definitions for
+/// `emit_arazzo`.
 std::string emit_arazzo(const arazzo::Arazzo &spec) noexcept {
   std::stringstream ss;
   ss << "#pragma once\n";

@@ -2,7 +2,6 @@
 /// @brief Implementation of OpenAPI 3.2.0 JSON parser.
 
 #include "parse.hpp"
-#include <iostream>
 #include <optional>
 
 namespace cdd_cpp::openapi {
@@ -168,7 +167,7 @@ static PathItem parse_PathItem(simdjson::dom::object obj) noexcept;
 static Components parse_Components(simdjson::dom::object obj) noexcept;
 static OpenAPI parse_OpenAPI(simdjson::dom::object obj) noexcept;
 
-/// @brief Internal helper or implementation for `parse_Reference`.
+/// @brief Deserialize OpenAPI JSON element via `parse_Reference`.
 inline static Reference parse_Reference(simdjson::dom::object obj) noexcept {
   Reference res;
   res.ref = get_optional_string(obj, "$ref").value_or("");
@@ -177,7 +176,7 @@ inline static Reference parse_Reference(simdjson::dom::object obj) noexcept {
   return res;
 }
 
-/// @brief Internal helper or implementation for `parse_Contact`.
+/// @brief Deserialize OpenAPI JSON element via `parse_Contact`.
 static Contact parse_Contact(simdjson::dom::object obj) noexcept {
   Contact res;
   res.name = get_optional_string(obj, "name");
@@ -186,7 +185,7 @@ static Contact parse_Contact(simdjson::dom::object obj) noexcept {
   return res;
 }
 
-/// @brief Internal helper or implementation for `parse_License`.
+/// @brief Deserialize OpenAPI JSON element via `parse_License`.
 static License parse_License(simdjson::dom::object obj) noexcept {
   License res;
   res.name = get_optional_string(obj, "name").value_or("");
@@ -195,7 +194,7 @@ static License parse_License(simdjson::dom::object obj) noexcept {
   return res;
 }
 
-/// @brief Internal helper or implementation for `parse_Info`.
+/// @brief Deserialize OpenAPI JSON element via `parse_Info`.
 static Info parse_Info(simdjson::dom::object obj) noexcept {
   Info res;
   res.title = get_optional_string(obj, "title").value_or("");
@@ -214,7 +213,7 @@ static Info parse_Info(simdjson::dom::object obj) noexcept {
   return res;
 }
 
-/// @brief Internal helper or implementation for `parse_ServerVariable`.
+/// @brief Deserialize OpenAPI JSON element via `parse_ServerVariable`.
 static ServerVariable parse_ServerVariable(simdjson::dom::object obj) noexcept {
   ServerVariable res;
   res.enum_values = parse_vector_string(obj, "enum");
@@ -223,7 +222,7 @@ static ServerVariable parse_ServerVariable(simdjson::dom::object obj) noexcept {
   return res;
 }
 
-/// @brief Internal helper or implementation for `parse_Server`.
+/// @brief Deserialize OpenAPI JSON element via `parse_Server`.
 static Server parse_Server(simdjson::dom::object obj) noexcept {
   Server res;
   res.url = get_optional_string(obj, "url").value_or("");
@@ -240,7 +239,7 @@ static Server parse_Server(simdjson::dom::object obj) noexcept {
   return res;
 }
 
-/// @brief Internal helper or implementation for `parse_ExternalDocumentation`.
+/// @brief Deserialize OpenAPI JSON element via `parse_ExternalDocumentation`.
 static ExternalDocumentation
 parse_ExternalDocumentation(simdjson::dom::object obj) noexcept {
   ExternalDocumentation res;
@@ -249,7 +248,7 @@ parse_ExternalDocumentation(simdjson::dom::object obj) noexcept {
   return res;
 }
 
-/// @brief Internal helper or implementation for `parse_Tag`.
+/// @brief Deserialize OpenAPI JSON element via `parse_Tag`.
 static Tag parse_Tag(simdjson::dom::object obj) noexcept {
   Tag res;
   res.name = get_optional_string(obj, "name").value_or("");
@@ -264,7 +263,7 @@ static Tag parse_Tag(simdjson::dom::object obj) noexcept {
   return res;
 }
 
-/// @brief Internal helper or implementation for `parse_Discriminator`.
+/// @brief Deserialize OpenAPI JSON element via `parse_Discriminator`.
 static Discriminator parse_Discriminator(simdjson::dom::object obj) noexcept {
   Discriminator res;
   res.propertyName = get_optional_string(obj, "propertyName").value_or("");
@@ -273,7 +272,7 @@ static Discriminator parse_Discriminator(simdjson::dom::object obj) noexcept {
   return res;
 }
 
-/// @brief Internal helper or implementation for `parse_XML`.
+/// @brief Deserialize OpenAPI JSON element via `parse_XML`.
 static XML parse_XML(simdjson::dom::object obj) noexcept {
   XML res;
   res.name = get_optional_string(obj, "name");
@@ -284,7 +283,7 @@ static XML parse_XML(simdjson::dom::object obj) noexcept {
   return res;
 }
 
-/// @brief Internal helper or implementation for `parse_Schema`.
+/// @brief Deserialize OpenAPI JSON element via `parse_Schema`.
 static Schema parse_Schema(simdjson::dom::object obj) noexcept {
   Schema res;
   res.type = get_optional_string(obj, "type");
@@ -388,7 +387,7 @@ static Schema parse_Schema(simdjson::dom::object obj) noexcept {
   return res;
 }
 
-/// @brief Internal helper or implementation for `parse_Example`.
+/// @brief Deserialize OpenAPI JSON element via `parse_Example`.
 static Example parse_Example(simdjson::dom::object obj) noexcept {
   Example res;
   res.summary = get_optional_string(obj, "summary");
@@ -402,7 +401,7 @@ static Example parse_Example(simdjson::dom::object obj) noexcept {
   return res;
 }
 
-/// @brief Internal helper or implementation for `parse_Encoding`.
+/// @brief Deserialize OpenAPI JSON element via `parse_Encoding`.
 static Encoding parse_Encoding(simdjson::dom::object obj) noexcept {
   Encoding res;
   res.contentType = get_optional_string(obj, "contentType");
@@ -446,7 +445,7 @@ static Encoding parse_Encoding(simdjson::dom::object obj) noexcept {
   }
   return res;
 }
-/// @brief Internal helper or implementation for `parse_MediaType`.
+/// @brief Deserialize OpenAPI JSON element via `parse_MediaType`.
 static MediaType parse_MediaType(simdjson::dom::object obj) noexcept {
   MediaType res;
   simdjson::dom::object el_schema;
@@ -490,7 +489,7 @@ static MediaType parse_MediaType(simdjson::dom::object obj) noexcept {
   }
   return res;
 }
-/// @brief Internal helper or implementation for `parse_Header`.
+/// @brief Deserialize OpenAPI JSON element via `parse_Header`.
 static Header parse_Header(simdjson::dom::object obj) noexcept {
   Header res;
   res.description = get_optional_string(obj, "description");
@@ -528,7 +527,7 @@ static Header parse_Header(simdjson::dom::object obj) noexcept {
   }
   return res;
 }
-/// @brief Internal helper or implementation for `parse_RequestBody`.
+/// @brief Deserialize OpenAPI JSON element via `parse_RequestBody`.
 static RequestBody parse_RequestBody(simdjson::dom::object obj) noexcept {
   RequestBody res;
   res.description = get_optional_string(obj, "description");
@@ -547,7 +546,7 @@ static RequestBody parse_RequestBody(simdjson::dom::object obj) noexcept {
   }
   return res;
 }
-/// @brief Internal helper or implementation for `parse_Link`.
+/// @brief Deserialize OpenAPI JSON element via `parse_Link`.
 static Link parse_Link(simdjson::dom::object obj) noexcept {
   Link res;
   res.operationRef = get_optional_string(obj, "operationRef");
@@ -565,7 +564,7 @@ static Link parse_Link(simdjson::dom::object obj) noexcept {
   }
   return res;
 }
-/// @brief Internal helper or implementation for `parse_Response`.
+/// @brief Deserialize OpenAPI JSON element via `parse_Response`.
 static Response parse_Response(simdjson::dom::object obj) noexcept {
   Response res;
   res.description = get_optional_string(obj, "description").value_or("");
@@ -599,7 +598,7 @@ static Response parse_Response(simdjson::dom::object obj) noexcept {
   }
   return res;
 }
-/// @brief Internal helper or implementation for `parse_Parameter`.
+/// @brief Deserialize OpenAPI JSON element via `parse_Parameter`.
 static Parameter parse_Parameter(simdjson::dom::object obj) noexcept {
   Parameter res;
   res.name = get_optional_string(obj, "name").value_or("");
@@ -640,7 +639,7 @@ static Parameter parse_Parameter(simdjson::dom::object obj) noexcept {
   return res;
 }
 
-/// @brief Internal helper or implementation for `parse_OAuthFlow`.
+/// @brief Deserialize OpenAPI JSON element via `parse_OAuthFlow`.
 static OAuthFlow parse_OAuthFlow(simdjson::dom::object obj) noexcept {
   OAuthFlow res;
   res.authorizationUrl = get_optional_string(obj, "authorizationUrl");
@@ -651,7 +650,7 @@ static OAuthFlow parse_OAuthFlow(simdjson::dom::object obj) noexcept {
   res.scopes = parse_map_string(obj, "scopes");
   return res;
 }
-/// @brief Internal helper or implementation for `parse_OAuthFlows`.
+/// @brief Deserialize OpenAPI JSON element via `parse_OAuthFlows`.
 static OAuthFlows parse_OAuthFlows(simdjson::dom::object obj) noexcept {
   OAuthFlows res;
   auto get_flow = [&](std::string_view key) -> std::optional<OAuthFlow> {
@@ -667,7 +666,7 @@ static OAuthFlows parse_OAuthFlows(simdjson::dom::object obj) noexcept {
   res.deviceAuthorization = get_flow("deviceAuthorization");
   return res;
 }
-/// @brief Internal helper or implementation for `parse_SecurityScheme`.
+/// @brief Deserialize OpenAPI JSON element via `parse_SecurityScheme`.
 static SecurityScheme parse_SecurityScheme(simdjson::dom::object obj) noexcept {
   SecurityScheme res;
   res.type = get_optional_string(obj, "type").value_or("");
@@ -689,7 +688,7 @@ static SecurityScheme parse_SecurityScheme(simdjson::dom::object obj) noexcept {
   }
   return res;
 }
-/// @brief Internal helper or implementation for `parse_Operation`.
+/// @brief Deserialize OpenAPI JSON element via `parse_Operation`.
 static Operation parse_Operation(simdjson::dom::object obj) noexcept {
   Operation res;
   res.tags = parse_vector_string(obj, "tags");
@@ -746,7 +745,7 @@ static Operation parse_Operation(simdjson::dom::object obj) noexcept {
   }
   return res;
 }
-/// @brief Internal helper or implementation for `parse_PathItem`.
+/// @brief Deserialize OpenAPI JSON element via `parse_PathItem`.
 static PathItem parse_PathItem(simdjson::dom::object obj) noexcept {
   PathItem res;
   res.ref = get_optional_string(obj, "$ref");
@@ -793,7 +792,7 @@ static PathItem parse_PathItem(simdjson::dom::object obj) noexcept {
   }
   return res;
 }
-/// @brief Internal helper or implementation for `parse_Components`.
+/// @brief Deserialize OpenAPI JSON element via `parse_Components`.
 static Components parse_Components(simdjson::dom::object obj) noexcept {
   Components res;
   simdjson::dom::object el_schemas;
@@ -892,7 +891,7 @@ static Components parse_Components(simdjson::dom::object obj) noexcept {
   }
   return res;
 }
-/// @brief Internal helper or implementation for `parse_OpenAPI`.
+/// @brief Deserialize OpenAPI JSON element via `parse_OpenAPI`.
 static OpenAPI parse_OpenAPI(simdjson::dom::object obj) noexcept {
   OpenAPI res;
   res.openapi = get_optional_string(obj, "openapi").value_or("");
@@ -946,7 +945,7 @@ static OpenAPI parse_OpenAPI(simdjson::dom::object obj) noexcept {
   return res;
 }
 
-/// @brief Internal helper or implementation for `parse`.
+/// @brief Deserialize OpenAPI JSON element via `parse`.
 Result<OpenAPI> parse(const std::string &input) noexcept {
   simdjson::dom::parser parser;
   simdjson::dom::element doc;

@@ -39,20 +39,17 @@ std::string map_type_to_postgres(const std::string &type,
 /// @param type The OpenAPI primitive type string.
 /// @return C++ type string ("std::string", "int", "double", "bool").
 std::string map_type_to_cpp(const std::string &type) noexcept {
-  if (type == "string")
-    return "std::string";
-  if (type == "integer")
-    return "int";
-  if (type == "number")
-    return "double";
-  if (type == "boolean")
-    return "bool";
-  return "std::string";
+  return openapi::openapi_type_to_cpp(type);
 }
 
-/// @brief Internal helper or implementation for `emit`.
-std::string emit(const openapi::OpenAPI & /*spec*/) noexcept {
-  return ""; // Legacy
+/// @brief Emit combined C++ ORM headers into a single string.
+std::string emit(const openapi::OpenAPI &spec) noexcept {
+  auto files = emit_modular(spec, true, false);
+  std::stringstream ss;
+  for (const auto &[path, content] : files) {
+    ss << "// File: " << path << "\n" << content << "\n";
+  }
+  return ss.str();
 }
 
 std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
@@ -85,8 +82,8 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
   if (with_postgres) {
     std::stringstream db_ss;
     db_ss << "#pragma once\n#include <string>\n#include <cstdlib>\n#include "
-             "<expected>\n#include <vector>\n#include <libpq-fe.h>\n#include "
-             "\"error.hpp\"\n\n";
+             "<expected>\n#include <random>\n#include <vector>\n#include "
+             "<libpq-fe.h>\n#include \"error.hpp\"\n\n";
     db_ss
         << "namespace cdd_orm {\n    /// Configuration required to connect to "
            "the underlying database.\n    struct DatabaseConfig {\n        "
@@ -119,7 +116,7 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
            "return std::unexpected(Error::DatabaseConnectionFailed); }\n";
     db_ss << "            if (config.is_ephemeral) {\n                "
              "std::string schema_name = \"ephem_\" + "
-             "std::to_string(std::rand());\n";
+             "std::to_string(std::random_device{}());\n";
     db_ss << "                std::string sql = \"CREATE SCHEMA \" + "
              "schema_name + \"; SET search_path TO \" + schema_name + \";\";\n";
     db_ss << "                PGresult* res = PQexec(conn, sql.c_str());\n";
@@ -142,7 +139,8 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
         c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
 
       std::stringstream ss;
-      ss << "#pragma once\n#include <expected>\n#include <vector>\n#include "
+      ss << "#pragma once\n#include <array>\n#include <cstdlib>\n#include "
+            "<expected>\n#include <vector>\n#include "
             "\"error.hpp\"\n#include \"../models/"
          << name << ".hpp\"\n";
       if (with_postgres)
@@ -222,8 +220,8 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
           first = false;
         }
         ss << "            sql += \")\";\n";
-        ss << "            const char* paramValues["
-           << schema.properties->size() << "];\n";
+        ss << "            std::array<const char*, "
+           << schema.properties->size() << "> paramValues{};\n";
         int paramIdx = 0;
         for (const auto &[prop_name, prop_schema] : *schema.properties) {
           std::string safe_prop = utils::sanitize_cpp_identifier(prop_name);
@@ -242,7 +240,7 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
         }
         ss << "            PGresult* res = PQexecParams(conn, sql.c_str(), "
            << schema.properties->size()
-           << ", nullptr, paramValues, nullptr, nullptr, 0);\n";
+           << ", nullptr, paramValues.data(), nullptr, nullptr, 0);\n";
         ss << "            if (!res || PQresultStatus(res) != "
               "PGRES_COMMAND_OK) { "
               "if (res) PQclear(res); return "
@@ -261,9 +259,40 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
            << "\");\n            PGresult* res = PQexec(conn, sql.c_str());\n  "
               "          if (!res || PQresultStatus(res) != PGRES_TUPLES_OK) { "
               "if (res) PQclear(res); return "
-              "std::unexpected(Error::QueryExecutionFailed); }\n            // "
-              "In a real app we parse fields here.\n            "
-              "PQclear(res);\n            return results;\n        }\n    };\n";
+              "std::unexpected(Error::QueryExecutionFailed); }\n"
+              "            int rows = PQntuples(res);\n"
+              "            for (int r = 0; r < rows; ++r) {\n"
+              "                cdd_models::"
+           << name << " row_item;\n";
+        int colIdx = 0;
+        for (const auto &[prop_name, prop_schema] : *schema.properties) {
+          std::string safe_prop = utils::sanitize_cpp_identifier(prop_name);
+          std::string c_type =
+              map_type_to_cpp(prop_schema.type.value_or("string"));
+          ss << "                if (!PQgetisnull(res, r, " << colIdx
+             << ")) {\n"
+             << "                    const char* v = PQgetvalue(res, r, "
+             << colIdx << ");\n";
+          if (c_type == "int") {
+            ss << "                    row_item." << safe_prop
+               << " = std::atoi(v);\n";
+          } else if (c_type == "double") {
+            ss << "                    row_item." << safe_prop
+               << " = std::atof(v);\n";
+          } else if (c_type == "bool") {
+            ss << "                    row_item." << safe_prop
+               << " = (v[0] == 't' || v[0] == '1');\n";
+          } else {
+            ss << "                    row_item." << safe_prop
+               << " = std::string(v);\n";
+          }
+          ss << "                }\n";
+          colIdx++;
+        }
+        ss << "                results.push_back(std::move(row_item));\n"
+              "            }\n"
+              "            PQclear(res);\n            return results;\n        "
+              "}\n    };\n";
       }
       ss << "}\n";
       files["src/orm/" + name + "Dao.hpp"] = ss.str();

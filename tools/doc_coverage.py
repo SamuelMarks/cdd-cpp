@@ -17,12 +17,15 @@ def check_doc_coverage(verbose=False):
             with open(filepath, "r") as f:
                 content = f.read()
 
-            # 1. File-level docstring check (@file or leading ///)
+            # 1. File-level docstring check (@file and @brief)
             total += 1
             first_lines = "\n".join(content.splitlines()[:10])
             if (
-                "@file" in first_lines or "///" in first_lines
-            ) and "Auto-generated doc." not in first_lines:
+                "@file" in first_lines
+                and "@brief" in first_lines
+                and "Auto-generated doc." not in content
+                and "Internal helper or implementation for" not in content
+            ):
                 documented += 1
             elif verbose:
                 print(f"UNDOC FILE: {filepath}")

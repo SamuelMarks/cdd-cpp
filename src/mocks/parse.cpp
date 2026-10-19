@@ -8,7 +8,7 @@
 
 namespace cdd_cpp::mocks {
 
-/// @brief Internal helper or implementation for `parse`.
+/// @brief Parse GoogleMock C++ source code for `parse`.
 Result<openapi::OpenAPI> parse(const std::string &input) noexcept {
   if (input.empty()) {
     return utils::make_error(utils::ErrorCode::CppAstParseError,
@@ -66,7 +66,7 @@ Result<openapi::OpenAPI> parse(const std::string &input) noexcept {
   return spec;
 }
 
-/// @brief Internal helper or implementation for `parse_arazzo`.
+/// @brief Parse GoogleMock C++ source code for `parse_arazzo`.
 Result<arazzo::Arazzo> parse_arazzo(const std::string &input) noexcept {
   if (input.empty()) {
     return utils::make_error(utils::ErrorCode::CppAstParseError,

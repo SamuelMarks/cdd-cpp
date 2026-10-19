@@ -7,6 +7,7 @@
 #include "../client_sdk_cli/parse.hpp"
 #include "../functions/parse.hpp"
 #include "../mocks/parse.hpp"
+#include "../models/parse.hpp"
 #include "../server/parse.hpp"
 #include "cpp_ast.hpp"
 #include <cctype>
@@ -20,58 +21,6 @@
 namespace fs = std::filesystem;
 
 namespace cdd_cpp::utils {
-
-/// @brief Map a C++ field type to an OpenAPI (type, format) pair.
-/// @param type The C++ type string.
-/// @return Pair of OpenAPI type and optional format string.
-std::pair<std::string, std::string>
-map_cpp_type_to_openapi(const std::string &type) noexcept {
-  if (type == "int" || type == "int32_t" || type == "short")
-    return {"integer", "int32"};
-  if (type == "long" || type == "int64_t")
-    return {"integer", "int64"};
-  if (type == "float")
-    return {"number", "float"};
-  if (type == "double")
-    return {"number", "double"};
-  if (type == "bool" || type == "boolean")
-    return {"boolean", ""};
-  if (type == "std::string" || type == "string")
-    return {"string", ""};
-
-  if (type.starts_with("std::vector<") || type.starts_with("vector<")) {
-    return {"array", ""};
-  }
-
-  return {"object", ""};
-}
-
-/// @brief Generate an OpenAPI Schema from a parsed CppClass AST node.
-/// @param cls The CppClass AST node.
-/// @return Populated OpenAPI Schema.
-openapi::Schema generate_schema_from_class(const CppClass &cls) noexcept {
-  openapi::Schema schema;
-  schema.type = "object";
-  schema.title = cls.name;
-  if (!cls.docstring.empty()) {
-    schema.description = cls.docstring;
-  }
-  schema.properties =
-      std::make_shared<std::map<std::string, openapi::Schema>>();
-  for (const auto &field : cls.fields) {
-    openapi::Schema field_schema;
-    auto [type, format] = map_cpp_type_to_openapi(field.type);
-    field_schema.type = type;
-    if (!format.empty()) {
-      field_schema.format = format;
-    }
-    if (!field.docstring.empty()) {
-      field_schema.description = field.docstring;
-    }
-    (*schema.properties)[field.name] = field_schema;
-  }
-  return schema;
-}
 
 /// @brief Merge paths from a source OpenAPI spec into a destination PathItem
 /// map without clobbering existing operations.
@@ -324,12 +273,7 @@ try_parse_cpp_project(const std::string &folder_path) noexcept {
         std::string content((std::istreambuf_iterator<char>(fs)),
                             std::istreambuf_iterator<char>());
         CppAST ast = parse_cpp(content);
-
-        for (const auto &cls : ast.classes) {
-          openapi::Schema schema = generate_schema_from_class(cls);
-          spec.components->schemas->insert(
-              {schema.title.value_or(cls.name), schema});
-        }
+        parse_schemas(ast, spec);
 
         merge_paths(*spec.paths, *client_sdk::parse(content)->paths);
         merge_paths(*spec.paths, *server::parse(content)->paths);
@@ -344,7 +288,7 @@ try_parse_cpp_project(const std::string &folder_path) noexcept {
   return spec;
 }
 
-/// @brief Internal helper or implementation for `parse_cpp_project`.
+/// @brief Scan and extract C++ project specifications via `parse_cpp_project`.
 openapi::OpenAPI parse_cpp_project(const std::string &folder_path) noexcept {
   auto res = try_parse_cpp_project(folder_path);
   if (res.has_value()) {

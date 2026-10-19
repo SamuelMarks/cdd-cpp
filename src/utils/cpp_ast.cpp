@@ -326,10 +326,14 @@ static bool find_next_class_head(const std::string &source, size_t search_pos,
   while (i < source.size()) {
     char c = source[i];
     if (c == '/' && source[i + 1] == '/') {
-      while (source[i] != '\n')
+      while (i < source.size() && source[i] != '\n')
         ++i;
     } else if (c == '/' && source[i + 1] == '*') {
-      i = source.find("*/", i + 2) + 1;
+      i += 2;
+      while (i + 1 < source.size() &&
+             !(source[i] == '*' && source[i + 1] == '/'))
+        ++i;
+      ++i;
     } else if ((i == 0 || !is_ident_char(source[i - 1])) &&
                (std::string_view(source).substr(i).starts_with("struct ") ||
                 std::string_view(source).substr(i).starts_with("class "))) {
@@ -340,7 +344,8 @@ static bool find_next_class_head(const std::string &source, size_t search_pos,
       while (is_ident_char(source[ne]))
         ++ne;
       size_t after_name = source.find_first_not_of(" \t\r\n", ne);
-      if (source[after_name] == '{' || source[after_name] == ':') {
+      if (after_name != std::string::npos &&
+          (source[after_name] == '{' || source[after_name] == ':')) {
         size_t brace = source.find_first_of("{;", after_name);
         out_match_start = i;
         out_open_brace = brace;
@@ -373,7 +378,8 @@ static bool find_next_func_head(const std::string &source, size_t search_pos,
 
     size_t ne = open_p;
     size_t ns = ne;
-    while (is_ident_char(source[ns - 1]) || source[ns - 1] == ':') {
+    while (ns > search_pos &&
+           (is_ident_char(source[ns - 1]) || source[ns - 1] == ':')) {
       --ns;
     }
 
@@ -387,7 +393,7 @@ static bool find_next_func_head(const std::string &source, size_t search_pos,
     if (ts > search_pos && source[ts - 1] == '>') {
       int depth = 1;
       --ts;
-      while (depth > 0) {
+      while (ts > search_pos && depth > 0) {
         --ts;
         if (source[ts] == '>')
           ++depth;
@@ -432,7 +438,7 @@ static bool find_next_func_head(const std::string &source, size_t search_pos,
   }
 }
 
-/// @brief Internal helper or implementation for `parse_cpp`.
+/// @brief Process C++ AST representation via `parse_cpp`.
 CppAST parse_cpp(const std::string &source) noexcept {
   CppAST ast;
 
@@ -485,7 +491,8 @@ CppAST parse_cpp(const std::string &source) noexcept {
     }
 
     size_t after_paren = close_paren + 1;
-    while (source[after_paren] != '{' && source[after_paren] != ';') {
+    while (after_paren < source.size() && source[after_paren] != '{' &&
+           source[after_paren] != ';') {
       ++after_paren;
     }
 
@@ -519,7 +526,7 @@ CppAST parse_cpp(const std::string &source) noexcept {
   return ast;
 }
 
-/// @brief Internal helper or implementation for `emit_cpp`.
+/// @brief Process C++ AST representation via `emit_cpp`.
 std::string emit_cpp(const CppAST &ast) noexcept {
   std::ostringstream out;
   out << ast.file_trivia.leading;

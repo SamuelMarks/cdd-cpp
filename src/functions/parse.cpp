@@ -7,7 +7,7 @@
 
 namespace cdd_cpp::functions {
 
-/// @brief Internal helper or implementation for `parse`.
+/// @brief Parse standalone C++ function declarations for `parse`.
 Result<openapi::OpenAPI> parse(const std::string &input) noexcept {
   if (input.empty()) {
     return utils::make_error(utils::ErrorCode::CppAstParseError,
@@ -53,14 +53,7 @@ Result<openapi::OpenAPI> parse(const std::string &input) noexcept {
                        : "query";
         param.required = (param.in == "path");
         param.schema = openapi::Schema{};
-        if (p.type == "int")
-          param.schema->type = "integer";
-        else if (p.type == "double")
-          param.schema->type = "number";
-        else if (p.type == "bool")
-          param.schema->type = "boolean";
-        else
-          param.schema->type = "string";
+        param.schema->type = openapi::cpp_type_to_openapi(p.type);
         params.push_back(param);
       }
     }
@@ -73,7 +66,7 @@ Result<openapi::OpenAPI> parse(const std::string &input) noexcept {
   return spec;
 }
 
-/// @brief Internal helper or implementation for `parse_arazzo`.
+/// @brief Parse standalone C++ function declarations for `parse_arazzo`.
 Result<arazzo::Arazzo> parse_arazzo(const std::string &input) noexcept {
   if (input.empty()) {
     return utils::make_error(utils::ErrorCode::CppAstParseError,
@@ -107,14 +100,7 @@ Result<arazzo::Arazzo> parse_arazzo(const std::string &input) noexcept {
         std::make_shared<std::map<std::string, openapi::Schema>>();
     for (const auto &p : fn.params) {
       openapi::Schema ps;
-      if (p.type == "int")
-        ps.type = "integer";
-      else if (p.type == "double")
-        ps.type = "number";
-      else if (p.type == "bool")
-        ps.type = "boolean";
-      else
-        ps.type = "string";
+      ps.type = openapi::cpp_type_to_openapi(p.type);
       (*in_schema.properties)[p.name] = std::move(ps);
     }
     wf.inputs = std::move(in_schema);

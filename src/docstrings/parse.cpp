@@ -14,7 +14,7 @@ namespace cdd_cpp::docstrings {
 /// a single docstring line.
 /// @param line Raw docstring line.
 /// @return Cleaned line content with trailing `\r`/whitespace trimmed.
-static std::string strip_comment_line_prefix(std::string_view line) noexcept {
+std::string strip_comment_line_prefix(std::string_view line) noexcept {
   size_t pos = line.find_first_not_of(" \t");
   if (pos == std::string_view::npos) {
     return "";
@@ -51,7 +51,7 @@ static std::vector<std::string> split_ws_tokens(std::string_view sv) noexcept {
   return out;
 }
 
-/// @brief Internal helper or implementation for `extract_tag`.
+/// @brief Extract and parse Doxygen docstring metadata for `extract_tag`.
 std::optional<std::string> extract_tag(const std::string &docstring,
                                        const std::string &tag) noexcept {
   std::string needle = "@" + tag + " ";
@@ -72,7 +72,8 @@ std::optional<std::string> extract_tag(const std::string &docstring,
   return raw.substr(first, last - first + 1);
 }
 
-/// @brief Internal helper or implementation for `parse_api_docstrings`.
+/// @brief Extract and parse Doxygen docstring metadata for
+/// `parse_api_docstrings`.
 void parse_api_docstrings(const std::string &docstring,
                           openapi::OpenAPI &spec) noexcept {
   if (auto v = extract_tag(docstring, "title"))
@@ -256,7 +257,8 @@ void parse_api_docstrings(const std::string &docstring,
   }
 }
 
-/// @brief Internal helper or implementation for `parse_operation_docstrings`.
+/// @brief Extract and parse Doxygen docstring metadata for
+/// `parse_operation_docstrings`.
 void parse_operation_docstrings(const std::string &docstring,
                                 openapi::Operation &op) noexcept {
   if (auto v = extract_tag(docstring, "summary"))
@@ -326,7 +328,8 @@ void parse_operation_docstrings(const std::string &docstring,
   }
 }
 
-/// @brief Internal helper or implementation for `parse_path_docstrings`.
+/// @brief Extract and parse Doxygen docstring metadata for
+/// `parse_path_docstrings`.
 void parse_path_docstrings(const std::string &docstring,
                            openapi::PathItem &pi) noexcept {
   if (auto v = extract_tag(docstring, "summary"))
@@ -335,11 +338,14 @@ void parse_path_docstrings(const std::string &docstring,
     pi.description = *v;
 }
 
-/// @brief Internal helper or implementation for `parse_schema_docstrings`.
+/// @brief Parse schema/field-level metadata into an OpenAPI Schema object.
 void parse_schema_docstrings(const std::string &docstring,
                              openapi::Schema &schema) noexcept {
-  if (auto v = extract_tag(docstring, "description"))
+  if (auto v = extract_tag(docstring, "description")) {
     schema.description = *v;
+  } else if (!docstring.empty() && docstring.find('@') == std::string::npos) {
+    schema.description = docstring;
+  }
   if (auto v = extract_tag(docstring, "example"))
     schema.example = *v;
   if (auto v = extract_tag(docstring, "format"))
@@ -352,13 +358,21 @@ void parse_schema_docstrings(const std::string &docstring,
   };
   if (auto v = extract_tag(docstring, "xml_name"))
     ensure_xml().name = *v;
+  if (auto v = extract_tag(docstring, "xml.name"))
+    ensure_xml().name = *v;
   if (auto v = extract_tag(docstring, "xml_namespace"))
+    ensure_xml().namespace_url = *v;
+  if (auto v = extract_tag(docstring, "xml.namespace_url"))
     ensure_xml().namespace_url = *v;
   if (auto v = extract_tag(docstring, "xml_prefix"))
     ensure_xml().prefix = *v;
-  if (docstring.find("@xml_attribute true") != std::string::npos)
+  if (auto v = extract_tag(docstring, "xml.prefix"))
+    ensure_xml().prefix = *v;
+  if (docstring.find("@xml_attribute true") != std::string::npos ||
+      docstring.find("@xml.attribute true") != std::string::npos)
     ensure_xml().attribute = true;
-  if (docstring.find("@xml_wrapped true") != std::string::npos)
+  if (docstring.find("@xml_wrapped true") != std::string::npos ||
+      docstring.find("@xml.wrapped true") != std::string::npos)
     ensure_xml().wrapped = true;
 
   auto ensure_ext_docs = [&]() -> openapi::ExternalDocumentation & {
@@ -368,7 +382,11 @@ void parse_schema_docstrings(const std::string &docstring,
   };
   if (auto v = extract_tag(docstring, "externalDocs_url"))
     ensure_ext_docs().url = *v;
+  if (auto v = extract_tag(docstring, "externalDocs.url"))
+    ensure_ext_docs().url = *v;
   if (auto v = extract_tag(docstring, "externalDocs_description"))
+    ensure_ext_docs().description = *v;
+  if (auto v = extract_tag(docstring, "externalDocs.description"))
     ensure_ext_docs().description = *v;
 
   auto ensure_disc = [&]() -> openapi::Discriminator & {
@@ -377,6 +395,8 @@ void parse_schema_docstrings(const std::string &docstring,
     return *schema.discriminator;
   };
   if (auto v = extract_tag(docstring, "discriminator_propertyName"))
+    ensure_disc().propertyName = *v;
+  if (auto v = extract_tag(docstring, "discriminator.propertyName"))
     ensure_disc().propertyName = *v;
 
   std::istringstream iss(docstring);
@@ -389,11 +409,20 @@ void parse_schema_docstrings(const std::string &docstring,
         ensure_disc().mapping = std::map<std::string, std::string>{};
       }
       schema.discriminator->mapping->insert({tokens[0], tokens[1]});
+    } else if (content.starts_with("@discriminator.mapping ")) {
+      auto tokens = split_ws_tokens(content.substr(23));
+      size_t colon = tokens[0].find(':');
+      if (!ensure_disc().mapping.has_value()) {
+        ensure_disc().mapping = std::map<std::string, std::string>{};
+      }
+      schema.discriminator->mapping->insert(
+          {tokens[0].substr(0, colon), tokens[0].substr(colon + 1)});
     }
   }
 }
 
-/// @brief Internal helper or implementation for `parse_arazzo_docstrings`.
+/// @brief Extract and parse Doxygen docstring metadata for
+/// `parse_arazzo_docstrings`.
 void parse_arazzo_docstrings(const std::string &docstring,
                              arazzo::Arazzo &spec) noexcept {
   auto full_json = extract_tag(docstring, "arazzo_spec_json");
@@ -415,7 +444,8 @@ void parse_arazzo_docstrings(const std::string &docstring,
     spec.info.version = *v_ver;
 }
 
-/// @brief Internal helper or implementation for `parse_workflow_docstrings`.
+/// @brief Extract and parse Doxygen docstring metadata for
+/// `parse_workflow_docstrings`.
 void parse_workflow_docstrings(const std::string &docstring,
                                arazzo::Workflow &wf) noexcept {
   auto v_id = extract_tag(docstring, "workflowId");
@@ -429,7 +459,7 @@ void parse_workflow_docstrings(const std::string &docstring,
     wf.description = *v_desc;
 }
 
-/// @brief Internal helper or implementation for `parse`.
+/// @brief Extract and parse Doxygen docstring metadata for `parse`.
 openapi::OpenAPI parse(const std::string &input) noexcept {
   openapi::OpenAPI spec;
   spec.openapi = "3.2.0";

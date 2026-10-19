@@ -12,20 +12,15 @@
 
 namespace cdd_cpp::server {
 
-/// @brief Internal helper or implementation for `map_type_to_cpp`.
+/// @brief Map an OpenAPI schema type to its C++ primitive/standard library
+/// type.
+/// @param type The OpenAPI primitive type string.
+/// @return C++ type string ("std::string", "int", "double", "bool").
 std::string map_type_to_cpp(const std::string &type) noexcept {
-  if (type == "string")
-    return "std::string";
-  if (type == "integer")
-    return "int";
-  if (type == "number")
-    return "double";
-  if (type == "boolean")
-    return "bool";
-  return "std::string";
+  return openapi::openapi_type_to_cpp(type);
 }
 
-/// @brief Internal helper or implementation for `emit`.
+/// @brief Emit C++ HTTP server or JSON-RPC handler for `emit`.
 std::string emit(const openapi::OpenAPI &spec) noexcept {
   std::stringstream ss;
   ss << "#pragma once\n";
@@ -34,7 +29,6 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   ss << "#include <string>\n";
   ss << "#include <functional>\n";
   ss << "#include <map>\n\n";
-  ss << "#include \"../docstrings/emit.hpp\"\n";
   ss << "namespace cdd_server {\n\n";
   ss << docstrings::emit_api_docstrings(spec);
 
@@ -89,10 +83,11 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
         ss << "        using " << func_name
            << "Handler = std::function<std::string(" << param_list << ")>;\n";
         ss << "        void on_" << method << "_" << func_name
-           << "(const std::string& path, " << func_name
-           << "Handler handler) noexcept {\n";
-        ss << "            // " << param_list << "\n";
-        ss << "            routes[\"" << method << " \" + path] = nullptr;\n";
+           << "(std::function<std::string(" << param_list
+           << ")> handler) noexcept {\n";
+        ss << "            (void)handler;\n";
+        ss << "            routes[\"" << method << " " << path
+           << "\"] = [](const std::string& req) { return req; };\n";
         ss << "        }\n\n";
       };
 
@@ -101,6 +96,10 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
       emit_method("PUT", item.put);
       emit_method("DELETE", item.delete_op);
       emit_method("PATCH", item.patch);
+      emit_method("OPTIONS", item.options);
+      emit_method("HEAD", item.head);
+      emit_method("TRACE", item.trace);
+      emit_method("QUERY", item.query);
     }
   }
 
@@ -127,7 +126,7 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   return ss.str();
 }
 
-/// @brief Internal helper or implementation for `serve_json_rpc`.
+/// @brief Emit C++ HTTP server or JSON-RPC handler for `serve_json_rpc`.
 std::string serve_json_rpc(const std::string &request) noexcept {
   auto make_err = [](const std::string &id, int code, const std::string &msg) {
     mcp::JSONRPCError err_obj;

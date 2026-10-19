@@ -28,7 +28,7 @@ extract_quoted_after(std::string_view body,
   return std::string(body.substr(q1 + 1, q2 - q1 - 1));
 }
 
-/// @brief Internal helper or implementation for `parse`.
+/// @brief Parse C++ client SDK source code for `parse`.
 Result<openapi::OpenAPI> parse(const std::string &input) noexcept {
   openapi::OpenAPI spec;
   spec.openapi = "3.2.0";
@@ -90,14 +90,7 @@ Result<openapi::OpenAPI> parse(const std::string &input) noexcept {
           }
 
           p.schema = openapi::Schema{};
-          if (param.type == "int")
-            p.schema->type = "integer";
-          else if (param.type == "double")
-            p.schema->type = "number";
-          else if (param.type == "bool")
-            p.schema->type = "boolean";
-          else
-            p.schema->type = "string";
+          p.schema->type = openapi::cpp_type_to_openapi(param.type);
 
           params.push_back(p);
         }
@@ -113,7 +106,7 @@ Result<openapi::OpenAPI> parse(const std::string &input) noexcept {
   return spec;
 }
 
-/// @brief Internal helper or implementation for `parse_arazzo`.
+/// @brief Parse C++ client SDK source code for `parse_arazzo`.
 Result<arazzo::Arazzo> parse_arazzo(const std::string &input) noexcept {
   if (input.empty()) {
     return utils::make_error(utils::ErrorCode::CppAstParseError,

@@ -9,15 +9,15 @@ namespace cdd_cpp::openapi {
 void emit_Contact(utils::JsonWriter &jw, const Contact &obj) noexcept;
 void emit_License(utils::JsonWriter &jw, const License &obj) noexcept;
 void emit_Info(utils::JsonWriter &jw, const Info &obj) noexcept;
-/// @brief Internal helper or implementation for `emit_ServerVariable`.
+/// @brief Serialize OpenAPI model element via `emit_ServerVariable`.
 void emit_ServerVariable(utils::JsonWriter &jw,
                          const ServerVariable &obj) noexcept;
 void emit_Server(utils::JsonWriter &jw, const Server &obj) noexcept;
-/// @brief Internal helper or implementation for `emit_ExternalDocumentation`.
+/// @brief Serialize OpenAPI model element via `emit_ExternalDocumentation`.
 void emit_ExternalDocumentation(utils::JsonWriter &jw,
                                 const ExternalDocumentation &obj) noexcept;
 void emit_Tag(utils::JsonWriter &jw, const Tag &obj) noexcept;
-/// @brief Internal helper or implementation for `emit_Discriminator`.
+/// @brief Serialize OpenAPI model element via `emit_Discriminator`.
 void emit_Discriminator(utils::JsonWriter &jw,
                         const Discriminator &obj) noexcept;
 void emit_XML(utils::JsonWriter &jw, const XML &obj) noexcept;
@@ -32,7 +32,7 @@ void emit_Response(utils::JsonWriter &jw, const Response &obj) noexcept;
 void emit_Parameter(utils::JsonWriter &jw, const Parameter &obj) noexcept;
 void emit_OAuthFlow(utils::JsonWriter &jw, const OAuthFlow &obj) noexcept;
 void emit_OAuthFlows(utils::JsonWriter &jw, const OAuthFlows &obj) noexcept;
-/// @brief Internal helper or implementation for `emit_SecurityScheme`.
+/// @brief Serialize OpenAPI model element via `emit_SecurityScheme`.
 void emit_SecurityScheme(utils::JsonWriter &jw,
                          const SecurityScheme &obj) noexcept;
 void emit_Operation(utils::JsonWriter &jw, const Operation &obj) noexcept;
@@ -40,7 +40,7 @@ void emit_PathItem(utils::JsonWriter &jw, const PathItem &obj) noexcept;
 void emit_Components(utils::JsonWriter &jw, const Components &obj) noexcept;
 void emit_OpenAPI(utils::JsonWriter &jw, const OpenAPI &obj) noexcept;
 
-/// @brief Internal helper or implementation for `emit_Contact`.
+/// @brief Serialize OpenAPI model element via `emit_Contact`.
 void emit_Contact(utils::JsonWriter &jw, const Contact &obj) noexcept {
   jw.start_object();
   jw.key_optional("name", obj.name);
@@ -49,7 +49,7 @@ void emit_Contact(utils::JsonWriter &jw, const Contact &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_License`.
+/// @brief Serialize OpenAPI model element via `emit_License`.
 void emit_License(utils::JsonWriter &jw, const License &obj) noexcept {
   jw.start_object();
   jw.key_value("name", obj.name);
@@ -58,7 +58,7 @@ void emit_License(utils::JsonWriter &jw, const License &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_Info`.
+/// @brief Serialize OpenAPI model element via `emit_Info`.
 void emit_Info(utils::JsonWriter &jw, const Info &obj) noexcept {
   jw.start_object();
   jw.key_value("title", obj.title);
@@ -77,7 +77,7 @@ void emit_Info(utils::JsonWriter &jw, const Info &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_ServerVariable`.
+/// @brief Serialize OpenAPI model element via `emit_ServerVariable`.
 void emit_ServerVariable(utils::JsonWriter &jw,
                          const ServerVariable &obj) noexcept {
   jw.start_object();
@@ -93,7 +93,7 @@ void emit_ServerVariable(utils::JsonWriter &jw,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_Server`.
+/// @brief Serialize OpenAPI model element via `emit_Server`.
 void emit_Server(utils::JsonWriter &jw, const Server &obj) noexcept {
   jw.start_object();
   jw.key_value("url", obj.url);
@@ -111,7 +111,7 @@ void emit_Server(utils::JsonWriter &jw, const Server &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_ExternalDocumentation`.
+/// @brief Serialize OpenAPI model element via `emit_ExternalDocumentation`.
 void emit_ExternalDocumentation(utils::JsonWriter &jw,
                                 const ExternalDocumentation &obj) noexcept {
   jw.start_object();
@@ -120,7 +120,7 @@ void emit_ExternalDocumentation(utils::JsonWriter &jw,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_Tag`.
+/// @brief Serialize OpenAPI model element via `emit_Tag`.
 void emit_Tag(utils::JsonWriter &jw, const Tag &obj) noexcept {
   jw.start_object();
   jw.key_value("name", obj.name);
@@ -134,7 +134,7 @@ void emit_Tag(utils::JsonWriter &jw, const Tag &obj) noexcept {
   }
   jw.end_object();
 }
-/// @brief Internal helper or implementation for `emit_Discriminator`.
+/// @brief Serialize OpenAPI model element via `emit_Discriminator`.
 void emit_Discriminator(utils::JsonWriter &jw,
                         const Discriminator &obj) noexcept {
   jw.start_object();
@@ -151,7 +151,7 @@ void emit_Discriminator(utils::JsonWriter &jw,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_XML`.
+/// @brief Serialize OpenAPI model element via `emit_XML`.
 void emit_XML(utils::JsonWriter &jw, const XML &obj) noexcept {
   jw.start_object();
   jw.key_optional("name", obj.name);
@@ -164,7 +164,7 @@ void emit_XML(utils::JsonWriter &jw, const XML &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_Schema`.
+/// @brief Serialize OpenAPI model element via `emit_Schema`.
 void emit_Schema(utils::JsonWriter &jw, const Schema &obj) noexcept {
   jw.start_object();
   jw.key_optional("type", obj.type);
@@ -220,7 +220,7 @@ void emit_Schema(utils::JsonWriter &jw, const Schema &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_Example`.
+/// @brief Serialize OpenAPI model element via `emit_Example`.
 void emit_Example(utils::JsonWriter &jw, const Example &obj) noexcept {
   jw.start_object();
   jw.key_optional("summary", obj.summary);
@@ -235,7 +235,7 @@ void emit_Example(utils::JsonWriter &jw, const Example &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_Encoding`.
+/// @brief Serialize OpenAPI model element via `emit_Encoding`.
 void emit_Encoding(utils::JsonWriter &jw, const Encoding &obj) noexcept {
   jw.start_object();
   jw.key_optional("contentType", obj.contentType);
@@ -281,7 +281,7 @@ void emit_Encoding(utils::JsonWriter &jw, const Encoding &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_MediaType`.
+/// @brief Serialize OpenAPI model element via `emit_MediaType`.
 void emit_MediaType(utils::JsonWriter &jw, const MediaType &obj) noexcept {
   jw.start_object();
   if (obj.schema.has_value()) {
@@ -326,7 +326,7 @@ void emit_MediaType(utils::JsonWriter &jw, const MediaType &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_Header`.
+/// @brief Serialize OpenAPI model element via `emit_Header`.
 void emit_Header(utils::JsonWriter &jw, const Header &obj) noexcept {
   jw.start_object();
   jw.key_optional("description", obj.description);
@@ -372,7 +372,7 @@ void emit_Header(utils::JsonWriter &jw, const Header &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_RequestBody`.
+/// @brief Serialize OpenAPI model element via `emit_RequestBody`.
 void emit_RequestBody(utils::JsonWriter &jw, const RequestBody &obj) noexcept {
   jw.start_object();
   jw.key_optional("description", obj.description);
@@ -395,7 +395,7 @@ void emit_RequestBody(utils::JsonWriter &jw, const RequestBody &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_Link`.
+/// @brief Serialize OpenAPI model element via `emit_Link`.
 void emit_Link(utils::JsonWriter &jw, const Link &obj) noexcept {
   jw.start_object();
   jw.key_optional("operationRef", obj.operationRef);
@@ -421,7 +421,7 @@ void emit_Link(utils::JsonWriter &jw, const Link &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_Response`.
+/// @brief Serialize OpenAPI model element via `emit_Response`.
 void emit_Response(utils::JsonWriter &jw, const Response &obj) noexcept {
   jw.start_object();
   jw.key_value("description", obj.description);
@@ -460,7 +460,7 @@ void emit_Response(utils::JsonWriter &jw, const Response &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_Parameter`.
+/// @brief Serialize OpenAPI model element via `emit_Parameter`.
 void emit_Parameter(utils::JsonWriter &jw, const Parameter &obj) noexcept {
   jw.start_object();
   jw.key_value("name", obj.name);
@@ -508,7 +508,7 @@ void emit_Parameter(utils::JsonWriter &jw, const Parameter &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_OAuthFlow`.
+/// @brief Serialize OpenAPI model element via `emit_OAuthFlow`.
 void emit_OAuthFlow(utils::JsonWriter &jw, const OAuthFlow &obj) noexcept {
   jw.start_object();
   jw.key_optional("authorizationUrl", obj.authorizationUrl);
@@ -525,7 +525,7 @@ void emit_OAuthFlow(utils::JsonWriter &jw, const OAuthFlow &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_OAuthFlows`.
+/// @brief Serialize OpenAPI model element via `emit_OAuthFlows`.
 void emit_OAuthFlows(utils::JsonWriter &jw, const OAuthFlows &obj) noexcept {
   jw.start_object();
   if (obj.implicit.has_value()) {
@@ -551,7 +551,7 @@ void emit_OAuthFlows(utils::JsonWriter &jw, const OAuthFlows &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_SecurityScheme`.
+/// @brief Serialize OpenAPI model element via `emit_SecurityScheme`.
 void emit_SecurityScheme(utils::JsonWriter &jw,
                          const SecurityScheme &obj) noexcept {
   jw.start_object();
@@ -576,7 +576,7 @@ void emit_SecurityScheme(utils::JsonWriter &jw,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_Operation`.
+/// @brief Serialize OpenAPI model element via `emit_Operation`.
 void emit_Operation(utils::JsonWriter &jw, const Operation &obj) noexcept {
   jw.start_object();
   if (obj.tags.has_value()) {
@@ -655,7 +655,7 @@ void emit_Operation(utils::JsonWriter &jw, const Operation &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_PathItem`.
+/// @brief Serialize OpenAPI model element via `emit_PathItem`.
 void emit_PathItem(utils::JsonWriter &jw, const PathItem &obj) noexcept {
   jw.start_object();
   jw.key_optional("$ref", obj.ref);
@@ -723,7 +723,7 @@ void emit_PathItem(utils::JsonWriter &jw, const PathItem &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_Components`.
+/// @brief Serialize OpenAPI model element via `emit_Components`.
 void emit_Components(utils::JsonWriter &jw, const Components &obj) noexcept {
   jw.start_object();
   if (obj.schemas.has_value()) {
@@ -833,7 +833,7 @@ void emit_Components(utils::JsonWriter &jw, const Components &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit_OpenAPI`.
+/// @brief Serialize OpenAPI model element via `emit_OpenAPI`.
 void emit_OpenAPI(utils::JsonWriter &jw, const OpenAPI &obj) noexcept {
   jw.start_object();
   jw.key_value("openapi", obj.openapi);
@@ -900,7 +900,7 @@ void emit_OpenAPI(utils::JsonWriter &jw, const OpenAPI &obj) noexcept {
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `emit`.
+/// @brief Serialize OpenAPI model element via `emit`.
 std::string emit(const OpenAPI &openapi) noexcept {
   utils::JsonWriter jw;
   emit_OpenAPI(jw, openapi);

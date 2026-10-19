@@ -79,14 +79,17 @@ static double extract_numeric_bound(simdjson::dom::object schema,
   return 0.0;
 }
 
-/// @brief Internal helper or implementation for `process_schema_3_0`.
+/// @brief Upgrade legacy OpenAPI/Swagger specification via
+/// `process_schema_3_0`.
 void process_schema_3_0(simdjson::dom::object schema,
                         utils::JsonWriter &jw) noexcept;
-/// @brief Internal helper or implementation for `process_element_3_0`.
+/// @brief Upgrade legacy OpenAPI/Swagger specification via
+/// `process_element_3_0`.
 void process_element_3_0(simdjson::dom::element el,
                          utils::JsonWriter &jw) noexcept;
 
-/// @brief Internal helper or implementation for `process_schema_3_0`.
+/// @brief Upgrade legacy OpenAPI/Swagger specification via
+/// `process_schema_3_0`.
 void process_schema_3_0(simdjson::dom::object schema,
                         utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -126,7 +129,8 @@ void process_schema_3_0(simdjson::dom::object schema,
   jw.end_object();
 }
 
-/// @brief Internal helper or implementation for `process_element_3_0`.
+/// @brief Upgrade legacy OpenAPI/Swagger specification via
+/// `process_element_3_0`.
 void process_element_3_0(simdjson::dom::element el,
                          utils::JsonWriter &jw) noexcept {
   if (el.is_array()) {
@@ -159,7 +163,7 @@ void process_element_3_0(simdjson::dom::element el,
   jw.raw_value(simdjson::minify(el));
 }
 
-/// @brief Internal helper or implementation for `upgrade_openapi_3`.
+/// @brief Upgrade legacy OpenAPI/Swagger specification via `upgrade_openapi_3`.
 std::string upgrade_openapi_3(simdjson::dom::object root,
                               std::string_view current_version) noexcept {
   utils::JsonWriter jw;
@@ -183,7 +187,8 @@ std::string upgrade_openapi_3(simdjson::dom::object root,
   return jw.str();
 }
 
-/// @brief Internal helper or implementation for `upgrade_swagger_1_2`.
+/// @brief Upgrade legacy OpenAPI/Swagger specification via
+/// `upgrade_swagger_1_2`.
 std::string upgrade_swagger_1_2(simdjson::dom::object root) noexcept {
   utils::JsonWriter jw;
   jw.start_object();
@@ -262,7 +267,8 @@ std::string upgrade_swagger_1_2(simdjson::dom::object root) noexcept {
   return jw.str();
 }
 
-/// @brief Internal helper or implementation for `upgrade_swagger_2_0`.
+/// @brief Upgrade legacy OpenAPI/Swagger specification via
+/// `upgrade_swagger_2_0`.
 std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
   utils::JsonWriter jw;
   jw.start_object();
@@ -658,7 +664,7 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
   return out;
 }
 
-/// @brief Internal helper or implementation for `upgrade_to_latest`.
+/// @brief Upgrade legacy OpenAPI/Swagger specification via `upgrade_to_latest`.
 Result<std::string> upgrade_to_latest(const std::string &json_spec) noexcept {
   simdjson::dom::parser parser;
   simdjson::dom::element doc;

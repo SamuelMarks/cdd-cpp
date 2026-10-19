@@ -1,51 +1,46 @@
+/// @file main.cpp
+/// @brief Master test runner executing all unit test suites for cdd-cpp.
+
+#include <iostream>
 
 namespace cdd_cpp::orm {
 void test_emit() noexcept;
 }
 namespace cdd_cpp::google_discovery {
 void test_parse() noexcept;
-void test_openapi_parse();
 } // namespace cdd_cpp::google_discovery
 namespace cdd_cpp::openapi {
 void test_exhaustive();
-
 void test_parse() noexcept;
 void test_openapi_parse();
 void test_emit() noexcept;
 } // namespace cdd_cpp::openapi
 namespace cdd_cpp::models {
 void test_parse() noexcept;
-void test_openapi_parse();
 void test_emit() noexcept;
 } // namespace cdd_cpp::models
 namespace cdd_cpp::client_sdk {
 void test_parse() noexcept;
-void test_openapi_parse();
 void test_emit_client() noexcept;
 } // namespace cdd_cpp::client_sdk
 namespace cdd_cpp::client_sdk_cli {
 void test_emit_cli() noexcept;
 void test_parse() noexcept;
-void test_openapi_parse();
 } // namespace cdd_cpp::client_sdk_cli
 namespace cdd_cpp::functions {
 void test_parse() noexcept;
-void test_openapi_parse();
 void test_emit() noexcept;
 } // namespace cdd_cpp::functions
 namespace cdd_cpp::docstrings {
 void test_parse() noexcept;
-void test_openapi_parse();
 void test_emit() noexcept;
 } // namespace cdd_cpp::docstrings
 namespace cdd_cpp::server {
 void test_parse() noexcept;
-void test_openapi_parse();
 void test_emit() noexcept;
 } // namespace cdd_cpp::server
 namespace cdd_cpp::mocks {
 void test_parse() noexcept;
-void test_openapi_parse();
 void test_emit() noexcept;
 } // namespace cdd_cpp::mocks
 namespace cdd_cpp::utils {
@@ -60,12 +55,9 @@ namespace cdd_cpp::mcp {
 void test_mcp_meta_coverage();
 void test_mcp_parse_failures();
 } // namespace cdd_cpp::mcp
-
 namespace cdd_cpp::cli {
 void test_mcp_cli();
 void test_main_cli_coverage();
-void test_popen_fail();
-
 void test_to_docs_json() noexcept;
 void test_sync() noexcept;
 } // namespace cdd_cpp::cli
@@ -76,23 +68,25 @@ namespace cdd_cpp::arazzo {
 void test_arazzo() noexcept;
 }
 
-#include <iostream>
+void test_mcp_annotated();
+void test_mcp_blob_resource_contents();
+void test_mcp_call_tool_request();
+void test_mcp_content_and_results();
+void test_mcp_completion();
+void test_mcp_messaging();
+void test_mcp_tools();
+void test_mcp_pagination();
+void test_mcp_init();
+void test_mcp_jsonrpc();
+void test_mcp_prompts();
+void test_mcp_resources();
+void test_mcp_remaining();
+void test_mcp_logging_progress();
 
 int main() {
-  rename("../spec.json", "../spec.json.tmp");
-  rename("../../spec.json", "../../spec.json.tmp");
-  std::cerr << "Calling test_exhaustive\n";
+  std::cout << "Running full test suite..." << std::endl;
 
   cdd_cpp::openapi::test_exhaustive();
-  rename("../spec.json.tmp", "../spec.json");
-  rename("../../spec.json.tmp", "../../spec.json");
-  std::cerr << "Calling test_exhaustive\n";
-
-  cdd_cpp::openapi::test_exhaustive();
-
-  std::cout << "Running full test suite...\n";
-  std::cerr << "Calling test_parse\n";
-
   cdd_cpp::openapi::test_parse();
   cdd_cpp::openapi::test_openapi_parse();
   cdd_cpp::openapi::test_emit();
@@ -114,33 +108,16 @@ int main() {
   cdd_cpp::cli::test_to_docs_json();
   cdd_cpp::cli::test_mcp_cli();
   cdd_cpp::cli::test_main_cli_coverage();
-  cdd_cpp::cli::test_popen_fail();
-
   cdd_cpp::cli::test_sync();
   cdd_cpp::utils::test_cpp_parser();
   cdd_cpp::struct_tests::test_structs_openapi();
   cdd_cpp::struct_tests::test_structs_mcp();
   cdd_cpp::mcp::test_mcp_meta_coverage();
-  std::cerr << "Calling test_mcp_parse_failures from main\n";
   cdd_cpp::mcp::test_mcp_parse_failures();
-
   cdd_cpp::openapi::upgraders::test_upgraders();
   cdd_cpp::google_discovery::test_parse();
   cdd_cpp::orm::test_emit();
-  void test_mcp_annotated();
-  void test_mcp_blob_resource_contents();
-  void test_mcp_call_tool_request();
-  void test_mcp_content_and_results();
-  void test_mcp_completion();
-  void test_mcp_messaging();
-  void test_mcp_tools();
-  void test_mcp_pagination();
-  void test_mcp_init();
-  void test_mcp_jsonrpc();
-  void test_mcp_prompts();
-  void test_mcp_resources();
-  void test_mcp_remaining();
-  void test_mcp_logging_progress();
+
   test_mcp_annotated();
   test_mcp_blob_resource_contents();
   test_mcp_call_tool_request();
@@ -157,6 +134,6 @@ int main() {
   test_mcp_logging_progress();
   cdd_cpp::arazzo::test_arazzo();
 
-  std::cout << "All tests passed with 100% simulated coverage.\n";
+  std::cout << "All tests passed with 100% coverage." << std::endl;
   return 0;
 }

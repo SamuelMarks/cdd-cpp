@@ -11,6 +11,12 @@
 
 namespace cdd_cpp::docstrings {
 
+/// @brief Strip leading whitespace and comment markers (`*`, `///`, `//`) from
+/// a single docstring line.
+/// @param line Raw docstring line.
+/// @return Cleaned line content with trailing `\r`/whitespace trimmed.
+std::string strip_comment_line_prefix(std::string_view line) noexcept;
+
 /// @brief Extract the value of a `@<tag> <value>` annotation from a docstring.
 /// @param docstring The Doxygen docstring block to search.
 /// @param tag The tag name without the leading `@` (e.g., "title", "summary").

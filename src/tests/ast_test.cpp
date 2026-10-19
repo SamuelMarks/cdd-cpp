@@ -179,6 +179,14 @@ void test_cpp_parser() {
   assert(unbal5.classes.empty());
   auto unbal6 = parse_cpp("struct UnbalLineCmt { // unclosed");
   assert(unbal6.classes.empty());
+  auto unbal7 = parse_cpp("// top-level unclosed line comment");
+  assert(unbal7.classes.empty());
+  auto unbal8 = parse_cpp("/* top-level unclosed block comment *");
+  assert(unbal8.classes.empty());
+  auto unbal9 = parse_cpp("struct TrailingEOF");
+  assert(unbal9.classes.empty());
+  auto unbal10 = parse_cpp("(int a); > b(int c);");
+  assert(unbal10.functions.size() == 1);
   auto line0_doc = parse_cpp("// Line0 doc\nstruct Line0Struct {};");
   assert(line0_doc.classes.size() == 1);
   assert(line0_doc.classes[0].docstring == "// Line0 doc");

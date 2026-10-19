@@ -732,7 +732,7 @@ struct Schema {
   }
 
   /// @brief Equality comparison operator.
-  bool operator==(const Schema &) const noexcept = default;
+  bool operator==(const Schema &other) const noexcept;
 };
 
 /// @brief Example object.
@@ -772,7 +772,7 @@ struct Encoding {
   std::shared_ptr<Encoding> itemEncoding; ///< Encoding for array items.
 
   /// @brief Equality comparison operator.
-  bool operator==(const Encoding &) const noexcept;
+  bool operator==(const Encoding &other) const noexcept;
 };
 
 /// @brief Each Media Type Object provides schema and examples for the media
@@ -791,7 +791,7 @@ struct MediaType {
   std::shared_ptr<Encoding> itemEncoding; ///< Item encoding.
 
   /// @brief Equality comparison operator.
-  bool operator==(const MediaType &) const noexcept = default;
+  bool operator==(const MediaType &other) const noexcept;
 };
 
 /// @brief The Header Object follows the structure of the Parameter Object.
@@ -1194,7 +1194,7 @@ struct PathItem {
   }
 
   /// @brief Equality comparison operator.
-  bool operator==(const PathItem &) const noexcept = default;
+  bool operator==(const PathItem &other) const noexcept;
 };
 
 /// @brief Holds a set of reusable objects for different aspects of the OAS.
@@ -1223,7 +1223,7 @@ struct Components {
       mediaTypes; ///< Media types.
 
   /// @brief Equality comparison operator.
-  bool operator==(const Components &) const noexcept = default;
+  bool operator==(const Components &other) const noexcept;
 };
 
 /// @brief This is the root document object of the OpenAPI document.
@@ -1256,7 +1256,160 @@ struct OpenAPI {
   bool operator==(const OpenAPI &) const noexcept = default;
 };
 
-inline bool Encoding::operator==(const Encoding &) const noexcept = default;
-inline bool Operation::operator==(const Operation &) const noexcept = default;
+/// @brief Deep-compare two std::shared_ptr instances by dereferenced value.
+/// @tparam T The pointed-to type.
+/// @param a First shared pointer.
+/// @param b Second shared pointer.
+/// @return True if both are null or both are non-null with equal values.
+template <typename T>
+inline bool deep_eq(const std::shared_ptr<T> &a,
+                    const std::shared_ptr<T> &b) noexcept {
+  if (a == b)
+    return true;
+  if (!a || !b)
+    return false;
+  return *a == *b;
+}
+
+/// @brief Map an OpenAPI primitive type string to its C++ primitive/standard
+/// library type.
+/// @param openapi_type The OpenAPI type string (e.g., "integer", "number",
+/// "boolean", "string").
+/// @return C++ type string ("int", "double", "bool", or "std::string").
+inline std::string openapi_type_to_cpp(std::string_view openapi_type) noexcept {
+  if (openapi_type == "integer")
+    return "int";
+  if (openapi_type == "number")
+    return "double";
+  if (openapi_type == "boolean")
+    return "bool";
+  return "std::string";
+}
+
+/// @brief Map a C++ primitive type string to its OpenAPI primitive type string.
+/// @param cpp_type The C++ type string (e.g., "int", "double", "bool",
+/// "std::string").
+/// @return OpenAPI primitive type string ("integer", "number", "boolean", or
+/// "string").
+inline std::string cpp_type_to_openapi(std::string_view cpp_type) noexcept {
+  if (cpp_type == "int" || cpp_type == "int32_t" || cpp_type == "int64_t" ||
+      cpp_type == "long" || cpp_type == "short")
+    return "integer";
+  if (cpp_type == "double" || cpp_type == "float")
+    return "number";
+  if (cpp_type == "bool" || cpp_type == "boolean")
+    return "boolean";
+  return "string";
+}
+
+/// @brief Deep value equality comparison for Schema.
+/// @param other The Schema to compare against.
+/// @return True if all fields and recursive sub-schemas are equal by value.
+inline bool Schema::operator==(const Schema &other) const noexcept {
+  return type == other.type && types == other.types &&
+         description == other.description && format == other.format &&
+         ref == other.ref && externalDocs == other.externalDocs &&
+         example == other.example && examples == other.examples &&
+         discriminator == other.discriminator && xml == other.xml &&
+         deep_eq(properties, other.properties) && deep_eq(items, other.items) &&
+         schema_dialect == other.schema_dialect && id == other.id &&
+         anchor == other.anchor && dynamicAnchor == other.dynamicAnchor &&
+         dynamicRef == other.dynamicRef && deep_eq(defs, other.defs) &&
+         comment == other.comment && title == other.title &&
+         default_value == other.default_value &&
+         enum_values == other.enum_values && const_value == other.const_value &&
+         deprecated == other.deprecated && readOnly == other.readOnly &&
+         writeOnly == other.writeOnly &&
+         boolean_schema == other.boolean_schema &&
+         multipleOf == other.multipleOf && maximum == other.maximum &&
+         exclusiveMaximum == other.exclusiveMaximum &&
+         minimum == other.minimum &&
+         exclusiveMinimum == other.exclusiveMinimum &&
+         maxLength == other.maxLength && minLength == other.minLength &&
+         pattern == other.pattern && maxItems == other.maxItems &&
+         minItems == other.minItems && uniqueItems == other.uniqueItems &&
+         maxContains == other.maxContains && minContains == other.minContains &&
+         maxProperties == other.maxProperties &&
+         minProperties == other.minProperties && required == other.required &&
+         deep_eq(dependentRequired, other.dependentRequired) &&
+         deep_eq(allOf, other.allOf) && deep_eq(anyOf, other.anyOf) &&
+         deep_eq(oneOf, other.oneOf) && deep_eq(not_schema, other.not_schema) &&
+         deep_eq(if_schema, other.if_schema) &&
+         deep_eq(then_schema, other.then_schema) &&
+         deep_eq(else_schema, other.else_schema) &&
+         deep_eq(prefixItems, other.prefixItems) &&
+         deep_eq(contains, other.contains) &&
+         deep_eq(patternProperties, other.patternProperties) &&
+         deep_eq(additionalProperties, other.additionalProperties) &&
+         additionalPropertiesBool == other.additionalPropertiesBool &&
+         deep_eq(propertyNames, other.propertyNames) &&
+         deep_eq(unevaluatedItems, other.unevaluatedItems) &&
+         unevaluatedItemsBool == other.unevaluatedItemsBool &&
+         deep_eq(unevaluatedProperties, other.unevaluatedProperties) &&
+         unevaluatedPropertiesBool == other.unevaluatedPropertiesBool;
+}
+
+/// @brief Deep value equality comparison for Encoding.
+/// @param other The Encoding to compare against.
+/// @return True if all fields and nested encodings/schemas are equal by value.
+inline bool Encoding::operator==(const Encoding &other) const noexcept {
+  return contentType == other.contentType && style == other.style &&
+         explode == other.explode && allowReserved == other.allowReserved &&
+         deep_eq(headers, other.headers) && deep_eq(encoding, other.encoding) &&
+         deep_eq(itemSchema, other.itemSchema) &&
+         deep_eq(prefixEncoding, other.prefixEncoding) &&
+         deep_eq(itemEncoding, other.itemEncoding);
+}
+
+/// @brief Deep value equality comparison for MediaType.
+/// @param other The MediaType to compare against.
+/// @return True if all fields and nested encodings/schemas are equal by value.
+inline bool MediaType::operator==(const MediaType &other) const noexcept {
+  return schema == other.schema && example == other.example &&
+         examples == other.examples && deep_eq(encoding, other.encoding) &&
+         deep_eq(itemSchema, other.itemSchema) &&
+         deep_eq(prefixEncoding, other.prefixEncoding) &&
+         deep_eq(itemEncoding, other.itemEncoding);
+}
+
+/// @brief Deep value equality comparison for Operation.
+/// @param other The Operation to compare against.
+/// @return True if all fields and callbacks are equal by value.
+inline bool Operation::operator==(const Operation &other) const noexcept {
+  return tags == other.tags && summary == other.summary &&
+         description == other.description &&
+         externalDocs == other.externalDocs &&
+         operationId == other.operationId && parameters == other.parameters &&
+         requestBody == other.requestBody && responses == other.responses &&
+         deep_eq(callbacks, other.callbacks) &&
+         deprecated == other.deprecated && security == other.security &&
+         servers == other.servers;
+}
+
+/// @brief Deep value equality comparison for PathItem.
+/// @param other The PathItem to compare against.
+/// @return True if all operations and fields are equal by value.
+inline bool PathItem::operator==(const PathItem &other) const noexcept {
+  return ref == other.ref && summary == other.summary &&
+         description == other.description && get == other.get &&
+         put == other.put && post == other.post &&
+         delete_op == other.delete_op && options == other.options &&
+         head == other.head && patch == other.patch && trace == other.trace &&
+         query == other.query &&
+         deep_eq(additionalOperations, other.additionalOperations) &&
+         servers == other.servers && parameters == other.parameters;
+}
+
+/// @brief Deep value equality comparison for Components.
+/// @param other The Components to compare against.
+/// @return True if all component maps and shared pointers are equal by value.
+inline bool Components::operator==(const Components &other) const noexcept {
+  return schemas == other.schemas && responses == other.responses &&
+         parameters == other.parameters && examples == other.examples &&
+         requestBodies == other.requestBodies && headers == other.headers &&
+         securitySchemes == other.securitySchemes && links == other.links &&
+         deep_eq(callbacks, other.callbacks) && pathItems == other.pathItems &&
+         deep_eq(mediaTypes, other.mediaTypes);
+}
 
 } // namespace cdd_cpp::openapi

@@ -7,7 +7,7 @@
 
 namespace cdd_cpp::google_discovery {
 
-/// @brief Internal helper or implementation for `convert_schema`.
+/// @brief Convert Google Discovery JSON element via `convert_schema`.
 openapi::Schema convert_schema(simdjson::dom::element el) noexcept {
   openapi::Schema out;
   simdjson::dom::object obj;
@@ -43,7 +43,7 @@ openapi::Schema convert_schema(simdjson::dom::element el) noexcept {
   return out;
 }
 
-/// @brief Internal helper or implementation for `process_methods`.
+/// @brief Convert Google Discovery JSON element via `process_methods`.
 void process_methods(simdjson::dom::object methods,
                      std::map<std::string, openapi::PathItem> &paths) noexcept {
   for (auto m : methods) {
@@ -145,7 +145,7 @@ void process_methods(simdjson::dom::object methods,
   }
 }
 
-/// @brief Internal helper or implementation for `process_resources`.
+/// @brief Convert Google Discovery JSON element via `process_resources`.
 void process_resources(
     simdjson::dom::object resources,
     std::map<std::string, openapi::PathItem> &paths) noexcept {
@@ -164,7 +164,7 @@ void process_resources(
   }
 }
 
-/// @brief Internal helper or implementation for `parse`.
+/// @brief Convert Google Discovery JSON element via `parse`.
 Result<std::vector<openapi::OpenAPI>> parse(const std::string &input) noexcept {
   simdjson::dom::parser parser;
   simdjson::dom::element doc;

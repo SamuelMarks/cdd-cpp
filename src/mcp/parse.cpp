@@ -3,7 +3,6 @@
 /// parsers.
 
 #include "parse.hpp"
-#include <iostream>
 
 namespace cdd_cpp::mcp {
 
@@ -58,7 +57,7 @@ static void set_opt_raw(simdjson::ondemand::object &obj, std::string_view key,
   }
 }
 
-/// @brief Internal helper or implementation for `parse_annotations`.
+/// @brief Deserialize MCP JSON-RPC payload via `parse_annotations`.
 std::optional<Annotations> parse_annotations(simdjson::ondemand::object &obj) {
   simdjson::ondemand::object annotations_obj;
   if (!obj["annotations"].get_object().get(annotations_obj)) {
@@ -70,7 +69,7 @@ std::optional<Annotations> parse_annotations(simdjson::ondemand::object &obj) {
   return std::nullopt;
 }
 
-/// @brief Internal helper or implementation for `parse_annotated`.
+/// @brief Deserialize MCP JSON-RPC payload via `parse_annotated`.
 McpResult<Annotated> parse_annotated(simdjson::ondemand::value &val) noexcept {
   Annotated result;
   simdjson::ondemand::object obj;
@@ -358,7 +357,7 @@ parse_complete_result(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
-/// @brief Internal helper or implementation for `parse_model_hint`.
+/// @brief Deserialize MCP JSON-RPC payload via `parse_model_hint`.
 McpResult<ModelHint> parse_model_hint(simdjson::ondemand::value &val) noexcept {
   ModelHint result;
   simdjson::ondemand::object obj;
@@ -475,7 +474,7 @@ parse_create_message_result(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
-/// @brief Internal helper or implementation for `parse_tool`.
+/// @brief Deserialize MCP JSON-RPC payload via `parse_tool`.
 McpResult<Tool> parse_tool(simdjson::ondemand::value &val) noexcept {
   Tool result;
   simdjson::ondemand::object obj;
@@ -717,7 +716,7 @@ parse_initialized_notification(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
-/// @brief Internal helper or implementation for `parse_request_id`.
+/// @brief Deserialize MCP JSON-RPC payload via `parse_request_id`.
 std::string parse_request_id(simdjson::ondemand::value &val) noexcept {
   std::string out = "null";
   auto t = val.type().value_unsafe();
@@ -891,7 +890,7 @@ parse_prompt_argument(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
-/// @brief Internal helper or implementation for `parse_prompt`.
+/// @brief Deserialize MCP JSON-RPC payload via `parse_prompt`.
 McpResult<Prompt> parse_prompt(simdjson::ondemand::value &val) noexcept {
   Prompt result;
   simdjson::ondemand::object obj;
@@ -1011,7 +1010,7 @@ parse_get_prompt_result(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
-/// @brief Internal helper or implementation for
+/// @brief Deserialize MCP JSON-RPC payload via
 /// `parse_prompt_list_changed_notification`.
 McpResult<PromptListChangedNotification> parse_prompt_list_changed_notification(
     simdjson::ondemand::value &val) noexcept {
@@ -1074,7 +1073,7 @@ parse_list_resources_request(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
-/// @brief Internal helper or implementation for `parse_resource`.
+/// @brief Deserialize MCP JSON-RPC payload via `parse_resource`.
 McpResult<Resource> parse_resource(simdjson::ondemand::value &val) noexcept {
   Resource result;
   simdjson::ondemand::object obj;
@@ -1270,7 +1269,7 @@ parse_resource_reference(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
-/// @brief Internal helper or implementation for `parse_result`.
+/// @brief Deserialize MCP JSON-RPC payload via `parse_result`.
 McpResult<Result> parse_result(simdjson::ondemand::value &val) noexcept {
   Result result;
   simdjson::ondemand::object obj;
@@ -1280,7 +1279,7 @@ McpResult<Result> parse_result(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
-/// @brief Internal helper or implementation for `parse_root`.
+/// @brief Deserialize MCP JSON-RPC payload via `parse_root`.
 McpResult<Root> parse_root(simdjson::ondemand::value &val) noexcept {
   Root result;
   simdjson::ondemand::object obj;

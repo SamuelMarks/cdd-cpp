@@ -246,6 +246,12 @@ struct EmbeddedResource {
   bool operator==(const EmbeddedResource &) const noexcept = default;
 };
 
+/// @brief Strongly typed JSON-RPC 2.0 request identifier (integer or string).
+using TypedRequestId = std::variant<int64_t, std::string>;
+
+/// @brief Strongly typed MCP progress token (integer or string).
+using TypedProgressToken = std::variant<int64_t, std::string>;
+
 /// @brief Variant representing any MCP content block (text, image, or embedded
 /// resource).
 using ContentBlockVariant =
@@ -257,6 +263,8 @@ struct CallToolResult {
   std::string content_json;         ///< JSON array of content blocks.
   std::optional<bool>
       isError; ///< True if the tool execution resulted in an error.
+  std::optional<std::vector<ContentBlockVariant>>
+      typed_content; ///< Strongly typed content block variants.
 
   /// @brief Equality comparison operator.
   bool operator==(const CallToolResult &) const noexcept = default;
