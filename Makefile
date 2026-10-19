@@ -1,4 +1,6 @@
-.PHONY: build test build_wasm clean install_deps
+.PHONY: build test build_wasm clean install_deps deps
+
+deps: install_deps
 
 build:
 	cmake -B build -S . -DCMAKE_BUILD_TYPE=Release

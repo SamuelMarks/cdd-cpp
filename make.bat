@@ -6,6 +6,7 @@ if "%~1"=="build" goto build
 if "%~1"=="test" goto test
 if "%~1"=="build_wasm" goto build_wasm
 if "%~1"=="clean" goto clean
+if "%~1"=="deps" goto install_deps
 if "%~1"=="install_deps" goto install_deps
 
 echo Unknown target: %1

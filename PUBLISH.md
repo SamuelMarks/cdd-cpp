@@ -1,23 +1,20 @@
 # Publish Guide
 
-To publish `cdd-cpp` to C++ package registries, we recommend utilizing **vcpkg** or **Conan**.
+To publish `cdd-cpp` to C++ package registries, we recommend utilizing **vcpkg** or **Conan**, or distributing pre-built native and WebAssembly binaries via **GitHub Releases**.
 
-## Vcpkg
+## vcpkg
 
-1. Generate a `vcpkg.json` file pointing to the repository and correct versions.
+1. Update the port manifest (`vcpkg.json` / `portfile.cmake`) pointing to the release tag and commit SHA512.
 2. Open a Pull Request on the main [vcpkg ports repository](https://github.com/microsoft/vcpkg).
 
 ## GitHub Releases
 
-We publish pre-built binaries (including WASM) directly to GitHub Releases. The CI/CD pipeline does this automatically on tag creation.
+Pre-built native binaries (`cdd-cpp`, `cdd-cpp.exe`) and standalone WebAssembly modules (`cdd-cpp.wasm`) are published directly to GitHub Releases. The `.github/workflows/ci.yml` pipeline builds and uploads these artifacts automatically on pushes to `master`/`main` and tag creation.
 
-## Documentation
+## Coverage & Badges
 
-To generate and serve local documentation:
+To verify 100% test and documentation coverage and refresh `README.md` badges locally:
 
-```bash
-make build_docs
-python -m http.server -d docs
+```sh
+python3 scripts/update_badges.py
 ```
-
-To publish docs online, push them to the `gh-pages` branch using a GitHub Action.

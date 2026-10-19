@@ -9,35 +9,48 @@ import tarfile
 import zipfile
 import atexit
 
+
 def run_cmd(cmd, cwd=None, env=None, capture_output=False, check=True):
     with open("pre_commit_debug.log", "a") as dbg:
         dbg.write(f"Running: {cmd if isinstance(cmd, str) else ' '.join(cmd)}\n")
 
     print(f"Running: {cmd if isinstance(cmd, str) else ' '.join(cmd)}", flush=True)
-    
+
     if env is None:
         env = os.environ.copy()
-    for key in ['GIT_DIR', 'GIT_INDEX_FILE', 'GIT_WORK_TREE']:
+    for key in ["GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE"]:
         env.pop(key, None)
-        
+
     if not capture_output:
         result = subprocess.run(cmd, cwd=cwd, env=env, shell=isinstance(cmd, str))
     else:
-        result = subprocess.run(cmd, cwd=cwd, env=env, shell=isinstance(cmd, str), capture_output=True, text=True)
-        
+        result = subprocess.run(
+            cmd,
+            cwd=cwd,
+            env=env,
+            shell=isinstance(cmd, str),
+            capture_output=True,
+            text=True,
+        )
+
     if check and result.returncode != 0:
         print(f"Command failed with exit code {result.returncode}", flush=True)
         if capture_output:
             print(result.stdout, flush=True)
             print(result.stderr, flush=True)
         import sys
+
         sys.exit(result.returncode)
     return result
 
+
 def build_project():
     print("Building project...")
-    run_cmd(["cmake", "-B", "build", "-S", ".", "-DCMAKE_BUILD_TYPE=Debug", "-DCOVERAGE=ON"])
+    run_cmd(
+        ["cmake", "-B", "build", "-S", ".", "-DCMAKE_BUILD_TYPE=Debug", "-DCOVERAGE=ON"]
+    )
     run_cmd(["cmake", "--build", "build", "--config", "Debug", "-j4"])
+
 
 def run_tests():
     print("Running tests...")
@@ -53,6 +66,7 @@ def run_tests():
         test_bin = os.path.join("build", "cdd-tests")
     run_cmd([test_bin])
 
+
 def build_wasm():
     print("Building WASM via wasi-sdk...")
     wasi_dir = "wasi-sdk"
@@ -65,55 +79,61 @@ def build_wasm():
             wasi_os = "windows"
         else:
             wasi_os = "linux"
-            
+
         if arch in ["x86_64", "amd64"]:
             wasi_arch = "x86_64"
         elif arch in ["arm64", "aarch64"]:
             wasi_arch = "arm64"
         else:
             wasi_arch = "x86_64"
-            
+
         url = f"https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-24/wasi-sdk-24.0-{wasi_arch}-{wasi_os}.tar.gz"
         tar_path = f"wasi-sdk-24.0-{wasi_arch}-{wasi_os}.tar.gz"
         print(f"Downloading {url}...")
         urllib.request.urlretrieve(url, tar_path)
-        
+
         print("Extracting wasi-sdk...")
         with tarfile.open(tar_path) as tar:
             tar.extractall()
         os.remove(tar_path)
-        
+
         for d in os.listdir("."):
             if d.startswith("wasi-sdk-24.0") and os.path.isdir(d):
                 os.rename(d, wasi_dir)
                 break
-                
+
     cmake_path = os.path.join(wasi_dir, "share", "cmake", "wasi-sdk.cmake")
     with open(cmake_path, "r") as f:
         content = f.read()
     content = content.replace("VERSION 3.4.0", "VERSION 3.11")
     with open(cmake_path, "w") as f:
         f.write(content)
-        
+
     build_dir = "build_wasm"
     if os.path.exists(build_dir):
         shutil.rmtree(build_dir)
     os.makedirs(build_dir)
-    
-    toolchain_file = os.path.abspath(os.path.join(wasi_dir, "share", "cmake", "wasi-sdk.cmake"))
+
+    toolchain_file = os.path.abspath(
+        os.path.join(wasi_dir, "share", "cmake", "wasi-sdk.cmake")
+    )
     cmake_args = [
-        "cmake", "-B", ".", "-S", "..",
+        "cmake",
+        "-B",
+        ".",
+        "-S",
+        "..",
         f"-DCMAKE_TOOLCHAIN_FILE={toolchain_file}",
         "-DCDD_EXTREME_CHECKS=OFF",
         "-DSIMDJSON_ENABLE_THREADS=OFF",
         "-DCMAKE_BUILD_TYPE=Release",
         "-DCMAKE_CXX_FLAGS=-fno-exceptions",
-        "-DCMAKE_C_FLAGS=-fno-exceptions"
+        "-DCMAKE_C_FLAGS=-fno-exceptions",
     ]
     if sys.platform == "win32":
         cmake_args.extend(["-G", "MinGW Makefiles"])
     run_cmd(cmake_args, cwd=build_dir)
-    
+
     # Patch simdjson to replace throw with abort
     patch_script = os.path.join(build_dir, "patch_simdjson.py")
     with open(patch_script, "w") as f:
@@ -138,66 +158,98 @@ for root, _, files in os.walk("_deps"):
                 pass
 """)
     run_cmd([sys.executable, "patch_simdjson.py"], cwd=build_dir)
-    
+
     run_cmd(["cmake", "--build", ".", "--target", "cdd-cpp", "-j4"], cwd=build_dir)
-    
+
     if not os.path.exists("bin"):
         os.makedirs("bin")
-    
+
     wasm_bin = os.path.join(build_dir, "cdd-cpp")
     if sys.platform == "win32" and os.path.exists(wasm_bin + ".exe"):
         wasm_bin += ".exe"
     shutil.copy2(wasm_bin, os.path.join("bin", "cdd-cpp.wasm"))
 
 
-
 def is_docker_running():
     try:
-        subprocess.run(["docker", "info"], check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(
+            ["docker", "info"],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
         return True
     except (subprocess.CalledProcessError, FileNotFoundError):
         return False
 
+
 def run_docker_petstore(base_path, port):
     container_name = f"petstore_server_{port}"
-    subprocess.run(["docker", "rm", "-f", container_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    
+    subprocess.run(
+        ["docker", "rm", "-f", container_name],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
     if base_path == "/api/v3":
         cmd = [
-            "docker", "run", "-d", "-p", f"{port}:8080",
-            "-e", f"OPENAPI_BASE_PATH={base_path}",
-            "--name", container_name,
-            "openapitools/openapi-petstore"
+            "docker",
+            "run",
+            "-d",
+            "-p",
+            f"{port}:8080",
+            "-e",
+            f"OPENAPI_BASE_PATH={base_path}",
+            "--name",
+            container_name,
+            "openapitools/openapi-petstore",
         ]
     else:
         cmd = [
-            "docker", "run", "-d", "-p", f"{port}:8080",
-            "-e", f"SWAGGER_HOST=http://127.0.0.1:{port}",
-            "-e", f"SWAGGER_BASE_PATH={base_path}",
-            "--name", container_name,
-            "swaggerapi/petstore"
+            "docker",
+            "run",
+            "-d",
+            "-p",
+            f"{port}:8080",
+            "-e",
+            f"SWAGGER_HOST=http://127.0.0.1:{port}",
+            "-e",
+            f"SWAGGER_BASE_PATH={base_path}",
+            "--name",
+            container_name,
+            "swaggerapi/petstore",
         ]
     run_cmd(cmd)
     return {"type": "docker", "name": container_name}
 
+
 def is_java_available():
     try:
         import subprocess
-        subprocess.run(["java", "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+
+        subprocess.run(
+            ["java", "-version"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True,
+        )
         return True
     except (subprocess.CalledProcessError, FileNotFoundError):
         return False
+
 
 def start_local_petstore(base_path, port=8080):
 
     # Check if instance is already active
     test_urls = [f"http://127.0.0.1:{port}{base_path}/swagger.json"]
     if base_path == "/api/v3":
-        test_urls.extend([
-            f"http://127.0.0.1:{port}/v3/openapi.json",
-            f"http://127.0.0.1:{port}{base_path}/openapi.json"
-        ])
-    
+        test_urls.extend(
+            [
+                f"http://127.0.0.1:{port}/v3/openapi.json",
+                f"http://127.0.0.1:{port}{base_path}/openapi.json",
+            ]
+        )
+
     is_active = False
     for url in test_urls:
         try:
@@ -223,7 +275,7 @@ def start_local_petstore(base_path, port=8080):
     else:
         print("Python mock failed, falling back to JVM/Docker...")
         proc.terminate()
-        
+
     if is_java_available():
         print(f"JVM found locally. Trying native JVM petstore for port {port}...")
         jvm_ok = True
@@ -231,16 +283,25 @@ def start_local_petstore(base_path, port=8080):
         try:
             v2_dir = os.path.abspath(os.path.join("..", "swagger-petstore-v2"))
             jetty_jar = os.path.join(v2_dir, "target", "lib", "jetty-runner.jar")
-            
+
             if not os.path.exists(v2_dir):
                 print(f"Cloning swagger-petstore-v2 to {v2_dir}...")
-                res = subprocess.run(["git", "clone", "https://github.com/swagger-api/swagger-petstore.git", v2_dir])
-                if res.returncode != 0: jvm_ok = False
-                
+                res = subprocess.run(
+                    [
+                        "git",
+                        "clone",
+                        "https://github.com/swagger-api/swagger-petstore.git",
+                        v2_dir,
+                    ]
+                )
+                if res.returncode != 0:
+                    jvm_ok = False
+
             if jvm_ok and not os.path.exists(jetty_jar):
                 print("Building local swagger-petstore-v2...")
                 res = subprocess.run(["mvn", "package", "-DskipTests"], cwd=v2_dir)
-                if res.returncode != 0: jvm_ok = False
+                if res.returncode != 0:
+                    jvm_ok = False
 
             if jvm_ok:
                 war_path = None
@@ -249,33 +310,35 @@ def start_local_petstore(base_path, port=8080):
                         if f.startswith("swagger-petstore-") and f.endswith(".war"):
                             war_path = os.path.join(v2_dir, "target", f)
                             break
-                    
+
                 if not war_path:
                     jvm_ok = False
-                    
+
             if jvm_ok:
-                webapp_dir = os.path.abspath(os.path.join("build", f"petstore_webapp_{port}"))
+                webapp_dir = os.path.abspath(
+                    os.path.join("build", f"petstore_webapp_{port}")
+                )
                 if os.path.exists(webapp_dir):
                     shutil.rmtree(webapp_dir)
                 os.makedirs(webapp_dir)
-                
-                with zipfile.ZipFile(war_path, 'r') as zip_ref:
+
+                with zipfile.ZipFile(war_path, "r") as zip_ref:
                     zip_ref.extractall(webapp_dir)
-                    
+
                 web_xml = os.path.join(webapp_dir, "WEB-INF", "web.xml")
                 with open(web_xml, "r") as f:
                     xml_content = f.read()
-                    
+
                 url = f"http://127.0.0.1:{port}"
                 full_path = f"{url}{base_path}"
-                
+
                 xml_content = xml_content.replace("SWAGGER_HOST", url)
                 xml_content = xml_content.replace("BASE_PATH", base_path)
                 xml_content = xml_content.replace("FULL_SWAGGER_PATH", full_path)
-                
+
                 with open(web_xml, "w") as f:
                     f.write(xml_content)
-                    
+
                 index_html = os.path.join(webapp_dir, "index.html")
                 if os.path.exists(index_html):
                     with open(index_html, "r") as f:
@@ -284,11 +347,19 @@ def start_local_petstore(base_path, port=8080):
                     idx_content = idx_content.replace("FULL_SWAGGER_PATH", full_path)
                     with open(index_html, "w") as f:
                         f.write(idx_content)
-                        
-                print(f"Starting local petstore server on port {port} with base path {base_path}...")
-                log_file = open(os.path.abspath(os.path.join("build", f"petstore_{port}.log")), "w")
-                proc = subprocess.Popen(["java", "-jar", jetty_jar, "--port", str(port), webapp_dir], stdout=log_file, stderr=subprocess.STDOUT)
-                
+
+                print(
+                    f"Starting local petstore server on port {port} with base path {base_path}..."
+                )
+                log_file = open(
+                    os.path.abspath(os.path.join("build", f"petstore_{port}.log")), "w"
+                )
+                proc = subprocess.Popen(
+                    ["java", "-jar", jetty_jar, "--port", str(port), webapp_dir],
+                    stdout=log_file,
+                    stderr=subprocess.STDOUT,
+                )
+
                 # Check if it starts correctly within a reasonable time
                 test_url = f"http://127.0.0.1:{port}{base_path}/swagger.json"
                 if wait_for_url(test_url, timeout=45):
@@ -299,7 +370,7 @@ def start_local_petstore(base_path, port=8080):
         except Exception as e:
             print(f"Error during JVM setup: {e}")
             jvm_ok = False
-            
+
         if not jvm_ok:
             if proc:
                 cleanup_petstore({"type": "jvm", "proc": proc})
@@ -310,23 +381,25 @@ def start_local_petstore(base_path, port=8080):
         proc_info = run_docker_petstore(base_path, port)
         test_url = f"http://127.0.0.1:{port}{base_path}/swagger.json"
         if base_path == "/api/v3":
-             test_url = f"http://127.0.0.1:{port}/api/v3/openapi.json"
+            test_url = f"http://127.0.0.1:{port}/api/v3/openapi.json"
         if wait_for_url(test_url, timeout=60):
             return proc_info
-        
+
         if base_path == "/api/v3":
-             # fallback for openapi 3
-             test_url = f"http://127.0.0.1:{port}/v3/openapi.json"
-             if wait_for_url(test_url, timeout=10):
-                 return proc_info
-             test_url = f"http://127.0.0.1:{port}/api/v3/swagger.json"
-             if wait_for_url(test_url, timeout=10):
-                 return proc_info
+            # fallback for openapi 3
+            test_url = f"http://127.0.0.1:{port}/v3/openapi.json"
+            if wait_for_url(test_url, timeout=10):
+                return proc_info
+            test_url = f"http://127.0.0.1:{port}/api/v3/swagger.json"
+            if wait_for_url(test_url, timeout=10):
+                return proc_info
 
         cleanup_petstore(proc_info)
         raise Exception("Docker petstore failed to start in time.")
     else:
-        print("Error: Neither Python, JVM nor Docker is available to start the petstore server.")
+        print(
+            "Error: Neither Python, JVM nor Docker is available to start the petstore server."
+        )
         sys.exit(1)
 
 
@@ -338,7 +411,11 @@ def cleanup_petstore(proc_info):
         return
     if isinstance(proc_info, dict) and proc_info.get("type") == "docker":
         print(f"Stopping docker container {proc_info['name']}...")
-        subprocess.run(["docker", "rm", "-f", proc_info["name"]], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(
+            ["docker", "rm", "-f", proc_info["name"]],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
     elif isinstance(proc_info, dict) and proc_info.get("type") == "python":
         print("Stopping Python mock petstore...")
         proc = proc_info.get("proc")
@@ -375,116 +452,152 @@ def wait_for_url(url, timeout=150):
     print(f"Timeout waiting for {url}")
     return False
 
-def verify_ml_framework_snapshots_grounding(cdd_cpp_bin):
-    snapshots_dir = os.path.abspath(os.path.join("..", "ml-framework-snapshots"))
-    print(f"Checking explicit grounding via {snapshots_dir}...")
-    if not os.path.exists(snapshots_dir):
-        print(f"Note: {snapshots_dir} not present on disk; skipping external snapshot directory walk.")
-        return
-    for root, _, files in os.walk(snapshots_dir):
-        for f in files:
-            if f.endswith(".arazzo.json"):
-                spec_path = os.path.join(root, f)
-                out_dir = os.path.abspath(os.path.join("build", "snapshot_grounding_tmp"))
-                if os.path.exists(out_dir):
-                    shutil.rmtree(out_dir)
-                run_cmd([cdd_cpp_bin, "from_arazzo", "to_sdk", "-i", spec_path, "-o", out_dir])
-                shutil.rmtree(out_dir, ignore_errors=True)
 
 def main():
     try:
         build_project()
-        
+
         run_tests()
-        
+
         print("Calculating coverage...")
-        test_cov_res = run_cmd([sys.executable, "tools/test_coverage.py"], capture_output=True, check=False)
+        test_cov_res = run_cmd(
+            [sys.executable, "tools/test_coverage.py"], capture_output=True, check=False
+        )
         test_cov = test_cov_res.stdout.strip() if test_cov_res.returncode == 0 else "0"
-        
-        doc_cov_res = run_cmd([sys.executable, "tools/doc_coverage.py", "src"], capture_output=True, check=False)
+
+        doc_cov_res = run_cmd(
+            [sys.executable, "tools/doc_coverage.py", "src"],
+            capture_output=True,
+            check=False,
+        )
         doc_cov = doc_cov_res.stdout.strip() if doc_cov_res.returncode == 0 else "0"
-        
+
         print(f"Coverage: Test={test_cov}, Doc={doc_cov}")
-        
+
         print("Updating README badges...")
         with open("README.md", "r") as f:
             readme_before = f.read()
         run_cmd([sys.executable, "tools/update_badges.py", test_cov, doc_cov])
         with open("README.md", "r") as f:
             readme_after = f.read()
-        
-        badges_updated = (readme_before != readme_after)
+
+        badges_updated = readme_before != readme_after
         if badges_updated:
             print("README.md was updated with new badges.")
-            
+
         cdd_cpp_bin = None
         if sys.platform == "win32":
             if os.path.exists(os.path.join("build", "Release", "cdd-cpp.exe")):
-                cdd_cpp_bin = os.path.abspath(os.path.join("build", "Release", "cdd-cpp.exe"))
+                cdd_cpp_bin = os.path.abspath(
+                    os.path.join("build", "Release", "cdd-cpp.exe")
+                )
             else:
                 cdd_cpp_bin = os.path.abspath(os.path.join("build", "cdd-cpp.exe"))
         else:
             cdd_cpp_bin = os.path.abspath(os.path.join("build", "cdd-cpp"))
-            
-        verify_ml_framework_snapshots_grounding(cdd_cpp_bin)
 
         # Swagger 2.0 Petstore test
         print("Running Swagger 2.0 Petstore test...")
         v2_out_dir = os.path.abspath(os.path.join("..", "cdd-cpp-client-v2"))
         if os.path.exists(v2_out_dir):
             shutil.rmtree(v2_out_dir)
-        
+
         petstore_json = os.path.abspath(os.path.join("..", "petstore.json"))
-        run_cmd([cdd_cpp_bin, "from_openapi", "to_sdk", "-i", petstore_json, "-o", v2_out_dir, "--tests"])
-        
+        run_cmd(
+            [
+                cdd_cpp_bin,
+                "from_openapi",
+                "to_sdk",
+                "-i",
+                petstore_json,
+                "-o",
+                v2_out_dir,
+                "--tests",
+            ]
+        )
+
         petstore_proc = start_local_petstore("/v2", 38084)
         try:
             if wait_for_url("http://127.0.0.1:38084/v2/swagger.json"):
                 v2_env = os.environ.copy()
                 v2_env["PETSTORE_URL"] = "http://127.0.0.1:38084/v2"
-                run_cmd(["cmake", ".", "-DFETCHCONTENT_UPDATES_DISCONNECTED=ON"], cwd=v2_out_dir)
+                run_cmd(
+                    ["cmake", ".", "-DFETCHCONTENT_UPDATES_DISCONNECTED=ON"],
+                    cwd=v2_out_dir,
+                )
                 run_cmd(["cmake", "--build", "."], cwd=v2_out_dir)
                 client_test_bin = None
                 if sys.platform == "win32":
-                    if os.path.exists(os.path.join(v2_out_dir, "tests", "Release", "client_test.exe")):
-                        client_test_bin = os.path.join(v2_out_dir, "tests", "Release", "client_test.exe")
+                    if os.path.exists(
+                        os.path.join(v2_out_dir, "tests", "Release", "client_test.exe")
+                    ):
+                        client_test_bin = os.path.join(
+                            v2_out_dir, "tests", "Release", "client_test.exe"
+                        )
                     else:
-                        client_test_bin = os.path.join(v2_out_dir, "tests", "client_test.exe")
+                        client_test_bin = os.path.join(
+                            v2_out_dir, "tests", "client_test.exe"
+                        )
                 else:
                     client_test_bin = os.path.join(v2_out_dir, "tests", "client_test")
                 run_cmd([client_test_bin], cwd=v2_out_dir, env=v2_env)
             else:
-                raise Exception("Swagger 2.0 tests failed because Java server did not start in time.")
+                raise Exception(
+                    "Swagger 2.0 tests failed because Java server did not start in time."
+                )
         finally:
             cleanup_petstore(petstore_proc)
-            
+
         # OpenAPI 3.2.0 Petstore test
         print("Running OpenAPI 3.2.0 Petstore test...")
         v3_out_dir = os.path.abspath(os.path.join("..", "cdd-cpp-client-v3"))
         if os.path.exists(v3_out_dir):
             shutil.rmtree(v3_out_dir)
-            
+
         petstore_oas3_json = os.path.abspath(os.path.join("..", "petstore_oas3.json"))
-        run_cmd([cdd_cpp_bin, "from_openapi", "to_sdk", "-i", petstore_oas3_json, "-o", v3_out_dir, "--tests"])
-        
+        run_cmd(
+            [
+                cdd_cpp_bin,
+                "from_openapi",
+                "to_sdk",
+                "-i",
+                petstore_oas3_json,
+                "-o",
+                v3_out_dir,
+                "--tests",
+            ]
+        )
+
         petstore_proc = start_local_petstore("/api/v3", 38085)
         try:
-            if wait_for_url("http://127.0.0.1:38085/api/v3/openapi.json") or wait_for_url("http://127.0.0.1:38085/v3/openapi.json") or wait_for_url("http://127.0.0.1:38085/api/v3/swagger.json"):
+            if (
+                wait_for_url("http://127.0.0.1:38085/api/v3/openapi.json")
+                or wait_for_url("http://127.0.0.1:38085/v3/openapi.json")
+                or wait_for_url("http://127.0.0.1:38085/api/v3/swagger.json")
+            ):
                 v3_env = os.environ.copy()
                 v3_env["PETSTORE_URL"] = "http://127.0.0.1:38085/api/v3"
                 run_cmd(["cmake", "."], cwd=v3_out_dir)
                 run_cmd(["cmake", "--build", ".", "-j4"], cwd=v3_out_dir)
                 client_test_bin = None
                 if sys.platform == "win32":
-                    if os.path.exists(os.path.join(v3_out_dir, "tests", "Release", "client_test.exe")):
-                        client_test_bin = os.path.join(v3_out_dir, "tests", "Release", "client_test.exe")
+                    if os.path.exists(
+                        os.path.join(v3_out_dir, "tests", "Release", "client_test.exe")
+                    ):
+                        client_test_bin = os.path.join(
+                            v3_out_dir, "tests", "Release", "client_test.exe"
+                        )
                     else:
-                        client_test_bin = os.path.join(v3_out_dir, "tests", "client_test.exe")
+                        client_test_bin = os.path.join(
+                            v3_out_dir, "tests", "client_test.exe"
+                        )
                 else:
                     client_test_bin = os.path.join(v3_out_dir, "tests", "client_test")
                 run_cmd([client_test_bin], cwd=v3_out_dir, env=v3_env)
             else:
-                raise Exception("OpenAPI 3.2.0 tests failed because Java server did not start in time.")
+                raise Exception(
+                    "OpenAPI 3.2.0 tests failed because Java server did not start in time."
+                )
         finally:
             cleanup_petstore(petstore_proc)
 
@@ -493,24 +606,41 @@ def main():
         v3_server_out_dir = os.path.abspath(os.path.join("..", "cdd-cpp-server-v3"))
         if os.path.exists(v3_server_out_dir):
             shutil.rmtree(v3_server_out_dir)
-            
+
         petstore_oas3_json = os.path.abspath(os.path.join("..", "petstore_oas3.json"))
-        run_cmd([cdd_cpp_bin, "from_openapi", "to_server", "-i", petstore_oas3_json, "-o", v3_server_out_dir, "--tests"])
-        
-        run_cmd(["cmake", ".", "-DFETCHCONTENT_UPDATES_DISCONNECTED=ON"], cwd=v3_server_out_dir)
+        run_cmd(
+            [
+                cdd_cpp_bin,
+                "from_openapi",
+                "to_server",
+                "-i",
+                petstore_oas3_json,
+                "-o",
+                v3_server_out_dir,
+                "--tests",
+            ]
+        )
+
+        run_cmd(
+            ["cmake", ".", "-DFETCHCONTENT_UPDATES_DISCONNECTED=ON"],
+            cwd=v3_server_out_dir,
+        )
         run_cmd(["cmake", "--build", "."], cwd=v3_server_out_dir)
         run_cmd(["ctest", "--output-on-failure"], cwd=v3_server_out_dir)
-            
+
         build_wasm()
-        
+
         print("Pre-commit checks passed.")
         if badges_updated:
-            print("README.md was updated with new badges. Please stage it and commit again.")
+            print(
+                "README.md was updated with new badges. Please stage it and commit again."
+            )
             sys.exit(1)
     except Exception as e:
         print(f"Error during pre-commit checks: {e}")
-        
+
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

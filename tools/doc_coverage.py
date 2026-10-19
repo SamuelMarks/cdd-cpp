@@ -20,7 +20,9 @@ def check_doc_coverage(verbose=False):
             # 1. File-level docstring check (@file or leading ///)
             total += 1
             first_lines = "\n".join(content.splitlines()[:10])
-            if ("@file" in first_lines or "///" in first_lines) and "Auto-generated doc." not in first_lines:
+            if (
+                "@file" in first_lines or "///" in first_lines
+            ) and "Auto-generated doc." not in first_lines:
                 documented += 1
             elif verbose:
                 print(f"UNDOC FILE: {filepath}")
@@ -44,7 +46,10 @@ def check_doc_coverage(verbose=False):
                     continue
 
                 is_decl = False
-                if re.match(r"^(?:struct|class|enum\s+class)\s+[a-zA-Z_][a-zA-Z0-9_]*\s*[{:]", stripped):
+                if re.match(
+                    r"^(?:struct|class|enum\s+class)\s+[a-zA-Z_][a-zA-Z0-9_]*\s*[{:]",
+                    stripped,
+                ):
                     is_decl = True
                 elif re.match(
                     r"^(?:template\s*<[^>]+>\s*)?(?:virtual\s+)?(?:(?:inline|static|explicit|constexpr)\s+)?(?:[a-zA-Z_:\-<>]+\s+)+[a-zA-Z_~:]+\s*\([^;{]*\)\s*(?:const)?\s*(?:noexcept)?\s*(?:=\s*0|=\s*default|=\s*delete)?\s*(?:;|{)",
@@ -69,9 +74,8 @@ def check_doc_coverage(verbose=False):
                         prev_idx -= 1
                     prev_line = lines[prev_idx] if prev_idx >= 0 else ""
                     if (
-                        ("///" in prev_line or "*/" in prev_line or "//" in prev_line)
-                        and "Auto-generated doc." not in prev_line
-                    ):
+                        "///" in prev_line or "*/" in prev_line or "//" in prev_line
+                    ) and "Auto-generated doc." not in prev_line:
                         documented += 1
                     else:
                         if verbose:

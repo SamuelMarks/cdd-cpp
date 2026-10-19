@@ -41,7 +41,7 @@ def get_coverage():
             for file in files:
                 if file.endswith(".gcda"):
                     os.remove(os.path.join(root, file))
-                    
+
         subprocess.run(
             ["ctest", "--output-on-failure"],
             cwd="build",
@@ -67,6 +67,7 @@ def get_coverage():
         ]
         if sys.platform.startswith("linux"):
             import shutil
+
             llvm_cov_exe = "llvm-cov"
             if not shutil.which(llvm_cov_exe):
                 for v in range(20, 9, -1):
@@ -74,7 +75,7 @@ def get_coverage():
                         llvm_cov_exe = f"llvm-cov-{v}"
                         break
             gcovr_cmd.extend(["--gcov-executable", f"{llvm_cov_exe} gcov"])
-        
+
         result = subprocess.run(
             gcovr_cmd,
             capture_output=True,
@@ -101,7 +102,10 @@ def get_coverage():
                 if line["count"] > 0:
                     covered_lines += 1
                 else:
-                    print(f"Uncovered line: {fname}:{line['line_number']}", file=sys.stderr)
+                    print(
+                        f"Uncovered line: {fname}:{line['line_number']}",
+                        file=sys.stderr,
+                    )
 
                 branches = line.get("branches", [])
                 for b in branches:
@@ -111,7 +115,10 @@ def get_coverage():
                     if b["count"] > 0:
                         covered_branches += 1
                     else:
-                        print(f"Uncovered branch: {fname}:{line['line_number']}", file=sys.stderr)
+                        print(
+                            f"Uncovered branch: {fname}:{line['line_number']}",
+                            file=sys.stderr,
+                        )
 
             for func in file["functions"]:
                 if func.get("gcovr/excluded", False):
@@ -120,7 +127,10 @@ def get_coverage():
                 if func["execution_count"] > 0:
                     covered_funcs += 1
                 else:
-                    print(f"Uncovered function: {fname}:{func.get('name', '?')}", file=sys.stderr)
+                    print(
+                        f"Uncovered function: {fname}:{func.get('name', '?')}",
+                        file=sys.stderr,
+                    )
 
         lines = (covered_lines / total_lines * 100.0) if total_lines > 0 else 100.0
         funcs = (covered_funcs / total_funcs * 100.0) if total_funcs > 0 else 100.0
