@@ -237,6 +237,10 @@ void test_to_docs_json() noexcept {
                                      tmp.path("code"), "-o", tmp.path("code")});
   assert(to_openapi_bad_out.code != 0);
 
+  auto to_openapi_bad_in =
+      run_cli({"cdd-cpp", "to_openapi", "-i", tmp.path("nonexistent_dir_xyz")});
+  assert(to_openapi_bad_in.code != 0);
+
   auto to_openapi_res =
       run_cli({"cdd-cpp", "to_openapi", "-i", tmp.path("code")});
   assert(to_openapi_res.code == 0 &&

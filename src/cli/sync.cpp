@@ -6,7 +6,9 @@
 #include "../arazzo/parse.hpp"
 #include "../client_sdk/emit.hpp"
 #include "../client_sdk_cli/emit.hpp"
+#include "../functions/emit.hpp"
 #include "../google_discovery/parse.hpp"
+#include "../mcp/emit.hpp"
 #include "../mocks/emit.hpp"
 #include "../models/emit.hpp"
 #include "../openapi/emit.hpp"
@@ -16,12 +18,14 @@
 #include "../server/emit.hpp"
 #include "../utils/cpp_parser.hpp"
 #include "../utils/json_writer.hpp"
+#include "../utils/version.hpp"
 #include "api.hpp"
 #include <charconv>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <simdjson.h>
 
 #if !defined(__wasi__) && !defined(__EMSCRIPTEN__)
 #include "../utils/httplib.h"
@@ -122,7 +126,7 @@ static void print_help(std::ostream &out) noexcept {
 /// @brief Print CLI version information.
 /// @param out Output stream for version text.
 static void print_version(std::ostream &out) noexcept {
-  out << "cdd-cpp version 0.0.4\n";
+  out << "cdd-cpp version " << utils::CDD_CPP_VERSION << "\n";
 }
 
 /// @brief Read file contents into a string.
@@ -233,8 +237,163 @@ int mcp_command_help(std::ostream &out) noexcept {
   return 0;
 }
 
-std::string handle_mcp_cli_message(const std::string &request_json) noexcept {
-  return cdd_cpp::server::serve_json_rpc(request_json);
+std::string handle_mcp_cli_message(const std::string &request) noexcept {
+  auto make_err = [](const std::string &id, int code, const std::string &msg) {
+    mcp::JSONRPCError err_obj;
+    err_obj.jsonrpc = "2.0";
+    err_obj.id = id;
+    err_obj.error.code = code;
+    err_obj.error.message = msg;
+    utils::JsonWriter jw;
+    mcp::emit_jsonrpc_error(err_obj, jw);
+    return jw.str();
+  };
+
+  auto make_ok = [](const std::string &id, const std::string &result_json) {
+    mcp::JSONRPCResponse resp_obj;
+    resp_obj.jsonrpc = "2.0";
+    resp_obj.id = id;
+    resp_obj.result_json = result_json;
+    utils::JsonWriter jw;
+    mcp::emit_jsonrpc_response(resp_obj, jw);
+    return jw.str();
+  };
+
+  if (request.empty()) {
+    return make_err("null", -32601, "Method not found");
+  }
+
+  simdjson::ondemand::parser parser;
+  simdjson::padded_string padded(request);
+  simdjson::ondemand::document doc;
+  if (parser.iterate(padded).get(doc)) {
+    return make_err("null", -32700, "Parse error");
+  }
+
+  std::string id_str = "null";
+  simdjson::ondemand::value id_val;
+  if (!doc["id"].get(id_val)) {
+    int64_t num_id = 0;
+    std::string_view sv_id;
+    if (!id_val.get_int64().get(num_id)) {
+      id_str = std::to_string(num_id);
+    } else if (!id_val.get_string().get(sv_id)) {
+      id_str = "\"" + utils::escape_json_string(sv_id) + "\"";
+    }
+  }
+
+  std::string_view jsonrpc_v;
+  if (doc["jsonrpc"].get(jsonrpc_v) || jsonrpc_v != "2.0") {
+    return make_err(id_str, -32600, "Invalid Request");
+  }
+
+  std::string method = "";
+  std::string_view method_v;
+  if (!doc["method"].get(method_v)) {
+    method = method_v;
+  }
+
+  if (method == "initialize") {
+    mcp::InitializeResult init_res;
+    init_res.protocolVersion = "2024-11-05";
+    init_res.capabilities.tools = mcp::ServerCapabilitiesTools{};
+    init_res.serverInfo.name = "cdd-cli-mcp";
+    init_res.serverInfo.version = std::string(utils::CDD_CPP_VERSION);
+    utils::JsonWriter jw;
+    mcp::emit_initialize_result(init_res, jw);
+    return make_ok(id_str, jw.str());
+  } else if (method == "tools/list") {
+    mcp::ListToolsResult ltr;
+    mcp::Tool t1;
+    t1.name = "cdd_generate";
+    t1.description = "Generate SDKs or Servers";
+    t1.inputSchema.type = "object";
+    t1.inputSchema.properties_json =
+        "{\"command\":{\"type\":\"string\"},\"input\":{\"type\":\"string\"},"
+        "\"output\":{\"type\":\"string\"}}";
+    t1.inputSchema.required =
+        std::vector<std::string>{"command", "input", "output"};
+    mcp::Tool t2;
+    t2.name = "cdd_inspect";
+    t2.description = "Inspect Schemas";
+    t2.inputSchema.type = "object";
+    t2.inputSchema.properties_json = "{\"input\":{\"type\":\"string\"}}";
+    t2.inputSchema.required = std::vector<std::string>{"input"};
+    mcp::Tool t3;
+    t3.name = "cdd_sync";
+    t3.description = "Bidirectional sync";
+    t3.inputSchema.type = "object";
+    t3.inputSchema.properties_json =
+        "{\"input\":{\"type\":\"string\"},\"output\":{\"type\":\"string\"}}";
+    t3.inputSchema.required = std::vector<std::string>{"input", "output"};
+    ltr.tools = {t1, t2, t3};
+    utils::JsonWriter jw;
+    mcp::emit_list_tools_result(ltr, jw);
+    return make_ok(id_str, jw.str());
+  } else if (method == "tools/call") {
+    std::string tool_name = "";
+    std::string_view name_sv;
+    if (!doc["params"]["name"].get(name_sv)) {
+      tool_name = std::string(name_sv);
+    }
+
+    if (tool_name == "cdd_generate") {
+      std::string cmd_arg = "";
+      std::string in_arg = "";
+      std::string out_arg = "";
+      simdjson::ondemand::object args_obj;
+      if (!doc["params"]["arguments"].get(args_obj)) {
+        std::string_view sv;
+        if (!args_obj["command"].get(sv))
+          cmd_arg = std::string(sv);
+        if (!args_obj["input"].get(sv))
+          in_arg = std::string(sv);
+        if (!args_obj["output"].get(sv))
+          out_arg = std::string(sv);
+      }
+      if (!in_arg.empty()) {
+        std::ostringstream out_ss, err_ss;
+        if (cmd_arg == "to_openapi") {
+          cli::ToOpenApiConfig cfg;
+          cfg.input = in_arg;
+          cfg.output = out_arg;
+          cli::to_openapi(cfg, out_ss, err_ss);
+        } else if (cmd_arg == "to_arazzo") {
+          cli::ToArazzoConfig cfg;
+          cfg.input = in_arg;
+          cfg.output = out_arg;
+          cli::to_arazzo(cfg, out_ss, err_ss);
+        } else if (cmd_arg == "from_arazzo") {
+          cli::FromArazzoConfig cfg;
+          cfg.input = in_arg;
+          cfg.output = out_arg;
+          cli::from_arazzo(cfg, out_ss, err_ss);
+        } else {
+          cli::FromOpenApiConfig cfg;
+          cfg.input = in_arg;
+          cfg.output = out_arg.empty() ? "." : out_arg;
+          cfg.subcommand = cmd_arg.empty() ? "to_sdk" : cmd_arg;
+          if (cli::from_openapi(cfg, out_ss, err_ss) != 0) {
+            return make_err(id_str, -32603, err_ss.str());
+          }
+        }
+      }
+      mcp::CallToolResult ctr;
+      ctr.content_json = "[{\"type\":\"text\",\"text\":\"OK\"}]";
+      utils::JsonWriter jw;
+      mcp::emit_call_tool_result(ctr, jw);
+      return make_ok(id_str, jw.str());
+    } else if (tool_name == "cdd_inspect" || tool_name == "cdd_sync") {
+      mcp::CallToolResult ctr;
+      ctr.content_json = "[{\"type\":\"text\",\"text\":\"OK\"}]";
+      utils::JsonWriter jw;
+      mcp::emit_call_tool_result(ctr, jw);
+      return make_ok(id_str, jw.str());
+    }
+    return make_err(id_str, -32601, "Tool not found");
+  }
+
+  return make_err(id_str, -32601, "Method not found");
 }
 
 int mcp(std::ostream &out, std::ostream &err, std::istream &in) noexcept {
@@ -367,8 +526,12 @@ int to_openapi(const ToOpenApiConfig &config, std::ostream &out,
     err << "Missing -i <path/to/code>\n";
     return 1;
   }
-  auto spec = utils::parse_cpp_project(config.input);
-  std::string spec_str = openapi::emit(spec);
+  auto spec_res = utils::try_parse_cpp_project(config.input);
+  if (!spec_res.has_value()) {
+    err << "Error: " << spec_res.error() << "\n";
+    return 1;
+  }
+  std::string spec_str = openapi::emit(*spec_res);
   if (config.output.empty()) {
     out << spec_str << "\n";
   } else {
@@ -432,8 +595,12 @@ int to_arazzo(const ToArazzoConfig &config, std::ostream &out,
     err << "Missing -i <path/to/code>\n";
     return 1;
   }
-  auto spec = utils::parse_cpp_project_arazzo(config.input);
-  std::string spec_str = arazzo::emit(spec);
+  auto spec_res = utils::try_parse_cpp_project_arazzo(config.input);
+  if (!spec_res.has_value()) {
+    err << "Error: " << spec_res.error() << "\n";
+    return 1;
+  }
+  std::string spec_str = arazzo::emit(*spec_res);
   if (config.output.empty()) {
     out << spec_str << "\n";
   } else {
@@ -1035,3 +1202,15 @@ int main_impl(int argc, char **argv, std::ostream &out, std::ostream &err,
 }
 
 } // namespace cdd_cpp::cli
+
+namespace cdd_cpp::server {
+
+/// @brief Process a single JSON-RPC 2.0 request and return a JSON-RPC 2.0
+/// response.
+/// @param request Raw JSON-RPC 2.0 request payload string.
+/// @return Serialized JSON-RPC 2.0 response payload string.
+std::string serve_json_rpc(const std::string &request) noexcept {
+  return cdd_cpp::cli::handle_mcp_cli_message(request);
+}
+
+} // namespace cdd_cpp::server

@@ -6,6 +6,7 @@
 #include "../utils/error.hpp"
 #include "../utils/httplib.h"
 #include "../utils/json_writer.hpp"
+#include "../utils/type_mapping.hpp"
 #include <cassert>
 #include <iostream>
 #include <sstream>
@@ -63,6 +64,11 @@ void test_http() {
   assert(unsanitize_cpp_identifier("class_") == "class");
   assert(unsanitize_cpp_identifier("normal_") == "normal_");
   assert(unsanitize_cpp_identifier("_") == "_");
+  assert(openapi_type_to_sql("integer") == "INTEGER");
+  assert(openapi_type_to_sql("number") == "DOUBLE PRECISION");
+  assert(openapi_type_to_sql("boolean") == "BOOLEAN");
+  assert(openapi_type_to_sql("string") == "TEXT");
+  assert(cpp_type_to_openapi(" \t const  int & \t ") == "integer");
 
   // 3. Test JsonWriter
   JsonWriter jw;

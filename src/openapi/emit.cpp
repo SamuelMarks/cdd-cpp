@@ -2,9 +2,23 @@
 /// @brief Implementation of OpenAPI 3.2.0 JSON emitter.
 
 #include "emit.hpp"
+#include "../arazzo/emit.hpp"
 #include "../utils/json_writer.hpp"
 
 namespace cdd_cpp::openapi {
+
+/// @brief Emit specification extension fields (`x-*`) into the current JSON
+/// object.
+/// @param jw Destination JsonWriter.
+/// @param exts Map of `x-*` keys to `JsonValue`.
+static void
+emit_extensions(utils::JsonWriter &jw,
+                const std::map<std::string, JsonValue> &exts) noexcept {
+  for (const auto &[k, v] : exts) {
+    jw.key(k);
+    arazzo::emit_json_value(jw, v);
+  }
+}
 
 void emit_Contact(utils::JsonWriter &jw, const Contact &obj) noexcept;
 void emit_License(utils::JsonWriter &jw, const License &obj) noexcept;
@@ -46,6 +60,7 @@ void emit_Contact(utils::JsonWriter &jw, const Contact &obj) noexcept {
   jw.key_optional("name", obj.name);
   jw.key_optional("url", obj.url);
   jw.key_optional("email", obj.email);
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -55,6 +70,7 @@ void emit_License(utils::JsonWriter &jw, const License &obj) noexcept {
   jw.key_value("name", obj.name);
   jw.key_optional("identifier", obj.identifier);
   jw.key_optional("url", obj.url);
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -74,6 +90,7 @@ void emit_Info(utils::JsonWriter &jw, const Info &obj) noexcept {
     emit_License(jw, obj.license.operator*());
   }
   jw.key_value("version", obj.version);
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -90,6 +107,7 @@ void emit_ServerVariable(utils::JsonWriter &jw,
   }
   jw.key_value("default", obj.default_value);
   jw.key_optional("description", obj.description);
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -108,6 +126,7 @@ void emit_Server(utils::JsonWriter &jw, const Server &obj) noexcept {
     }
     jw.end_object();
   }
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -117,6 +136,7 @@ void emit_ExternalDocumentation(utils::JsonWriter &jw,
   jw.start_object();
   jw.key_optional("description", obj.description);
   jw.key_value("url", obj.url);
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -132,6 +152,7 @@ void emit_Tag(utils::JsonWriter &jw, const Tag &obj) noexcept {
     jw.key("externalDocs");
     emit_ExternalDocumentation(jw, obj.externalDocs.operator*());
   }
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 /// @brief Serialize OpenAPI model element via `emit_Discriminator`.
@@ -148,6 +169,7 @@ void emit_Discriminator(utils::JsonWriter &jw,
     jw.end_object();
   }
   jw.key_optional("defaultMapping", obj.defaultMapping);
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -161,13 +183,23 @@ void emit_XML(utils::JsonWriter &jw, const XML &obj) noexcept {
     jw.key_value("attribute", obj.attribute.operator*());
   if (obj.wrapped.has_value())
     jw.key_value("wrapped", obj.wrapped.operator*());
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
 /// @brief Serialize OpenAPI model element via `emit_Schema`.
 void emit_Schema(utils::JsonWriter &jw, const Schema &obj) noexcept {
   jw.start_object();
-  jw.key_optional("type", obj.type);
+  if (obj.types.has_value()) {
+    jw.key("type");
+    jw.start_array();
+    for (const auto &t : *obj.types) {
+      jw.value(t);
+    }
+    jw.end_array();
+  } else {
+    jw.key_optional("type", obj.type);
+  }
   jw.key_optional("description", obj.description);
   jw.key_optional("format", obj.format);
   if (obj.ref.has_value()) {
@@ -196,6 +228,84 @@ void emit_Schema(utils::JsonWriter &jw, const Schema &obj) noexcept {
     jw.key("items");
     emit_Schema(jw, *obj.items);
   }
+  if (obj.prefixItems != nullptr) {
+    jw.key("prefixItems");
+    jw.start_array();
+    for (const auto &s : *obj.prefixItems) {
+      emit_Schema(jw, s);
+    }
+    jw.end_array();
+  }
+  if (obj.allOf != nullptr) {
+    jw.key("allOf");
+    jw.start_array();
+    for (const auto &s : *obj.allOf) {
+      emit_Schema(jw, s);
+    }
+    jw.end_array();
+  }
+  if (obj.anyOf != nullptr) {
+    jw.key("anyOf");
+    jw.start_array();
+    for (const auto &s : *obj.anyOf) {
+      emit_Schema(jw, s);
+    }
+    jw.end_array();
+  }
+  if (obj.oneOf != nullptr) {
+    jw.key("oneOf");
+    jw.start_array();
+    for (const auto &s : *obj.oneOf) {
+      emit_Schema(jw, s);
+    }
+    jw.end_array();
+  }
+  if (obj.not_schema != nullptr) {
+    jw.key("not");
+    emit_Schema(jw, *obj.not_schema);
+  }
+  jw.key_optional("$schema", obj.schema_dialect);
+  jw.key_optional("$id", obj.id);
+  jw.key_optional("$anchor", obj.anchor);
+  jw.key_optional("$dynamicAnchor", obj.dynamicAnchor);
+  jw.key_optional("$dynamicRef", obj.dynamicRef);
+  jw.key_optional("$comment", obj.comment);
+  jw.key_optional("title", obj.title);
+  jw.key_optional("deprecated", obj.deprecated);
+  jw.key_optional("readOnly", obj.readOnly);
+  jw.key_optional("writeOnly", obj.writeOnly);
+  if (obj.defs != nullptr) {
+    jw.key("$defs");
+    jw.start_object();
+    for (const auto &[k, v] : *obj.defs) {
+      jw.key(k);
+      emit_Schema(jw, v);
+    }
+    jw.end_object();
+  }
+  jw.key_optional("multipleOf", obj.multipleOf);
+  jw.key_optional("maximum", obj.maximum);
+  jw.key_optional("exclusiveMaximum", obj.exclusiveMaximum);
+  jw.key_optional("minimum", obj.minimum);
+  jw.key_optional("exclusiveMinimum", obj.exclusiveMinimum);
+  jw.key_optional("maxLength", obj.maxLength);
+  jw.key_optional("minLength", obj.minLength);
+  jw.key_optional("maxItems", obj.maxItems);
+  jw.key_optional("minItems", obj.minItems);
+  jw.key_optional("maxContains", obj.maxContains);
+  jw.key_optional("minContains", obj.minContains);
+  jw.key_optional("maxProperties", obj.maxProperties);
+  jw.key_optional("minProperties", obj.minProperties);
+  jw.key_optional("pattern", obj.pattern);
+  jw.key_optional("uniqueItems", obj.uniqueItems);
+  if (obj.required.has_value()) {
+    jw.key("required");
+    jw.start_array();
+    for (const auto &v : *obj.required) {
+      jw.value(v);
+    }
+    jw.end_array();
+  }
   jw.key_optional("default", obj.default_value);
   jw.key_optional("const", obj.const_value);
   if (obj.enum_values.has_value()) {
@@ -214,9 +324,13 @@ void emit_Schema(utils::JsonWriter &jw, const Schema &obj) noexcept {
     }
     jw.end_array();
   }
-  if (obj.additionalPropertiesBool.has_value()) {
+  if (obj.additionalProperties != nullptr) {
+    jw.key("additionalProperties");
+    emit_Schema(jw, *obj.additionalProperties);
+  } else if (obj.additionalPropertiesBool.has_value()) {
     jw.key_value("additionalProperties", *obj.additionalPropertiesBool);
   }
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -232,6 +346,7 @@ void emit_Example(utils::JsonWriter &jw, const Example &obj) noexcept {
     jw.key_optional("summary", obj.ref.operator*().summary);
     jw.key_optional("description", obj.ref.operator*().description);
   }
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -278,6 +393,7 @@ void emit_Encoding(utils::JsonWriter &jw, const Encoding &obj) noexcept {
     jw.key("itemEncoding");
     emit_Encoding(jw, *obj.itemEncoding);
   }
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -323,6 +439,7 @@ void emit_MediaType(utils::JsonWriter &jw, const MediaType &obj) noexcept {
     jw.key("itemEncoding");
     emit_Encoding(jw, *obj.itemEncoding);
   }
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -369,6 +486,7 @@ void emit_Header(utils::JsonWriter &jw, const Header &obj) noexcept {
     jw.key_optional("summary", obj.ref.operator*().summary);
     jw.key_optional("description", obj.ref.operator*().description);
   }
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -392,6 +510,7 @@ void emit_RequestBody(utils::JsonWriter &jw, const RequestBody &obj) noexcept {
     jw.key_optional("summary", obj.ref.operator*().summary);
     jw.key_optional("description", obj.ref.operator*().description);
   }
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -418,13 +537,15 @@ void emit_Link(utils::JsonWriter &jw, const Link &obj) noexcept {
     jw.key_optional("summary", obj.ref.operator*().summary);
     jw.key_optional("description", obj.ref.operator*().description);
   }
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
 /// @brief Serialize OpenAPI model element via `emit_Response`.
 void emit_Response(utils::JsonWriter &jw, const Response &obj) noexcept {
   jw.start_object();
-  jw.key_value("description", obj.description);
+  if (!obj.ref.has_value() || !obj.description.empty())
+    jw.key_value("description", obj.description);
   if (obj.headers.has_value()) {
     jw.key("headers");
     jw.start_object();
@@ -457,6 +578,7 @@ void emit_Response(utils::JsonWriter &jw, const Response &obj) noexcept {
     jw.key_optional("summary", obj.ref.operator*().summary);
     jw.key_optional("description", obj.ref.operator*().description);
   }
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -505,6 +627,7 @@ void emit_Parameter(utils::JsonWriter &jw, const Parameter &obj) noexcept {
     jw.key_optional("summary", obj.ref.operator*().summary);
     jw.key_optional("description", obj.ref.operator*().description);
   }
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -522,6 +645,7 @@ void emit_OAuthFlow(utils::JsonWriter &jw, const OAuthFlow &obj) noexcept {
       jw.key_value(k, v);
     jw.end_object();
   }
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -548,6 +672,7 @@ void emit_OAuthFlows(utils::JsonWriter &jw, const OAuthFlows &obj) noexcept {
     jw.key("deviceAuthorization");
     emit_OAuthFlow(jw, obj.deviceAuthorization.operator*());
   }
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -573,6 +698,7 @@ void emit_SecurityScheme(utils::JsonWriter &jw,
     jw.key_optional("summary", obj.ref.operator*().summary);
     jw.key_optional("description", obj.ref.operator*().description);
   }
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -652,6 +778,7 @@ void emit_Operation(utils::JsonWriter &jw, const Operation &obj) noexcept {
       emit_Server(jw, item);
     jw.end_array();
   }
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -720,6 +847,7 @@ void emit_PathItem(utils::JsonWriter &jw, const PathItem &obj) noexcept {
     }
     jw.end_object();
   }
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -830,6 +958,7 @@ void emit_Components(utils::JsonWriter &jw, const Components &obj) noexcept {
     }
     jw.end_object();
   }
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 
@@ -897,6 +1026,7 @@ void emit_OpenAPI(utils::JsonWriter &jw, const OpenAPI &obj) noexcept {
     jw.key("externalDocs");
     emit_ExternalDocumentation(jw, obj.externalDocs.operator*());
   }
+  emit_extensions(jw, obj.extensions);
   jw.end_object();
 }
 

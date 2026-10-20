@@ -139,6 +139,65 @@ static simdjson::dom::object unwrap_obj(simdjson::dom::element el) noexcept {
   return o;
 }
 
+/// @brief Recursively convert a `simdjson::dom::element` into a `JsonValue`.
+/// @param el The simdjson DOM element.
+/// @return Converted `JsonValue`.
+static JsonValue parse_json_value(simdjson::dom::element el) noexcept {
+  if (el.is_string()) {
+    std::string_view sv;
+    (void)el.get(sv);
+    return JsonValue(std::string(sv));
+  }
+  if (el.is_int64()) {
+    int64_t iv = 0;
+    (void)el.get(iv);
+    return JsonValue(iv);
+  }
+  if (el.is_double()) {
+    double dv = 0.0;
+    (void)el.get(dv);
+    return JsonValue(dv);
+  }
+  if (el.is_bool()) {
+    bool bv = false;
+    (void)el.get(bv);
+    return JsonValue(bv);
+  }
+  if (el.is_array()) {
+    simdjson::dom::array arr;
+    (void)el.get(arr);
+    std::vector<JsonValue> vec;
+    for (auto item : arr) {
+      vec.push_back(parse_json_value(item));
+    }
+    return JsonValue(std::move(vec));
+  }
+  if (el.is_object()) {
+    simdjson::dom::object obj;
+    (void)el.get(obj);
+    std::map<std::string, JsonValue> m;
+    for (auto field : obj) {
+      m[std::string(field.key)] = parse_json_value(field.value);
+    }
+    return JsonValue(std::move(m));
+  }
+  return JsonValue(nullptr);
+}
+
+/// @brief Extract all `x-*` specification extensions from a DOM object.
+/// @param obj The simdjson DOM object.
+/// @return Map of extension key (`x-...`) to `JsonValue`.
+static std::map<std::string, JsonValue>
+parse_extensions(simdjson::dom::object obj) noexcept {
+  std::map<std::string, JsonValue> exts;
+  for (auto field : obj) {
+    if (field.key.starts_with("x-")) {
+      exts[std::string(field.key)] = parse_json_value(field.value);
+    }
+  }
+  return exts;
+}
+
 inline static Reference parse_Reference(simdjson::dom::object obj) noexcept;
 static Contact parse_Contact(simdjson::dom::object obj) noexcept;
 static License parse_License(simdjson::dom::object obj) noexcept;
@@ -182,6 +241,7 @@ static Contact parse_Contact(simdjson::dom::object obj) noexcept {
   res.name = get_optional_string(obj, "name");
   res.url = get_optional_string(obj, "url");
   res.email = get_optional_string(obj, "email");
+  res.extensions = parse_extensions(obj);
   return res;
 }
 
@@ -191,6 +251,7 @@ static License parse_License(simdjson::dom::object obj) noexcept {
   res.name = get_optional_string(obj, "name").value_or("");
   res.identifier = get_optional_string(obj, "identifier");
   res.url = get_optional_string(obj, "url");
+  res.extensions = parse_extensions(obj);
   return res;
 }
 
@@ -210,6 +271,7 @@ static Info parse_Info(simdjson::dom::object obj) noexcept {
     res.license = parse_License(el_license);
   }
   res.version = get_optional_string(obj, "version").value_or("");
+  res.extensions = parse_extensions(obj);
   return res;
 }
 
@@ -219,6 +281,7 @@ static ServerVariable parse_ServerVariable(simdjson::dom::object obj) noexcept {
   res.enum_values = parse_vector_string(obj, "enum");
   res.default_value = get_optional_string(obj, "default").value_or("");
   res.description = get_optional_string(obj, "description");
+  res.extensions = parse_extensions(obj);
   return res;
 }
 
@@ -236,6 +299,7 @@ static Server parse_Server(simdjson::dom::object obj) noexcept {
     }
     res.variables = m;
   }
+  res.extensions = parse_extensions(obj);
   return res;
 }
 
@@ -245,6 +309,7 @@ parse_ExternalDocumentation(simdjson::dom::object obj) noexcept {
   ExternalDocumentation res;
   res.description = get_optional_string(obj, "description");
   res.url = get_optional_string(obj, "url").value_or("");
+  res.extensions = parse_extensions(obj);
   return res;
 }
 
@@ -260,6 +325,7 @@ static Tag parse_Tag(simdjson::dom::object obj) noexcept {
   if (obj["externalDocs"].get(el_externalDocs) == simdjson::SUCCESS) {
     res.externalDocs = parse_ExternalDocumentation(el_externalDocs);
   }
+  res.extensions = parse_extensions(obj);
   return res;
 }
 
@@ -269,6 +335,7 @@ static Discriminator parse_Discriminator(simdjson::dom::object obj) noexcept {
   res.propertyName = get_optional_string(obj, "propertyName").value_or("");
   res.mapping = parse_map_string(obj, "mapping");
   res.defaultMapping = get_optional_string(obj, "defaultMapping");
+  res.extensions = parse_extensions(obj);
   return res;
 }
 
@@ -280,6 +347,7 @@ static XML parse_XML(simdjson::dom::object obj) noexcept {
   res.prefix = get_optional_string(obj, "prefix");
   res.attribute = get_optional_bool(obj, "attribute");
   res.wrapped = get_optional_bool(obj, "wrapped");
+  res.extensions = parse_extensions(obj);
   return res;
 }
 
@@ -287,6 +355,12 @@ static XML parse_XML(simdjson::dom::object obj) noexcept {
 static Schema parse_Schema(simdjson::dom::object obj) noexcept {
   Schema res;
   res.type = get_optional_string(obj, "type");
+  if (!res.type.has_value()) {
+    res.types = parse_vector_string(obj, "type");
+    if (res.types.has_value() && !res.types->empty()) {
+      res.type = res.types->front();
+    }
+  }
   res.description = get_optional_string(obj, "description");
   res.format = get_optional_string(obj, "format");
   simdjson::dom::element el_ref;
@@ -312,6 +386,34 @@ static Schema parse_Schema(simdjson::dom::object obj) noexcept {
   simdjson::dom::object el_items;
   if (obj["items"].get(el_items) == simdjson::SUCCESS) {
     res.items = std::make_shared<Schema>(parse_Schema(el_items));
+  }
+  simdjson::dom::array el_allOf;
+  if (obj["allOf"].get(el_allOf) == simdjson::SUCCESS) {
+    auto v = std::make_shared<std::vector<Schema>>();
+    for (auto item : el_allOf) {
+      v->push_back(parse_Schema(unwrap_obj(item)));
+    }
+    res.allOf = v;
+  }
+  simdjson::dom::array el_anyOf;
+  if (obj["anyOf"].get(el_anyOf) == simdjson::SUCCESS) {
+    auto v = std::make_shared<std::vector<Schema>>();
+    for (auto item : el_anyOf) {
+      v->push_back(parse_Schema(unwrap_obj(item)));
+    }
+    res.anyOf = v;
+  }
+  simdjson::dom::array el_oneOf;
+  if (obj["oneOf"].get(el_oneOf) == simdjson::SUCCESS) {
+    auto v = std::make_shared<std::vector<Schema>>();
+    for (auto item : el_oneOf) {
+      v->push_back(parse_Schema(unwrap_obj(item)));
+    }
+    res.oneOf = v;
+  }
+  simdjson::dom::object el_not;
+  if (obj["not"].get(el_not) == simdjson::SUCCESS) {
+    res.not_schema = std::make_shared<Schema>(parse_Schema(el_not));
   }
   res.schema_dialect = get_optional_string(obj, "$schema");
   res.id = get_optional_string(obj, "$id");
@@ -383,6 +485,20 @@ static Schema parse_Schema(simdjson::dom::object obj) noexcept {
   res.examples = parse_vector_string(obj, "examples");
   res.default_value = get_optional_string(obj, "default");
   res.additionalPropertiesBool = get_optional_bool(obj, "additionalProperties");
+  simdjson::dom::object el_addProps;
+  if (obj["additionalProperties"].get(el_addProps) == simdjson::SUCCESS) {
+    res.additionalProperties =
+        std::make_shared<Schema>(parse_Schema(el_addProps));
+  }
+  simdjson::dom::array el_prefixItems;
+  if (obj["prefixItems"].get(el_prefixItems) == simdjson::SUCCESS) {
+    auto v = std::make_shared<std::vector<Schema>>();
+    for (auto item : el_prefixItems) {
+      v->push_back(parse_Schema(unwrap_obj(item)));
+    }
+    res.prefixItems = v;
+  }
+  res.extensions = parse_extensions(obj);
 
   return res;
 }
@@ -398,6 +514,7 @@ static Example parse_Example(simdjson::dom::object obj) noexcept {
   if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
     res.ref = parse_Reference(obj);
   }
+  res.extensions = parse_extensions(obj);
   return res;
 }
 
@@ -443,6 +560,7 @@ static Encoding parse_Encoding(simdjson::dom::object obj) noexcept {
     }
     res.prefixEncoding = v;
   }
+  res.extensions = parse_extensions(obj);
   return res;
 }
 /// @brief Deserialize OpenAPI JSON element via `parse_MediaType`.
@@ -487,6 +605,7 @@ static MediaType parse_MediaType(simdjson::dom::object obj) noexcept {
     }
     res.prefixEncoding = v;
   }
+  res.extensions = parse_extensions(obj);
   return res;
 }
 /// @brief Deserialize OpenAPI JSON element via `parse_Header`.
@@ -525,6 +644,7 @@ static Header parse_Header(simdjson::dom::object obj) noexcept {
   if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
     res.ref = parse_Reference(obj);
   }
+  res.extensions = parse_extensions(obj);
   return res;
 }
 /// @brief Deserialize OpenAPI JSON element via `parse_RequestBody`.
@@ -544,6 +664,7 @@ static RequestBody parse_RequestBody(simdjson::dom::object obj) noexcept {
   if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
     res.ref = parse_Reference(obj);
   }
+  res.extensions = parse_extensions(obj);
   return res;
 }
 /// @brief Deserialize OpenAPI JSON element via `parse_Link`.
@@ -562,6 +683,7 @@ static Link parse_Link(simdjson::dom::object obj) noexcept {
   if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
     res.ref = parse_Reference(obj);
   }
+  res.extensions = parse_extensions(obj);
   return res;
 }
 /// @brief Deserialize OpenAPI JSON element via `parse_Response`.
@@ -596,6 +718,7 @@ static Response parse_Response(simdjson::dom::object obj) noexcept {
   if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
     res.ref = parse_Reference(obj);
   }
+  res.extensions = parse_extensions(obj);
   return res;
 }
 /// @brief Deserialize OpenAPI JSON element via `parse_Parameter`.
@@ -636,6 +759,7 @@ static Parameter parse_Parameter(simdjson::dom::object obj) noexcept {
   if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
     res.ref = parse_Reference(obj);
   }
+  res.extensions = parse_extensions(obj);
   return res;
 }
 
@@ -648,6 +772,7 @@ static OAuthFlow parse_OAuthFlow(simdjson::dom::object obj) noexcept {
   res.deviceAuthorizationUrl =
       get_optional_string(obj, "deviceAuthorizationUrl");
   res.scopes = parse_map_string(obj, "scopes");
+  res.extensions = parse_extensions(obj);
   return res;
 }
 /// @brief Deserialize OpenAPI JSON element via `parse_OAuthFlows`.
@@ -664,6 +789,7 @@ static OAuthFlows parse_OAuthFlows(simdjson::dom::object obj) noexcept {
   res.clientCredentials = get_flow("clientCredentials");
   res.authorizationCode = get_flow("authorizationCode");
   res.deviceAuthorization = get_flow("deviceAuthorization");
+  res.extensions = parse_extensions(obj);
   return res;
 }
 /// @brief Deserialize OpenAPI JSON element via `parse_SecurityScheme`.
@@ -686,6 +812,7 @@ static SecurityScheme parse_SecurityScheme(simdjson::dom::object obj) noexcept {
   if (obj["$ref"].get(el_ref) == simdjson::SUCCESS) {
     res.ref = parse_Reference(obj);
   }
+  res.extensions = parse_extensions(obj);
   return res;
 }
 /// @brief Deserialize OpenAPI JSON element via `parse_Operation`.
@@ -743,6 +870,7 @@ static Operation parse_Operation(simdjson::dom::object obj) noexcept {
     }
     res.servers = vec;
   }
+  res.extensions = parse_extensions(obj);
   return res;
 }
 /// @brief Deserialize OpenAPI JSON element via `parse_PathItem`.
@@ -790,6 +918,7 @@ static PathItem parse_PathItem(simdjson::dom::object obj) noexcept {
     }
     res.additionalOperations = m;
   }
+  res.extensions = parse_extensions(obj);
   return res;
 }
 /// @brief Deserialize OpenAPI JSON element via `parse_Components`.
@@ -889,6 +1018,7 @@ static Components parse_Components(simdjson::dom::object obj) noexcept {
     }
     res.mediaTypes = m;
   }
+  res.extensions = parse_extensions(obj);
   return res;
 }
 /// @brief Deserialize OpenAPI JSON element via `parse_OpenAPI`.
@@ -942,6 +1072,7 @@ static OpenAPI parse_OpenAPI(simdjson::dom::object obj) noexcept {
   if (obj["externalDocs"].get(el_externalDocs) == simdjson::SUCCESS) {
     res.externalDocs = parse_ExternalDocumentation(el_externalDocs);
   }
+  res.extensions = parse_extensions(obj);
   return res;
 }
 

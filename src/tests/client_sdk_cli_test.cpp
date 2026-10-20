@@ -34,6 +34,9 @@ void test_client_sdk_cli_emit_details() {
   spec.paths = std::map<std::string, openapi::PathItem>{{"/path", pathItem}};
 
   auto out = cdd_cpp::client_sdk_cli::emit_cli(spec, false, false, false);
+  assert(out.contains("src/generated_cli.cpp"));
+  assert(out.at("src/generated_cli.cpp").find("--reqP") != std::string::npos);
+  assert(out.at("src/generated_cli.cpp").find("bodyOnly") != std::string::npos);
 }
 
 void test_client_sdk_cli_emit_details2() {
@@ -59,6 +62,9 @@ void test_client_sdk_cli_emit_details2() {
        pathItem}}; // This forces path_params logic to be hit
 
   auto out = cdd_cpp::client_sdk_cli::emit_cli(spec, false, false, false);
+  assert(out.contains("src/generated_cli.cpp"));
+  assert(out.at("src/generated_cli.cpp").find("path_params[\"id\"]") !=
+         std::string::npos);
 }
 
 void test_client_sdk_cli_emit_details3() {
@@ -84,6 +90,8 @@ void test_client_sdk_cli_emit_details3() {
   // This will trigger the mcp call tool path and require multiple params, and
   // hit those std::cout comma lines.
   auto out = cdd_cpp::client_sdk_cli::emit_cli(spec, false, false, false);
+  assert(out.contains("src/generated_cli.cpp"));
+  assert(out.at("src/generated_cli.cpp").find("--reqP2") != std::string::npos);
 }
 
 void test_client_sdk_cli_emit_details4() {
@@ -110,6 +118,9 @@ void test_client_sdk_cli_emit_details4() {
   // This will trigger the mcp call tool path and require multiple params, and
   // hit those std::cout comma lines.
   auto out = cdd_cpp::client_sdk_cli::emit_cli(spec, false, false, false);
+  assert(out.contains("src/generated_cli.cpp"));
+  assert(out.at("src/generated_cli.cpp").find("\\\"body\\\"") !=
+         std::string::npos);
 }
 
 void test_emit_cli() {
@@ -244,6 +255,9 @@ void test_emit_cli() {
   assert(generated2.find("add_subdirectory(tests)") != std::string::npos);
   assert(generated2.find("tests/cli_test.cpp") != std::string::npos);
   assert(generated2.find("cd tests && ./cli_test") != std::string::npos);
+  assert(!generated_files_with_options.contains(".github/workflows/ci.yml"));
+  assert(!generated_files_with_options.contains("CMakeLists.txt"));
+  assert(!generated3.empty());
 
   openapi::OpenAPI spec_empty;
   spec_empty.paths =
@@ -251,12 +265,16 @@ void test_emit_cli() {
   openapi::Operation get_op_empty;
   get_op_empty.operationId = "getEmpty";
   spec_empty.paths->at("/{id}").get = get_op_empty;
-  emit_cli(spec_empty);
+  auto empty_cli = emit_cli(spec_empty);
+  assert(empty_cli.contains("src/generated_cli.cpp"));
+  assert(empty_cli.at("src/generated_cli.cpp").find("getEmpty") !=
+         std::string::npos);
 
   openapi::OpenAPI spec_str;
   spec_str.paths = std::map<std::string, openapi::PathItem>{
       {"/\"\\\n\r", openapi::PathItem{}}};
-  emit_cli(spec_str);
+  auto str_cli = emit_cli(spec_str);
+  assert(str_cli.contains("src/generated_cli.cpp"));
 
   std::cout << "client_sdk_cli::test_emit_cli passed.\n";
 }

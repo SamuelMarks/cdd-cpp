@@ -334,6 +334,13 @@ static bool find_next_class_head(const std::string &source, size_t search_pos,
              !(source[i] == '*' && source[i + 1] == '/'))
         ++i;
       ++i;
+    } else if (c == '"') {
+      ++i;
+      while (i < source.size() && source[i] != '"') {
+        if (source[i] == '\\')
+          ++i;
+        ++i;
+      }
     } else if ((i == 0 || !is_ident_char(source[i - 1])) &&
                (std::string_view(source).substr(i).starts_with("struct ") ||
                 std::string_view(source).substr(i).starts_with("class "))) {
@@ -438,42 +445,15 @@ static bool find_next_func_head(const std::string &source, size_t search_pos,
   }
 }
 
-/// @brief Process C++ AST representation via `parse_cpp`.
-CppAST parse_cpp(const std::string &source) noexcept {
-  CppAST ast;
-
-  // 1. Parse structs and classes with balanced `{ ... }`
-  size_t search_pos = 0;
-  size_t match_start = 0;
-  size_t open_brace = 0;
-  std::string cls_name;
-
-  while (find_next_class_head(source, search_pos, match_start, open_brace,
-                              cls_name)) {
-    size_t close_brace = find_matching_delimiter(source, open_brace, '{', '}');
-    if (close_brace == std::string::npos) {
-      break;
-    }
-
-    std::string raw_prefix =
-        source.substr(search_pos, match_start - search_pos);
-    auto [lead_trivia, doc] = split_leading_docstring(raw_prefix);
-
-    CppClass cls;
-    cls.name = cls_name;
-    cls.docstring = doc;
-    cls.trivia.leading = lead_trivia;
-
-    std::string body =
-        source.substr(open_brace + 1, close_brace - open_brace - 1);
-    cls.fields = parse_class_fields(body);
-
-    ast.classes.push_back(cls);
-    search_pos = close_brace + 1;
-  }
-
-  // 2. Parse functions with balanced `( ... )` and balanced `{ ... }` or `;`
+/// @brief Parse all function/method declarations and definitions within a
+/// C++ source or class body slice.
+/// @param source C++ source or class body string.
+/// @return Vector of parsed CppFunction nodes.
+static std::vector<CppFunction>
+parse_functions_from_body(const std::string &source) noexcept {
+  std::vector<CppFunction> functions;
   size_t fn_search_pos = 0;
+  size_t match_start = 0;
   size_t open_paren = 0;
   std::string ret_type;
   std::string fn_name;
@@ -520,8 +500,48 @@ CppAST parse_cpp(const std::string &source) noexcept {
       fn_search_pos = after_paren + 1;
     }
 
-    ast.functions.push_back(fn);
+    functions.push_back(fn);
   }
+  return functions;
+}
+
+/// @brief Process C++ AST representation via `parse_cpp`.
+CppAST parse_cpp(const std::string &source) noexcept {
+  CppAST ast;
+
+  // 1. Parse structs and classes with balanced `{ ... }`
+  size_t search_pos = 0;
+  size_t match_start = 0;
+  size_t open_brace = 0;
+  std::string cls_name;
+
+  while (find_next_class_head(source, search_pos, match_start, open_brace,
+                              cls_name)) {
+    size_t close_brace = find_matching_delimiter(source, open_brace, '{', '}');
+    if (close_brace == std::string::npos) {
+      break;
+    }
+
+    std::string raw_prefix =
+        source.substr(search_pos, match_start - search_pos);
+    auto [lead_trivia, doc] = split_leading_docstring(raw_prefix);
+
+    CppClass cls;
+    cls.name = cls_name;
+    cls.docstring = doc;
+    cls.trivia.leading = lead_trivia;
+
+    std::string body =
+        source.substr(open_brace + 1, close_brace - open_brace - 1);
+    cls.fields = parse_class_fields(body);
+    cls.methods = parse_functions_from_body(body);
+
+    ast.classes.push_back(cls);
+    search_pos = close_brace + 1;
+  }
+
+  // 2. Parse functions with balanced `( ... )` and balanced `{ ... }` or `;`
+  ast.functions = parse_functions_from_body(source);
 
   return ast;
 }

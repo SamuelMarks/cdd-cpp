@@ -291,6 +291,12 @@ void test_emit() {
   assert(!emit_modular(empty_spec, false, false, false, false).empty());
 
   auto files = emit_modular(spec, false, false, false, false);
+  assert(files.contains("CMakeLists.txt"));
+  assert(files.contains("src/CMakeLists.txt"));
+  assert(files.contains("src/routes/TestStructRoutes.hpp"));
+  assert(files.contains("src/generated_server.cpp"));
+  assert(!files.contains("tests/TestStructRoutesTest.cpp"));
+  assert(!files.contains("src/mocks/TestStructMock.hpp"));
 
   // Test map_type_to_cpp default via unknown type
   openapi::Parameter p_unk;

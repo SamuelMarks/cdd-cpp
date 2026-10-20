@@ -402,6 +402,11 @@ void test_structs_mcp() {
   h_typed.set_typed_style(cdd_cpp::openapi::ParameterStyle::Simple);
   assert(h_typed.typed_style() == cdd_cpp::openapi::ParameterStyle::Simple);
 
+  cdd_cpp::openapi::Encoding enc_typed;
+  assert(!enc_typed.typed_style().has_value());
+  enc_typed.set_typed_style(cdd_cpp::openapi::ParameterStyle::Form);
+  assert(enc_typed.typed_style() == cdd_cpp::openapi::ParameterStyle::Form);
+
   cdd_cpp::openapi::SecurityScheme ss_typed;
   ss_typed.set_typed_type(cdd_cpp::openapi::SecuritySchemeType::ApiKey);
   assert(ss_typed.typed_type() == cdd_cpp::openapi::SecuritySchemeType::ApiKey);
@@ -451,6 +456,32 @@ void test_structs_mcp() {
                cdd_cpp::mcp::to_string(ic)) == ic);
   }
   assert(!cdd_cpp::mcp::include_context_from_string("invalid").has_value());
+
+  cdd_cpp::mcp::JSONRPCRequest jreq_typed;
+  jreq_typed.set_typed_id(int64_t{42});
+  assert(std::get<int64_t>(jreq_typed.typed_id()) == 42);
+  jreq_typed.set_typed_id(std::string("req-abc"));
+  assert(std::get<std::string>(jreq_typed.typed_id()) == "req-abc");
+  jreq_typed.id = "unquoted_str";
+  assert(std::get<std::string>(jreq_typed.typed_id()) == "unquoted_str");
+  jreq_typed.id = "";
+  assert(std::get<std::string>(jreq_typed.typed_id()).empty());
+
+  cdd_cpp::mcp::JSONRPCResponse jresp_typed;
+  jresp_typed.set_typed_id(int64_t{7});
+  assert(std::get<int64_t>(jresp_typed.typed_id()) == 7);
+
+  cdd_cpp::mcp::JSONRPCError jerr_typed;
+  jerr_typed.set_typed_id(std::string("err-1"));
+  assert(std::get<std::string>(jerr_typed.typed_id()) == "err-1");
+
+  cdd_cpp::mcp::CancelledNotificationParams cancel_typed;
+  cancel_typed.set_typed_request_id(int64_t{99});
+  assert(std::get<int64_t>(cancel_typed.typed_request_id()) == 99);
+
+  cdd_cpp::mcp::ProgressNotificationParams prog_typed;
+  prog_typed.set_typed_progress_token(std::string("tok-1"));
+  assert(std::get<std::string>(prog_typed.typed_progress_token()) == "tok-1");
 }
 
 } // namespace cdd_cpp::struct_tests

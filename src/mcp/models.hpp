@@ -3,6 +3,7 @@
 /// and JSON-RPC 2.0 structures.
 
 #pragma once
+#include <charconv>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -241,6 +242,8 @@ struct EmbeddedResource {
   std::string resource_json; ///< Serialized JSON of TextResourceContents or
                              ///< BlobResourceContents.
   std::optional<Annotations> annotations; ///< Optional annotations.
+  std::optional<ResourceContentsVariant>
+      typed_resource; ///< Strongly typed resource contents variant.
 
   /// @brief Equality comparison operator.
   bool operator==(const EmbeddedResource &) const noexcept = default;
@@ -251,6 +254,31 @@ using TypedRequestId = std::variant<int64_t, std::string>;
 
 /// @brief Strongly typed MCP progress token (integer or string).
 using TypedProgressToken = std::variant<int64_t, std::string>;
+
+/// @brief Parse a serialized request ID / token string into a TypedRequestId.
+/// @param raw Raw ID string (e.g. `"123"` or `"\"req-1\""`).
+/// @return Parsed TypedRequestId variant.
+inline TypedRequestId parse_typed_request_id(std::string_view raw) noexcept {
+  if (raw.size() >= 2 && raw.front() == '"' && raw.back() == '"') {
+    return std::string(raw.substr(1, raw.size() - 2));
+  }
+  int64_t val = 0;
+  auto [ptr, ec] = std::from_chars(raw.data(), raw.data() + raw.size(), val);
+  if (ec == std::errc{}) {
+    return val;
+  }
+  return std::string(raw);
+}
+
+/// @brief Format a TypedRequestId into its raw JSON representation.
+/// @param id The TypedRequestId variant.
+/// @return Formatted string (`"123"` for integers, `"\"abc\""` for strings).
+inline std::string format_typed_request_id(const TypedRequestId &id) noexcept {
+  if (const auto *i = std::get_if<int64_t>(&id)) {
+    return std::to_string(*i);
+  }
+  return "\"" + std::get<std::string>(id) + "\"";
+}
 
 /// @brief Variant representing any MCP content block (text, image, or embedded
 /// resource).
@@ -275,6 +303,18 @@ struct CancelledNotificationParams {
   std::string requestId; ///< ID of the request being cancelled.
   std::optional<std::string>
       reason; ///< Optional human-readable reason for cancellation.
+
+  /// @brief Get the strongly typed request ID variant.
+  /// @return TypedRequestId (int64_t or std::string).
+  TypedRequestId typed_request_id() const noexcept {
+    return parse_typed_request_id(requestId);
+  }
+
+  /// @brief Set the requestId from a strongly typed TypedRequestId.
+  /// @param id The TypedRequestId variant to set.
+  void set_typed_request_id(const TypedRequestId &id) noexcept {
+    requestId = format_typed_request_id(id);
+  }
 
   /// @brief Equality comparison operator.
   bool operator==(const CancelledNotificationParams &) const noexcept = default;
@@ -347,6 +387,8 @@ struct CompleteRequestParams {
   CompleteRequestArgument argument; ///< The argument being autocompleted.
   std::string
       ref_json; ///< Serialized JSON of PromptReference or ResourceReference.
+  std::optional<CompletionReferenceVariant>
+      typed_ref; ///< Strongly typed PromptReference or ResourceReference.
 
   /// @brief Equality comparison operator.
   bool operator==(const CompleteRequestParams &) const noexcept = default;
@@ -462,6 +504,8 @@ struct CreateMessageResult {
   std::string role;  ///< Role of the generated message ("assistant" or "user").
   std::optional<std::string> stopReason; ///< Reason why sampling stopped (e.g.,
                                          ///< "endTurn", "maxTokens").
+  std::optional<ContentBlockVariant>
+      typed_content; ///< Strongly typed content block variant.
 
   /// @brief Get the strongly typed RoleEnum for this result.
   /// @return Optional RoleEnum value.
@@ -691,6 +735,18 @@ struct JSONRPCError {
   RequestId id;            ///< Request identifier matching the failed request.
   JSONRPCErrorError error; ///< Detailed error object.
 
+  /// @brief Get the strongly typed request ID variant.
+  /// @return TypedRequestId (int64_t or std::string).
+  TypedRequestId typed_id() const noexcept {
+    return parse_typed_request_id(id);
+  }
+
+  /// @brief Set the request ID from a strongly typed TypedRequestId.
+  /// @param tid The TypedRequestId variant to set.
+  void set_typed_id(const TypedRequestId &tid) noexcept {
+    id = format_typed_request_id(tid);
+  }
+
   /// @brief Equality comparison operator.
   bool operator==(const JSONRPCError &) const noexcept = default;
 };
@@ -731,6 +787,18 @@ struct JSONRPCRequest {
   std::string method;  ///< Invoked method name.
   std::optional<JSONRPCRequestParams> params; ///< Optional method parameters.
 
+  /// @brief Get the strongly typed request ID variant.
+  /// @return TypedRequestId (int64_t or std::string).
+  TypedRequestId typed_id() const noexcept {
+    return parse_typed_request_id(id);
+  }
+
+  /// @brief Set the request ID from a strongly typed TypedRequestId.
+  /// @param tid The TypedRequestId variant to set.
+  void set_typed_id(const TypedRequestId &tid) noexcept {
+    id = format_typed_request_id(tid);
+  }
+
   /// @brief Equality comparison operator.
   bool operator==(const JSONRPCRequest &) const noexcept = default;
 };
@@ -740,6 +808,18 @@ struct JSONRPCResponse {
   std::string jsonrpc;     ///< JSON-RPC protocol version ("2.0").
   RequestId id;            ///< Request identifier matching the request.
   std::string result_json; ///< Serialized JSON result payload.
+
+  /// @brief Get the strongly typed request ID variant.
+  /// @return TypedRequestId (int64_t or std::string).
+  TypedRequestId typed_id() const noexcept {
+    return parse_typed_request_id(id);
+  }
+
+  /// @brief Set the request ID from a strongly typed TypedRequestId.
+  /// @param tid The TypedRequestId variant to set.
+  void set_typed_id(const TypedRequestId &tid) noexcept {
+    id = format_typed_request_id(tid);
+  }
 
   /// @brief Equality comparison operator.
   bool operator==(const JSONRPCResponse &) const noexcept = default;
@@ -983,6 +1063,8 @@ struct ReadResourceResult {
   std::vector<std::string>
       contents_json; ///< Serialized JSON objects (TextResourceContents or
                      ///< BlobResourceContents).
+  std::optional<std::vector<ResourceContentsVariant>>
+      typed_contents; ///< Strongly typed resource contents variants.
 
   /// @brief Equality comparison operator.
   bool operator==(const ReadResourceResult &) const noexcept = default;
@@ -1171,6 +1253,18 @@ struct ProgressNotificationParams {
   double progress = 0.0; ///< Current progress value.
   std::optional<double> total; ///< Optional total target progress value.
 
+  /// @brief Get the strongly typed progress token variant.
+  /// @return TypedProgressToken (int64_t or std::string).
+  TypedProgressToken typed_progress_token() const noexcept {
+    return parse_typed_request_id(progressToken);
+  }
+
+  /// @brief Set the progressToken from a strongly typed TypedProgressToken.
+  /// @param tok The TypedProgressToken variant to set.
+  void set_typed_progress_token(const TypedProgressToken &tok) noexcept {
+    progressToken = format_typed_request_id(tok);
+  }
+
   /// @brief Equality comparison operator.
   bool operator==(const ProgressNotificationParams &) const noexcept = default;
 };
@@ -1197,6 +1291,8 @@ using Role = std::string;
 struct SamplingMessage {
   Role role;                ///< Participant role ("user" or "assistant").
   std::string content_json; ///< Serialized JSON of TextContent or ImageContent.
+  std::optional<ContentBlockVariant>
+      typed_content; ///< Strongly typed content block variant.
 
   /// @brief Get the strongly typed RoleEnum for this message.
   /// @return Optional RoleEnum value.

@@ -427,8 +427,8 @@ json_value_to_string(const openapi::JsonValue &val) noexcept {
   if (const auto *i = std::get_if<int64_t>(&val.data)) {
     return std::to_string(*i);
   }
-  if (std::holds_alternative<bool>(val.data)) {
-    return "true";
+  if (const auto *b = std::get_if<bool>(&val.data)) {
+    return *b ? "true" : "false";
   }
   if (const auto *d = std::get_if<double>(&val.data)) {
     std::ostringstream ss;
@@ -720,6 +720,21 @@ static std::string_view trim_ws(std::string_view sv) noexcept {
   return sv;
 }
 
+/// @brief Match an escaped character code (`d`, `w`, `s`, or literal) against
+/// `c`.
+/// @param esc The character immediately following `\`.
+/// @param c The character to test.
+/// @return True if `c` matches the escape sequence.
+static bool match_escaped_char(char esc, char c) noexcept {
+  if (esc == 'd')
+    return std::isdigit(static_cast<unsigned char>(c)) != 0;
+  if (esc == 'w')
+    return std::isalnum(static_cast<unsigned char>(c)) != 0 || c == '_';
+  if (esc == 's')
+    return std::isspace(static_cast<unsigned char>(c)) != 0;
+  return c == esc;
+}
+
 /// @brief Match a single regex atom (`[a-z]`, `\d`, `\w`, `\s`, `.`, or
 /// literal) against `c`.
 /// @param atom The regex atom slice.
@@ -730,14 +745,7 @@ static bool match_regex_atom(std::string_view atom, char c) noexcept {
     return true;
   }
   if (atom.front() == '\\') {
-    char esc = atom[1];
-    if (esc == 'd')
-      return std::isdigit(static_cast<unsigned char>(c)) != 0;
-    if (esc == 'w')
-      return std::isalnum(static_cast<unsigned char>(c)) != 0 || c == '_';
-    if (esc == 's')
-      return std::isspace(static_cast<unsigned char>(c)) != 0;
-    return c == esc;
+    return match_escaped_char(atom[1], c);
   }
   if (atom.front() == '[') {
     std::string_view cls = atom.substr(1, atom.size() - 2);
@@ -746,7 +754,11 @@ static bool match_regex_atom(std::string_view atom, char c) noexcept {
       cls.remove_prefix(1);
     bool matched = false;
     for (size_t k = 0; k < cls.size(); ++k) {
-      if (k + 2 < cls.size() && cls[k + 1] == '-') {
+      if (cls[k] == '\\') {
+        if (match_escaped_char(cls[k + 1], c))
+          matched = true;
+        ++k;
+      } else if (k + 2 < cls.size() && cls[k + 1] == '-') {
         if (c >= cls[k] && c <= cls[k + 2])
           matched = true;
         k += 2;
@@ -770,6 +782,26 @@ static bool match_regex_here(std::string_view pat,
   if (pat == "$")
     return text.empty();
 
+  if (pat.front() == '(') {
+    auto close_paren = pat.find(')');
+    std::string_view group = pat.substr(1, close_paren - 1);
+    std::string_view after_group = pat.substr(close_paren + 1);
+    size_t start = 0;
+    for (;;) {
+      auto pipe = group.find('|', start);
+      std::string_view alt = (pipe == std::string_view::npos)
+                                 ? group.substr(start)
+                                 : group.substr(start, pipe - start);
+      if (text.starts_with(alt) &&
+          match_regex_here(after_group, text.substr(alt.size())))
+        return true;
+      if (pipe == std::string_view::npos)
+        break;
+      start = pipe + 1;
+    }
+    return false;
+  }
+
   size_t atom_len = 1;
   if (pat.front() == '\\') {
     atom_len = 2;
@@ -779,10 +811,33 @@ static bool match_regex_here(std::string_view pat,
 
   std::string_view atom = pat.substr(0, atom_len);
   char quant = (atom_len < pat.size()) ? pat[atom_len] : '\0';
-  if (quant == '*' || quant == '+' || quant == '?') {
+  if (quant == '*' || quant == '+' || quant == '?' || quant == '{') {
+    size_t min_rep = 0;
+    size_t max_rep = text.size();
     std::string_view rest_pat = pat.substr(atom_len + 1);
-    size_t min_rep = (quant == '+') ? 1 : 0;
-    size_t max_rep = (quant == '?') ? 1 : text.size();
+    if (quant == '+') {
+      min_rep = 1;
+    } else if (quant == '?') {
+      max_rep = 1;
+    } else if (quant == '{') {
+      auto close_brace = pat.find('}', atom_len + 1);
+      std::string_view bounds =
+          pat.substr(atom_len + 1, close_brace - atom_len - 1);
+      rest_pat = pat.substr(close_brace + 1);
+      auto comma = bounds.find(',');
+      if (comma == std::string_view::npos) {
+        (void)std::from_chars(bounds.data(), bounds.data() + bounds.size(),
+                              min_rep);
+        max_rep = min_rep;
+      } else {
+        (void)std::from_chars(bounds.data(), bounds.data() + comma, min_rep);
+        std::string_view max_sv = bounds.substr(comma + 1);
+        if (!max_sv.empty()) {
+          (void)std::from_chars(max_sv.data(), max_sv.data() + max_sv.size(),
+                                max_rep);
+        }
+      }
+    }
     for (size_t i = 0; i <= max_rep; ++i) {
       if (i >= min_rep && match_regex_here(rest_pat, text.substr(i)))
         return true;
@@ -796,6 +851,33 @@ static bool match_regex_here(std::string_view pat,
          match_regex_here(pat.substr(atom_len), text.substr(1));
 }
 
+/// @brief Find a top-level `|` alternation operator outside `(...)` and
+/// `[...]`.
+/// @param pattern The regex pattern string view.
+/// @return Index of top-level `|` or `std::string_view::npos`.
+static size_t find_top_level_pipe(std::string_view pattern) noexcept {
+  int paren_depth = 0;
+  bool in_brackets = false;
+  for (size_t i = 0; i < pattern.size(); ++i) {
+    if (pattern[i] == '\\') {
+      ++i;
+      continue;
+    }
+    if (pattern[i] == '[') {
+      in_brackets = true;
+    } else if (pattern[i] == ']') {
+      in_brackets = false;
+    } else if (!in_brackets && pattern[i] == '(') {
+      ++paren_depth;
+    } else if (!in_brackets && pattern[i] == ')') {
+      --paren_depth;
+    } else if (!in_brackets && paren_depth == 0 && pattern[i] == '|') {
+      return i;
+    }
+  }
+  return std::string_view::npos;
+}
+
 /// @brief Evaluate a regular expression pattern against `text` without
 /// exceptions.
 /// @param pattern The regular expression string.
@@ -803,7 +885,7 @@ static bool match_regex_here(std::string_view pat,
 /// @return True if `pattern` matches `text`.
 static bool match_regex(std::string_view pattern,
                         std::string_view text) noexcept {
-  size_t pipe = pattern.find('|');
+  size_t pipe = find_top_level_pipe(pattern);
   if (pipe != std::string_view::npos) {
     return match_regex(pattern.substr(0, pipe), text) ||
            match_regex(pattern.substr(pipe + 1), text);
@@ -840,6 +922,80 @@ resolve_operand(std::string_view token, const WorkflowExecutionContext &ctx,
     return std::string(token.substr(1, token.size() - 2));
   }
   return std::string(token);
+}
+
+/// @brief Compare two resolved string/numeric operands using a relational
+/// operator.
+/// @param lhs Left-hand side string value.
+/// @param op Relational operator (`==`, `!=`, `>=`, `<=`, `>`, `<`).
+/// @param rhs Right-hand side string value.
+/// @return True if the relational condition holds.
+static bool compare_values(std::string_view lhs, std::string_view op,
+                           std::string_view rhs) noexcept {
+  int64_t l_num = 0;
+  int64_t r_num = 0;
+  auto [lp, lec] = std::from_chars(lhs.data(), lhs.data() + lhs.size(), l_num);
+  auto [rp, rec] = std::from_chars(rhs.data(), rhs.data() + rhs.size(), r_num);
+  bool both_numeric = (lec == std::errc{} && rec == std::errc{});
+
+  if (op == "==")
+    return both_numeric ? (l_num == r_num) : (lhs == rhs);
+  if (op == "!=")
+    return both_numeric ? (l_num != r_num) : (lhs != rhs);
+  if (op == ">=")
+    return l_num >= r_num;
+  if (op == "<=")
+    return l_num <= r_num;
+  if (op == ">")
+    return l_num > r_num;
+  return l_num < r_num;
+}
+
+/// @brief Convert a JSONPath selector (`$.a.b` or `$['a'][0]`) to an RFC 6901
+/// JSON Pointer.
+/// @param jp The JSONPath selector starting after `$`.
+/// @return Converted RFC 6901 JSON Pointer string.
+static std::string jsonpath_to_pointer(std::string_view jp) noexcept {
+  jp = trim_ws(jp);
+  std::string ptr;
+  size_t i = 0;
+  while (i < jp.size()) {
+    if (jp[i] == '.') {
+      ++i;
+      ptr.push_back('/');
+      while (i < jp.size() && jp[i] != '.' && jp[i] != '[') {
+        ptr.push_back(jp[i]);
+        ++i;
+      }
+    } else if (jp[i] == '[') {
+      ++i;
+      if (jp[i] == '\'' || jp[i] == '"') {
+        char quote = jp[i++];
+        ptr.push_back('/');
+        while (jp[i] != quote) {
+          if (jp[i] == '~')
+            ptr.append("~0");
+          else if (jp[i] == '/')
+            ptr.append("~1");
+          else
+            ptr.push_back(jp[i]);
+          ++i;
+        }
+        i = jp.find(']', i) + 1;
+      } else {
+        ptr.push_back('/');
+        while (jp[i] != ']') {
+          ptr.push_back(jp[i]);
+          ++i;
+        }
+        ++i;
+      }
+    } else {
+      ptr.push_back(jp[i]);
+      ++i;
+    }
+  }
+  return ptr;
 }
 
 utils::Result<bool>
@@ -881,15 +1037,35 @@ evaluate_criterion(const Criterion &criterion,
                                "JSONPath condition must start with '$'",
                                criterion.condition);
     }
-    std::string_view jp = cond.substr(1);
-    std::string ptr;
-    for (char c : jp) {
-      if (c == ' ')
+    std::string_view jp_expr = cond.substr(1);
+    std::string_view found_op;
+    size_t op_pos = std::string_view::npos;
+    for (std::string_view op : {"==", "!=", ">=", "<=", ">", "<"}) {
+      auto pos = jp_expr.find(op);
+      if (pos != std::string_view::npos) {
+        found_op = op;
+        op_pos = pos;
         break;
-      ptr.push_back(c == '.' ? '/' : c);
+      }
     }
+    std::string_view selector = (op_pos == std::string_view::npos)
+                                    ? jp_expr
+                                    : jp_expr.substr(0, op_pos);
+    std::string ptr = jsonpath_to_pointer(selector);
     auto resolved = evaluate_json_pointer(ctx_json, ptr);
-    return resolved.has_value();
+    if (!resolved.has_value()) {
+      return false;
+    }
+    if (op_pos != std::string_view::npos) {
+      auto rhs = resolve_operand(jp_expr.substr(op_pos + found_op.size()), ctx,
+                                 ctx_str);
+      if (!rhs.has_value()) {
+        return std::unexpected(rhs.error());
+      }
+      return compare_values(json_value_to_string(*resolved), found_op, *rhs);
+    }
+    std::string val_str = json_value_to_string(*resolved);
+    return val_str != "false" && val_str != "null";
   }
 
   if (eff_type == CriterionType::Regex) {
@@ -899,7 +1075,15 @@ evaluate_criterion(const Criterion &criterion,
 
   if (eff_type == CriterionType::XPath) {
     std::string target = ctx_str.value_or("");
-    return !target.empty() && cond.starts_with('/');
+    if (target.empty() || !cond.starts_with('/')) {
+      return false;
+    }
+    if (target.starts_with('<')) {
+      auto last_slash = cond.rfind('/');
+      std::string_view tag = cond.substr(last_slash + 1);
+      return target.find("<" + std::string(tag)) != std::string::npos;
+    }
+    return true;
   }
 
   // Compound logical conditions (`||` and `&&`)
@@ -941,26 +1125,7 @@ evaluate_criterion(const Criterion &criterion,
       auto rhs = resolve_operand(cond.substr(op_pos + op.size()), ctx, ctx_str);
       if (!rhs.has_value())
         return std::unexpected(rhs.error());
-
-      int64_t l_num = 0;
-      int64_t r_num = 0;
-      auto [lp, lec] =
-          std::from_chars(lhs->data(), lhs->data() + lhs->size(), l_num);
-      auto [rp, rec] =
-          std::from_chars(rhs->data(), rhs->data() + rhs->size(), r_num);
-      bool both_numeric = (lec == std::errc{} && rec == std::errc{});
-
-      if (op == "==")
-        return both_numeric ? (l_num == r_num) : (*lhs == *rhs);
-      if (op == "!=")
-        return both_numeric ? (l_num != r_num) : (*lhs != *rhs);
-      if (op == ">=")
-        return l_num >= r_num;
-      if (op == "<=")
-        return l_num <= r_num;
-      if (op == ">")
-        return l_num > r_num;
-      return l_num < r_num;
+      return compare_values(*lhs, op, *rhs);
     }
   }
 

@@ -3,6 +3,7 @@
 /// models.
 
 #pragma once
+#include "../utils/type_mapping.hpp"
 #include <cstdint>
 #include <map>
 #include <memory>
@@ -463,6 +464,8 @@ struct Contact {
       url; ///< The URL pointing to the contact information.
   std::optional<std::string>
       email; ///< The email address of the contact person/organization.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
   bool operator==(const Contact &) const noexcept = default;
@@ -474,6 +477,8 @@ struct License {
   std::optional<std::string>
       identifier;                 ///< An SPDX license expression for the API.
   std::optional<std::string> url; ///< A URL to the license used for the API.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
   bool operator==(const License &) const noexcept = default;
@@ -491,6 +496,8 @@ struct Info {
   std::optional<License>
       license;         ///< The license information for the exposed API.
   std::string version; ///< The version of the OpenAPI document.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
   bool operator==(const Info &) const noexcept = default;
@@ -505,6 +512,8 @@ struct ServerVariable {
   std::string default_value; ///< The default value to use for substitution.
   std::optional<std::string>
       description; ///< An optional description for the server variable.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
   bool operator==(const ServerVariable &) const noexcept = default;
@@ -519,6 +528,8 @@ struct Server {
   std::optional<std::string> name = {}; ///< An optional name for the server.
   std::optional<std::map<std::string, ServerVariable>> variables =
       {}; ///< A map between a variable name and its value.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
   bool operator==(const Server &) const noexcept = default;
@@ -529,6 +540,8 @@ struct ExternalDocumentation {
   std::optional<std::string>
       description; ///< A description of the target documentation.
   std::string url; ///< The URL for the target documentation.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
   bool operator==(const ExternalDocumentation &) const noexcept = default;
@@ -544,6 +557,8 @@ struct Tag {
       kind; ///< The kind of tag (e.g., entity, action, namespace).
   std::optional<ExternalDocumentation>
       externalDocs; ///< Additional external documentation for this tag.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
   bool operator==(const Tag &) const noexcept = default;
@@ -561,6 +576,8 @@ struct Discriminator {
   std::optional<std::string> defaultMapping =
       {}; ///< A default schema value to use if the discriminator
           ///< property does not match any mapping.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
   bool operator==(const Discriminator &) const noexcept = default;
@@ -580,6 +597,8 @@ struct XML {
                  ///< attribute instead of an element.
   std::optional<bool> wrapped; ///< MAY be used only for an array definition.
                                ///< Signifies whether the array is wrapped.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
   bool operator==(const XML &) const noexcept = default;
@@ -686,6 +705,8 @@ struct Schema {
       {}; ///< The unevaluatedProperties keyword.
   std::optional<bool> unevaluatedPropertiesBool =
       {}; ///< Boolean unevaluatedProperties (true/false).
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Get the strongly typed SchemaTypeVariant for this schema.
   /// @return Optional SchemaTypeVariant representing either a single primitive
@@ -745,6 +766,8 @@ struct Example {
   std::optional<std::string>
       externalValue;            ///< A URL that points to the literal example.
   std::optional<Reference> ref; ///< A reference to an example.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
   bool operator==(const Example &) const noexcept = default;
@@ -770,6 +793,23 @@ struct Encoding {
   std::shared_ptr<std::vector<Encoding>>
       prefixEncoding; ///< Array of encodings for prefix items.
   std::shared_ptr<Encoding> itemEncoding; ///< Encoding for array items.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
+
+  /// @brief Get the strongly typed ParameterStyle for this encoding.
+  /// @return Optional ParameterStyle enumerator.
+  std::optional<ParameterStyle> typed_style() const noexcept {
+    if (!style.has_value())
+      return std::nullopt;
+    return parameter_style_from_string(*style);
+  }
+
+  /// @brief Set the encoding style from a strongly typed ParameterStyle
+  /// enumerator.
+  /// @param s The ParameterStyle to set.
+  void set_typed_style(ParameterStyle s) noexcept {
+    style = std::string(to_string(s));
+  }
 
   /// @brief Equality comparison operator.
   bool operator==(const Encoding &other) const noexcept;
@@ -789,6 +829,8 @@ struct MediaType {
   std::shared_ptr<std::vector<Encoding>>
       prefixEncoding;                     ///< Prefix items encoding.
   std::shared_ptr<Encoding> itemEncoding; ///< Item encoding.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
   bool operator==(const MediaType &other) const noexcept;
@@ -819,6 +861,8 @@ struct Header {
   std::optional<std::map<std::string, MediaType>>
       content; ///< A map containing the representations for the header.
   std::optional<Reference> ref; ///< Reference to another header.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Get the strongly typed ParameterStyle for this header.
   /// @return Optional ParameterStyle enumerator.
@@ -848,6 +892,8 @@ struct RequestBody {
   bool required =
       false; ///< Determines if the request body is required in the request.
   std::optional<Reference> ref; ///< Reference to a request body.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
   bool operator==(const RequestBody &) const noexcept = default;
@@ -870,6 +916,8 @@ struct Link {
   std::optional<Server>
       server; ///< A server object to be used by the target operation.
   std::optional<Reference> ref; ///< A reference to another link.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
   bool operator==(const Link &) const noexcept = default;
@@ -887,6 +935,8 @@ struct Response {
       links; ///< A map of operations links that can be followed from the
              ///< response.
   std::optional<Reference> ref; ///< A reference to another response.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
   bool operator==(const Response &) const noexcept = default;
@@ -922,6 +972,8 @@ struct Parameter {
       std::nullopt; ///< A map containing the representations for the parameter.
   std::optional<Reference> ref =
       std::nullopt; ///< A reference to another parameter.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Get the strongly typed ParameterLocation for this parameter.
   /// @return Optional ParameterLocation enumerator.
@@ -968,6 +1020,8 @@ struct OAuthFlow {
                               ///< this flow.
   std::optional<std::map<std::string, std::string>>
       scopes; ///< The available scopes for the OAuth2 security scheme.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
   bool operator==(const OAuthFlow &) const noexcept = default;
@@ -985,6 +1039,8 @@ struct OAuthFlows {
                                                 ///< Authorization Code flow.
   std::optional<OAuthFlow> deviceAuthorization; ///< Configuration for the OAuth
                                                 ///< Device Authorization flow.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
   bool operator==(const OAuthFlows &) const noexcept = default;
@@ -1015,6 +1071,8 @@ struct SecurityScheme {
   std::optional<bool>
       deprecated; ///< Specifies whether the security scheme is deprecated.
   std::optional<Reference> ref; ///< Reference to another security scheme.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Get the strongly typed SecuritySchemeType.
   /// @return Optional SecuritySchemeType enumerator.
@@ -1077,6 +1135,8 @@ struct Operation {
                 ///< this operation.
   std::optional<std::vector<Server>>
       servers; ///< An alternative server array to service this operation.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
   bool operator==(const Operation &) const noexcept;
@@ -1118,6 +1178,8 @@ struct PathItem {
   std::optional<std::vector<Parameter>>
       parameters; ///< A list of parameters that are applicable for all the
                   ///< operations described under this path.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Retrieve a mutable reference to the optional Operation slot for a
   /// given HttpMethod.
@@ -1221,6 +1283,8 @@ struct Components {
       pathItems; ///< An object to hold reusable Path Item Objects.
   std::shared_ptr<std::map<std::string, MediaType>>
       mediaTypes; ///< Media types.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
   bool operator==(const Components &other) const noexcept;
@@ -1251,6 +1315,8 @@ struct OpenAPI {
       tags; ///< A list of tags used by the document with additional metadata.
   std::optional<ExternalDocumentation>
       externalDocs; ///< Additional external documentation.
+  std::map<std::string, JsonValue> extensions =
+      {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
   bool operator==(const OpenAPI &) const noexcept = default;
@@ -1277,13 +1343,7 @@ inline bool deep_eq(const std::shared_ptr<T> &a,
 /// "boolean", "string").
 /// @return C++ type string ("int", "double", "bool", or "std::string").
 inline std::string openapi_type_to_cpp(std::string_view openapi_type) noexcept {
-  if (openapi_type == "integer")
-    return "int";
-  if (openapi_type == "number")
-    return "double";
-  if (openapi_type == "boolean")
-    return "bool";
-  return "std::string";
+  return utils::openapi_type_to_cpp(openapi_type);
 }
 
 /// @brief Map a C++ primitive type string to its OpenAPI primitive type string.
@@ -1292,14 +1352,7 @@ inline std::string openapi_type_to_cpp(std::string_view openapi_type) noexcept {
 /// @return OpenAPI primitive type string ("integer", "number", "boolean", or
 /// "string").
 inline std::string cpp_type_to_openapi(std::string_view cpp_type) noexcept {
-  if (cpp_type == "int" || cpp_type == "int32_t" || cpp_type == "int64_t" ||
-      cpp_type == "long" || cpp_type == "short")
-    return "integer";
-  if (cpp_type == "double" || cpp_type == "float")
-    return "number";
-  if (cpp_type == "bool" || cpp_type == "boolean")
-    return "boolean";
-  return "string";
+  return utils::cpp_type_to_openapi(cpp_type);
 }
 
 /// @brief Deep value equality comparison for Schema.
@@ -1346,7 +1399,8 @@ inline bool Schema::operator==(const Schema &other) const noexcept {
          deep_eq(unevaluatedItems, other.unevaluatedItems) &&
          unevaluatedItemsBool == other.unevaluatedItemsBool &&
          deep_eq(unevaluatedProperties, other.unevaluatedProperties) &&
-         unevaluatedPropertiesBool == other.unevaluatedPropertiesBool;
+         unevaluatedPropertiesBool == other.unevaluatedPropertiesBool &&
+         extensions == other.extensions;
 }
 
 /// @brief Deep value equality comparison for Encoding.
@@ -1358,7 +1412,8 @@ inline bool Encoding::operator==(const Encoding &other) const noexcept {
          deep_eq(headers, other.headers) && deep_eq(encoding, other.encoding) &&
          deep_eq(itemSchema, other.itemSchema) &&
          deep_eq(prefixEncoding, other.prefixEncoding) &&
-         deep_eq(itemEncoding, other.itemEncoding);
+         deep_eq(itemEncoding, other.itemEncoding) &&
+         extensions == other.extensions;
 }
 
 /// @brief Deep value equality comparison for MediaType.
@@ -1369,7 +1424,8 @@ inline bool MediaType::operator==(const MediaType &other) const noexcept {
          examples == other.examples && deep_eq(encoding, other.encoding) &&
          deep_eq(itemSchema, other.itemSchema) &&
          deep_eq(prefixEncoding, other.prefixEncoding) &&
-         deep_eq(itemEncoding, other.itemEncoding);
+         deep_eq(itemEncoding, other.itemEncoding) &&
+         extensions == other.extensions;
 }
 
 /// @brief Deep value equality comparison for Operation.
@@ -1383,7 +1439,7 @@ inline bool Operation::operator==(const Operation &other) const noexcept {
          requestBody == other.requestBody && responses == other.responses &&
          deep_eq(callbacks, other.callbacks) &&
          deprecated == other.deprecated && security == other.security &&
-         servers == other.servers;
+         servers == other.servers && extensions == other.extensions;
 }
 
 /// @brief Deep value equality comparison for PathItem.
@@ -1397,7 +1453,8 @@ inline bool PathItem::operator==(const PathItem &other) const noexcept {
          head == other.head && patch == other.patch && trace == other.trace &&
          query == other.query &&
          deep_eq(additionalOperations, other.additionalOperations) &&
-         servers == other.servers && parameters == other.parameters;
+         servers == other.servers && parameters == other.parameters &&
+         extensions == other.extensions;
 }
 
 /// @brief Deep value equality comparison for Components.
@@ -1409,7 +1466,8 @@ inline bool Components::operator==(const Components &other) const noexcept {
          requestBodies == other.requestBodies && headers == other.headers &&
          securitySchemes == other.securitySchemes && links == other.links &&
          deep_eq(callbacks, other.callbacks) && pathItems == other.pathItems &&
-         deep_eq(mediaTypes, other.mediaTypes);
+         deep_eq(mediaTypes, other.mediaTypes) &&
+         extensions == other.extensions;
 }
 
 } // namespace cdd_cpp::openapi

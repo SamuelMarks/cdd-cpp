@@ -183,6 +183,8 @@ void test_cpp_parser() {
   assert(unbal7.classes.empty());
   auto unbal8 = parse_cpp("/* top-level unclosed block comment *");
   assert(unbal8.classes.empty());
+  auto unbal_str_top = parse_cpp("const char *s = \"unclosed");
+  assert(unbal_str_top.classes.empty());
   auto unbal9 = parse_cpp("struct TrailingEOF");
   assert(unbal9.classes.empty());
   auto unbal10 = parse_cpp("(int a); > b(int c);");
@@ -192,6 +194,7 @@ void test_cpp_parser() {
   assert(line0_doc.classes[0].docstring == "// Line0 doc");
 
   auto qual_fns = parse_cpp(R"(
+    const char *kFake = "struct FakeInString { \\\" };";
     struct Derived : Base {
       // field doc
       /* block doc */
@@ -203,6 +206,8 @@ void test_cpp_parser() {
     (void)0;
   )");
   assert(qual_fns.classes.size() == 1);
+  assert(qual_fns.classes[0].methods.size() == 1);
+  assert(qual_fns.classes[0].methods[0].name == "inline_method");
   assert(!qual_fns.functions.empty());
 
   std::cout << "test_cpp_parser passed.\n";

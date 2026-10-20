@@ -8,10 +8,10 @@
 #include "../utils/json_writer.hpp"
 #include <string>
 
-namespace cdd_cpp::utils {
+namespace cdd_cpp::models {
 
 /// @brief Parse C++ AST struct definitions via `parse_schemas`.
-void parse_schemas(const CppAST &ast, openapi::OpenAPI &spec) noexcept {
+void parse_schemas(const utils::CppAST &ast, openapi::OpenAPI &spec) noexcept {
   for (const auto &cls : ast.classes) {
     if (cls.name == "Client" || cls.name == "Router")
       continue; // skip main classes
@@ -38,7 +38,7 @@ void parse_schemas(const CppAST &ast, openapi::OpenAPI &spec) noexcept {
         ftype = ftype.substr(14, ftype.length() - 15);
       }
 
-      std::string prop_name = unsanitize_cpp_identifier(field.name);
+      std::string prop_name = utils::unsanitize_cpp_identifier(field.name);
 
       if (!is_optional)
         required.push_back(prop_name);
@@ -101,4 +101,4 @@ void parse_schemas(const CppAST &ast, openapi::OpenAPI &spec) noexcept {
   }
 }
 
-} // namespace cdd_cpp::utils
+} // namespace cdd_cpp::models

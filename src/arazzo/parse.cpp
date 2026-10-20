@@ -332,7 +332,7 @@ parse_success_action(simdjson::dom::object obj) noexcept {
   sa.type = *st;
   sa.workflowId = get_opt_str(obj, "workflowId");
   sa.stepId = get_opt_str(obj, "stepId");
-  if (sa.workflowId.has_value()) {
+  if (sa.workflowId.has_value() && sa.stepId.has_value()) {
     return utils::make_error(
         utils::ErrorCode::InvalidArazzoDocument,
         "SuccessAction cannot specify both workflowId and stepId");
@@ -407,7 +407,7 @@ parse_failure_action(simdjson::dom::object obj) noexcept {
   fa.type = *ft;
   fa.workflowId = get_opt_str(obj, "workflowId");
   fa.stepId = get_opt_str(obj, "stepId");
-  if (fa.workflowId.has_value()) {
+  if (fa.workflowId.has_value() && fa.stepId.has_value()) {
     return utils::make_error(
         utils::ErrorCode::InvalidArazzoDocument,
         "FailureAction cannot specify both workflowId and stepId");

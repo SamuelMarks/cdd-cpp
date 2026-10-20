@@ -79,21 +79,29 @@ Result<arazzo::Arazzo> parse_arazzo(const std::string &input) noexcept {
   spec.info.version = "1.0.0";
 
   docstrings::parse_arazzo_docstrings(input, spec);
-  if (!spec.workflows.empty()) {
-    return spec;
+  if (spec.sourceDescriptions.empty()) {
+    arazzo::SourceDescription sd;
+    sd.name = "default";
+    sd.url = "./openapi.json";
+    sd.type = arazzo::SourceDescriptionType::OpenApi;
+    spec.sourceDescriptions.push_back(std::move(sd));
   }
-
-  arazzo::SourceDescription sd;
-  sd.name = "default";
-  sd.url = "./openapi.json";
-  sd.type = arazzo::SourceDescriptionType::OpenApi;
-  spec.sourceDescriptions.push_back(std::move(sd));
 
   utils::CppAST ast = utils::parse_cpp(input);
   for (const auto &fn : ast.functions) {
     arazzo::Workflow wf;
     wf.workflowId = fn.name;
     docstrings::parse_workflow_docstrings(fn.docstring, wf);
+    bool exists = false;
+    for (const auto &existing : spec.workflows) {
+      if (existing.workflowId == wf.workflowId) {
+        exists = true;
+        break;
+      }
+    }
+    if (exists) {
+      continue;
+    }
     openapi::Schema in_schema;
     in_schema.type = "object";
     in_schema.properties =

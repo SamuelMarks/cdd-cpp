@@ -10,6 +10,65 @@
 
 namespace cdd_cpp::client_sdk {
 
+/// @brief Map an OpenAPI Schema to its C++ response/model type string.
+/// @param s The OpenAPI Schema to resolve.
+/// @return Resolved C++ type string.
+static std::string resolve_schema_cpp_type(const openapi::Schema &s) noexcept {
+  if (s.ref.has_value()) {
+    auto slash = s.ref->ref.rfind('/');
+    std::string name = (slash == std::string::npos)
+                           ? s.ref->ref
+                           : s.ref->ref.substr(slash + 1);
+    return "cdd_models::" + name;
+  }
+  std::string t = s.type.value_or("string");
+  if (t == "array") {
+    std::string inner =
+        s.items ? resolve_schema_cpp_type(*s.items) : "std::string";
+    return "std::vector<" + inner + ">";
+  }
+  if (t == "object") {
+    return "std::map<std::string, std::string>";
+  }
+  if (t == "integer") {
+    return "int64_t";
+  }
+  if (t == "number") {
+    return "double";
+  }
+  if (t == "boolean") {
+    return "bool";
+  }
+  return "std::string";
+}
+
+/// @brief Resolve the primary C++ return type from an Operation's 2XX/default
+/// response schema.
+/// @param op The OpenAPI Operation to inspect.
+/// @return Resolved C++ type string (e.g. `cdd_models::Pet`, `void`,
+/// `std::string`).
+static std::string
+resolve_operation_response_type(const openapi::Operation &op) noexcept {
+  if (!op.responses.has_value()) {
+    return "std::string";
+  }
+  for (const auto &[code, resp] : *op.responses) {
+    if (code == "204") {
+      return "void";
+    }
+    if (code.starts_with('2') || code == "default") {
+      if (resp.content.has_value()) {
+        for (const auto &[_, mt] : *resp.content) {
+          if (mt.schema.has_value()) {
+            return resolve_schema_cpp_type(*mt.schema);
+          }
+        }
+      }
+    }
+  }
+  return "std::string";
+}
+
 /// @brief Map an OpenAPI Parameter to its C++ parameter type.
 /// @param p The OpenAPI Parameter.
 /// @return C++ type string ("int", "bool", "double", or "std::string").
@@ -103,6 +162,8 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
         new_op.parameters = all_params;
         c_hpp << docstrings::emit_path_docstrings(item);
         c_hpp << docstrings::emit_operation_docstrings(new_op);
+        c_hpp << "        /// @response_cpp_type "
+              << resolve_operation_response_type(*op) << "\n";
 
         std::string param_list = "";
         for (size_t i = 0; i < all_params.size(); ++i) {
@@ -583,102 +644,107 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
           if (!op.has_value())
             return;
           std::string func_name = op->operationId.value_or("request");
-          if (func_name != "findPetsByStatus" && func_name != "getInventory") {
-            t_cpp << "TEST(ClientTest, " << func_name << "Test) {\n";
-            std::vector<openapi::Parameter> all_params =
-                collect_params(item, *op);
+          t_cpp << "TEST(ClientTest, " << func_name << "Test) {\n";
+          std::vector<openapi::Parameter> all_params =
+              collect_params(item, *op);
 
-            std::string call_args = "";
-            for (size_t i = 0; i < all_params.size(); ++i) {
-              const auto &p = all_params[i];
-              std::string val = "\"user1\"";
-              std::string ctype = param_cpp_type(p);
-              if (ctype == "int") {
-                val = "1";
-              } else if (ctype == "bool") {
-                val = "true";
-              } else if (ctype == "double") {
-                val = "1.0";
-              }
-
-              if (i > 0)
-                call_args += ", ";
-              call_args += val;
+          std::string call_args = "";
+          for (size_t i = 0; i < all_params.size(); ++i) {
+            const auto &p = all_params[i];
+            std::string val = "\"user1\"";
+            std::string ctype = param_cpp_type(p);
+            if (ctype == "int") {
+              val = "1";
+            } else if (ctype == "bool") {
+              val = "true";
+            } else if (ctype == "double") {
+              val = "1.0";
+            } else if (p.schema.has_value() &&
+                       p.schema->enum_values.has_value() &&
+                       !p.schema->enum_values->empty()) {
+              val = "\"" + p.schema->enum_values->front() + "\"";
             }
 
-            if (op->requestBody) {
-              if (!call_args.empty())
-                call_args += ", ";
-
-              std::string content_type = "application/json";
-              if (!op->requestBody->content.empty()) {
-                content_type = op->requestBody->content.begin()->first;
-              }
-
-              std::string payload =
-                  "\"{\\\"id\\\":1,\\\"username\\\":\\\"user1\\\","
-                  "\\\"name\\\":\\\"test\\\",\\\"photoUrls\\\":[]}\"";
-
-              if (content_type == "application/x-www-form-urlencoded") {
-                payload = "\"name=test&status=available\"";
-              } else if (content_type == "application/octet-stream") {
-                payload = "\"file content\"";
-              } else if (content_type == "multipart/form-data") {
-                payload =
-                    "\"--boundary\\r\\nContent-Disposition: form-data; "
-                    "name=\\\"additionalMetadata\\\"\\r\\n\\r\\ntest\\r\\n-"
-                    "-boundary\\r\\nContent-Disposition: form-data; "
-                    "name=\\\"file\\\"; "
-                    "filename=\\\"test.png\\\"\\r\\nContent-Type: "
-                    "image/png\\r\\n\\r\\nPNG...\\r\\n--boundary--\\r\\n\"";
-              } else if (func_name.find("Array") != std::string::npos ||
-                         func_name.find("List") != std::string::npos) {
-                payload = "\"[{\\\"id\\\":1,\\\"username\\\":\\\"user1\\\","
-                          "\\\"name\\\":\\\"test\\\",\\\"photoUrls\\\":[]}]\"";
-              }
-              call_args += payload;
-            }
-
-            t_cpp << "    cdd_client::Client client(get_server_url());\n";
-            t_cpp << "    auto res = client." << func_name << "(" << call_args
-                  << ");\n";
-            bool has_success = false;
-            if (op->responses) {
-              for (const auto &[code, _] : *op->responses) {
-                if (code == "default" || code.starts_with('2')) {
-                  has_success = true;
-                  break;
-                }
-              }
-            }
-            if (has_success) {
-              t_cpp << "    if (!res.has_value()) {\n";
-              t_cpp << "        ASSERT_FALSE(res.error().empty());\n";
-              t_cpp << "        return;\n";
-              t_cpp << "    }\n";
-            } else {
-              t_cpp << "    if (res.has_value()) {\n";
-              t_cpp << "        return;\n";
-              t_cpp << "    }\n";
-              t_cpp << "    ASSERT_FALSE(res.error().empty());\n";
-              t_cpp << "    return;\n";
-            }
-            t_cpp << "    if (!res.operator*().empty()) {\n";
-            t_cpp << "        simdjson::dom::parser parser;\n";
-            t_cpp << "        simdjson::dom::element doc;\n";
-            t_cpp << "        auto error = "
-                     "parser.parse(res.operator*()).get(doc);\n";
-            t_cpp << "        if (error == simdjson::SUCCESS) {\n";
-            t_cpp << "            if (doc.is_object() && "
-                     "doc[\"sabotage\"].error() == simdjson::SUCCESS) {\n";
-            t_cpp << "                FAIL() << \"Invalid schema: sabotage "
-                     "detected\";\n";
-            t_cpp << "            }\n";
-            t_cpp << "        }\n";
-            t_cpp << "    }\n";
-            t_cpp << "    SUCCEED();\n";
-            t_cpp << "}\n\n";
+            if (i > 0)
+              call_args += ", ";
+            call_args += val;
           }
+
+          if (op->requestBody) {
+            if (!call_args.empty())
+              call_args += ", ";
+
+            std::string content_type = "application/json";
+            bool is_array_body = false;
+            if (!op->requestBody->content.empty()) {
+              content_type = op->requestBody->content.begin()->first;
+              const auto &mt = op->requestBody->content.begin()->second;
+              if (mt.schema.has_value() && mt.schema->type == "array") {
+                is_array_body = true;
+              }
+            }
+
+            std::string payload =
+                "\"{\\\"id\\\":1,\\\"username\\\":\\\"user1\\\","
+                "\\\"name\\\":\\\"test\\\",\\\"photoUrls\\\":[]}\"";
+
+            if (content_type == "application/x-www-form-urlencoded") {
+              payload = "\"name=test&status=available\"";
+            } else if (content_type == "application/octet-stream") {
+              payload = "\"file content\"";
+            } else if (content_type == "multipart/form-data") {
+              payload = "\"--boundary\\r\\nContent-Disposition: form-data; "
+                        "name=\\\"additionalMetadata\\\"\\r\\n\\r\\ntest\\r\\n-"
+                        "-boundary\\r\\nContent-Disposition: form-data; "
+                        "name=\\\"file\\\"; "
+                        "filename=\\\"test.png\\\"\\r\\nContent-Type: "
+                        "image/png\\r\\n\\r\\nPNG...\\r\\n--boundary--\\r\\n\"";
+            } else if (is_array_body) {
+              payload = "\"[{\\\"id\\\":1,\\\"username\\\":\\\"user1\\\","
+                        "\\\"name\\\":\\\"test\\\",\\\"photoUrls\\\":[]}]\"";
+            }
+            call_args += payload;
+          }
+
+          t_cpp << "    cdd_client::Client client(get_server_url());\n";
+          t_cpp << "    auto res = client." << func_name << "(" << call_args
+                << ");\n";
+          bool has_success = false;
+          if (op->responses) {
+            for (const auto &[code, _] : *op->responses) {
+              if (code == "default" || code.starts_with('2')) {
+                has_success = true;
+                break;
+              }
+            }
+          }
+          if (has_success) {
+            t_cpp << "    if (!res.has_value()) {\n";
+            t_cpp << "        ASSERT_FALSE(res.error().empty());\n";
+            t_cpp << "        return;\n";
+            t_cpp << "    }\n";
+          } else {
+            t_cpp << "    if (res.has_value()) {\n";
+            t_cpp << "        return;\n";
+            t_cpp << "    }\n";
+            t_cpp << "    ASSERT_FALSE(res.error().empty());\n";
+            t_cpp << "    return;\n";
+          }
+          t_cpp << "    if (!res.operator*().empty()) {\n";
+          t_cpp << "        simdjson::dom::parser parser;\n";
+          t_cpp << "        simdjson::dom::element doc;\n";
+          t_cpp << "        auto error = "
+                   "parser.parse(res.operator*()).get(doc);\n";
+          t_cpp << "        if (error == simdjson::SUCCESS) {\n";
+          t_cpp << "            if (doc.is_object() && "
+                   "doc[\"sabotage\"].error() == simdjson::SUCCESS) {\n";
+          t_cpp << "                FAIL() << \"Invalid schema: sabotage "
+                   "detected\";\n";
+          t_cpp << "            }\n";
+          t_cpp << "        }\n";
+          t_cpp << "    }\n";
+          t_cpp << "    SUCCEED();\n";
+          t_cpp << "}\n\n";
         };
 
         emit_test("GET", item.get);

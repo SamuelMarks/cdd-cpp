@@ -139,7 +139,8 @@ def build_wasm():
     # Patch simdjson to replace throw with abort
     patch_script = os.path.join(build_dir, "patch_simdjson.py")
     with open(patch_script, "w") as f:
-        f.write("""
+        f.write(
+            """
 import os
 for root, _, files in os.walk("_deps"):
     for file in files:
@@ -158,7 +159,8 @@ for root, _, files in os.walk("_deps"):
                         f.write(content)
             except Exception:
                 pass
-""")
+"""
+        )
     run_cmd([sys.executable, "patch_simdjson.py"], cwd=build_dir)
 
     run_cmd(["cmake", "--build", ".", "--target", "cdd-cpp", "-j4"], cwd=build_dir)

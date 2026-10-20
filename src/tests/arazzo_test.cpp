@@ -332,12 +332,20 @@ static void test_arazzo_expressions() noexcept {
   rep1.value = openapi::JsonValue("$inputs.apiKey");
   auto replaced1 = apply_payload_replacement(ctx.request_body, rep1, ctx);
   assert(replaced1.has_value());
+  assert((std::get<std::map<std::string, openapi::JsonValue>>(replaced1->data)
+              .at("name") == openapi::JsonValue("secret")));
 
   PayloadReplacement rep2;
   rep2.target = "/tags/0";
   rep2.value = openapi::JsonValue("Bearer {$steps.s1.outputs.tok}");
   auto replaced2 = apply_payload_replacement(ctx.response_body, rep2, ctx);
   assert(replaced2.has_value());
+  assert(
+      (std::get<std::vector<openapi::JsonValue>>(
+           std::get<std::map<std::string, openapi::JsonValue>>(replaced2->data)
+               .at("tags")
+               .data)
+           .at(0) == openapi::JsonValue("Bearer xyz")));
 
   PayloadReplacement rep_bad_ptr;
   rep_bad_ptr.target = "invalid_pointer";
@@ -429,6 +437,7 @@ static void test_arazzo_expressions() noexcept {
       openapi::JsonValue(std::map<std::string, openapi::JsonValue>{
           {"id", openapi::JsonValue(99)},
           {"active", openapi::JsonValue(true)},
+          {"inactive", openapi::JsonValue(false)},
           {"score", openapi::JsonValue(9.5)},
           {"empty", openapi::JsonValue(nullptr)},
           {"a/b~c", openapi::JsonValue("esc_aped~")},
@@ -436,6 +445,16 @@ static void test_arazzo_expressions() noexcept {
            openapi::JsonValue(std::vector<openapi::JsonValue>{
                openapi::JsonValue("first"), openapi::JsonValue("second")})}});
   assert(evaluate_criterion(c_regex_neg, ctx).value() == false);
+
+  // Boolean false interpolation and criterion evaluation
+  assert(interpolate_template("$response.body#/inactive", ctx).value() ==
+         "false");
+  Criterion c_falsy_bool;
+  c_falsy_bool.condition = "$response.body#/inactive";
+  assert(evaluate_criterion(c_falsy_bool, ctx).value() == false);
+  Criterion c_falsy_eq;
+  c_falsy_eq.condition = "$response.body#/inactive == false";
+  assert(evaluate_criterion(c_falsy_eq, ctx).value() == true);
 
   Criterion c_regex_word_underscore;
   c_regex_word_underscore.context = "$response.body#/a~1b~0c";
@@ -448,6 +467,37 @@ static void test_arazzo_expressions() noexcept {
   c_regex_plus_fail.condition = "\\d+";
   c_regex_plus_fail.type = CriterionType::Regex;
   assert(evaluate_criterion(c_regex_plus_fail, ctx).value() == false);
+
+  // Regex character class escapes, groups, and bounded quantifiers
+  Criterion c_regex_cls_esc;
+  c_regex_cls_esc.context = "$statusCode";
+  c_regex_cls_esc.condition = "^[\\d\\s]{3}$";
+  c_regex_cls_esc.type = CriterionType::Regex;
+  assert(evaluate_criterion(c_regex_cls_esc, ctx).value() == true);
+
+  Criterion c_regex_quant_range;
+  c_regex_quant_range.context = "$statusCode";
+  c_regex_quant_range.condition = "^\\d{2,4}$";
+  c_regex_quant_range.type = CriterionType::Regex;
+  assert(evaluate_criterion(c_regex_quant_range, ctx).value() == true);
+
+  Criterion c_regex_quant_min;
+  c_regex_quant_min.context = "$statusCode";
+  c_regex_quant_min.condition = "^\\d{2,}$";
+  c_regex_quant_min.type = CriterionType::Regex;
+  assert(evaluate_criterion(c_regex_quant_min, ctx).value() == true);
+
+  Criterion c_regex_group_ok;
+  c_regex_group_ok.context = "$method";
+  c_regex_group_ok.condition = "^(GET|PO|POST)$";
+  c_regex_group_ok.type = CriterionType::Regex;
+  assert(evaluate_criterion(c_regex_group_ok, ctx).value() == true);
+
+  Criterion c_regex_group_fail;
+  c_regex_group_fail.context = "$method";
+  c_regex_group_fail.condition = "^(GET|DELETE)$";
+  c_regex_group_fail.type = CriterionType::Regex;
+  assert(evaluate_criterion(c_regex_group_fail, ctx).value() == false);
 
   Criterion c_and_ok;
   c_and_ok.condition = "$statusCode == 201 && $method == 'POST'";
@@ -482,6 +532,54 @@ static void test_arazzo_expressions() noexcept {
   c_jp.type = cet;
   assert(evaluate_criterion(c_jp, ctx).value() == true);
 
+  Criterion c_jp_bracket;
+  c_jp_bracket.context = "$response.body";
+  c_jp_bracket.condition = "$['a/b~c'] == 'esc_aped~'";
+  c_jp_bracket.type = CriterionType::JsonPath;
+  assert(evaluate_criterion(c_jp_bracket, ctx).value() == true);
+
+  Criterion c_jp_arr;
+  c_jp_arr.context = "$response.body";
+  c_jp_arr.condition = "$.tags[0] == 'first'";
+  c_jp_arr.type = CriterionType::JsonPath;
+  assert(evaluate_criterion(c_jp_arr, ctx).value() == true);
+
+  Criterion c_jp_missing;
+  c_jp_missing.context = "$response.body";
+  c_jp_missing.condition = "$.missing.nested";
+  c_jp_missing.type = CriterionType::JsonPath;
+  assert(evaluate_criterion(c_jp_missing, ctx).value() == false);
+
+  Criterion c_jp_bad_rhs;
+  c_jp_bad_rhs.context = "$response.body";
+  c_jp_bad_rhs.condition = "$.id == $inputs.missing";
+  c_jp_bad_rhs.type = CriterionType::JsonPath;
+  assert(!evaluate_criterion(c_jp_bad_rhs, ctx).has_value());
+
+  Criterion c_jp_dquote_bracket;
+  c_jp_dquote_bracket.context = "$response.body";
+  c_jp_dquote_bracket.condition = "$[\"id\"]";
+  c_jp_dquote_bracket.type = CriterionType::JsonPath;
+  assert(evaluate_criterion(c_jp_dquote_bracket, ctx).value() == true);
+
+  Criterion c_jp_false;
+  c_jp_false.context = "$response.body";
+  c_jp_false.condition = "$.inactive";
+  c_jp_false.type = CriterionType::JsonPath;
+  assert(evaluate_criterion(c_jp_false, ctx).value() == false);
+
+  Criterion c_jp_null;
+  c_jp_null.context = "$response.body";
+  c_jp_null.condition = "$.empty";
+  c_jp_null.type = CriterionType::JsonPath;
+  assert(evaluate_criterion(c_jp_null, ctx).value() == false);
+
+  Criterion c_jp_slash;
+  c_jp_slash.context = "$response.body";
+  c_jp_slash.condition = "$/id";
+  c_jp_slash.type = CriterionType::JsonPath;
+  assert(evaluate_criterion(c_jp_slash, ctx).value() == true);
+
   Criterion c_jp_bad;
   c_jp_bad.condition = "invalid_jp";
   c_jp_bad.type = CriterionType::JsonPath;
@@ -492,6 +590,20 @@ static void test_arazzo_expressions() noexcept {
   c_xpath.condition = "/root";
   c_xpath.type = CriterionType::XPath;
   assert(evaluate_criterion(c_xpath, ctx).value() == true);
+
+  ctx.inputs["xmlDoc"] =
+      openapi::JsonValue("<root><order><id>1</id></order></root>");
+  Criterion c_xpath_xml_ok;
+  c_xpath_xml_ok.context = "$inputs.xmlDoc";
+  c_xpath_xml_ok.condition = "/root/order";
+  c_xpath_xml_ok.type = CriterionType::XPath;
+  assert(evaluate_criterion(c_xpath_xml_ok, ctx).value() == true);
+
+  Criterion c_xpath_xml_fail;
+  c_xpath_xml_fail.context = "$inputs.xmlDoc";
+  c_xpath_xml_fail.condition = "/root/missing";
+  c_xpath_xml_fail.type = CriterionType::XPath;
+  assert(evaluate_criterion(c_xpath_xml_fail, ctx).value() == false);
 
   Criterion c_empty;
   c_empty.condition = " \t\n\r ";
@@ -520,8 +632,10 @@ static void test_arazzo_expressions() noexcept {
   PayloadReplacement rep_empty_target;
   rep_empty_target.target = "";
   rep_empty_target.value = openapi::JsonValue(int64_t{42});
-  assert(apply_payload_replacement(ctx.request_body, rep_empty_target, ctx)
-             .has_value());
+  auto rep_empty_res =
+      apply_payload_replacement(ctx.request_body, rep_empty_target, ctx);
+  assert(rep_empty_res.has_value());
+  assert(*rep_empty_res == openapi::JsonValue(int64_t{42}));
 
   PayloadReplacement rep_bad_expr;
   rep_bad_expr.target = "/name";
@@ -967,6 +1081,11 @@ static void test_arazzo_parse_and_emit() noexcept {
            R"("workflows":[{"workflowId":"w1","steps":[{"stepId":"s1","operationId":"op","onSuccess":[{"name":"s","type":"goto","workflowId":"w","stepId":"s"}]}]}]})")
            .has_value());
   assert(
+      parse(
+          base_prefix +
+          R"("workflows":[{"workflowId":"w1","steps":[{"stepId":"s1","operationId":"op","onSuccess":[{"name":"s","type":"goto","workflowId":"w1"}]}]}]})")
+          .has_value());
+  assert(
       !parse(
            base_prefix +
            R"("workflows":[{"workflowId":"w1","steps":[{"stepId":"s1","operationId":"op","onSuccess":[{"name":"s","type":"end","criteria":[123]}]}]}]})")
@@ -998,6 +1117,11 @@ static void test_arazzo_parse_and_emit() noexcept {
            base_prefix +
            R"("workflows":[{"workflowId":"w1","steps":[{"stepId":"s1","operationId":"op","onFailure":[{"name":"f","type":"goto","workflowId":"w","stepId":"s"}]}]}]})")
            .has_value());
+  assert(
+      parse(
+          base_prefix +
+          R"("workflows":[{"workflowId":"w1","steps":[{"stepId":"s1","operationId":"op","onFailure":[{"name":"f","type":"goto","workflowId":"w1"}]}]}]})")
+          .has_value());
   assert(
       !parse(
            base_prefix +
@@ -1035,6 +1159,26 @@ static void test_arazzo_parse_and_emit() noexcept {
   assert(!parse(base_prefix +
                 R"("workflows":[{"workflowId":"w1","steps":[{"stepId":""}]}]})")
               .has_value());
+  assert(
+      !parse(
+           base_prefix +
+           R"("workflows":[{"workflowId":"w1","steps":[{"stepId":"s1","operationId":"op","operationPath":"{$sourceDescriptions.sd.url}#/paths/~1p/get"}]}]})")
+           .has_value());
+  assert(
+      !parse(
+           base_prefix +
+           R"("workflows":[{"workflowId":"w1","steps":[{"stepId":"s1","operationPath":"{$sourceDescriptions.sd.url}#/paths/~1p/get","workflowId":"w1"}]}]})")
+           .has_value());
+  assert(
+      !parse(
+           base_prefix +
+           R"("workflows":[{"workflowId":"w1","steps":[{"stepId":"s1","operationId":"op","workflowId":"w1"}]}]})")
+           .has_value());
+  assert(
+      !parse(
+           base_prefix +
+           R"("workflows":[{"workflowId":"w1","steps":[{"stepId":"s1","operationId":"op","operationPath":"{$sourceDescriptions.sd.url}#/paths/~1p/get","workflowId":"w1"}]}]})")
+           .has_value());
   assert(
       !parse(
            base_prefix +
@@ -1310,6 +1454,9 @@ static void test_arazzo_generators_and_cli() noexcept {
     assert(cli::main_impl(4, const_cast<char **>(argv), out_ss, err_ss) == 0);
   }
 
+  auto valid_proj = utils::parse_cpp_project_arazzo(out_sdk_dir);
+  assert(!valid_proj.workflows.empty());
+
   auto fallback_proj =
       utils::parse_cpp_project_arazzo(tmp_dir + "/nonexistent_dir_xyz");
   assert(fallback_proj.arazzo == "1.1.0");
@@ -1385,6 +1532,9 @@ static void test_arazzo_generators_and_cli() noexcept {
                           err_ss) == 0);
 
     cli::ToArazzoConfig to_cfg;
+    assert(cli::to_arazzo(to_cfg, out_ss, err_ss) == 1);
+
+    to_cfg.input = tmp_dir + "/nonexistent_input_dir_999";
     assert(cli::to_arazzo(to_cfg, out_ss, err_ss) == 1);
 
     to_cfg.input = out_sdk_dir;

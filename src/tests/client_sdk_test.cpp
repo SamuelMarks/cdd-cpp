@@ -177,34 +177,148 @@ void test_emit_client() {
   post_op.operationId = "createArray";
   post_op.responses =
       std::map<std::string, openapi::Response>{{"400", resp_200}};
-  post_op.requestBody->content = std::map<std::string, openapi::MediaType>{
-      {"application/json", openapi::MediaType{}}};
+  openapi::MediaType arr_mt;
+  openapi::Schema arr_schema;
+  arr_schema.type = "array";
+  arr_schema.items = std::make_shared<openapi::Schema>();
+  arr_schema.items->ref = openapi::Reference{"#/components/schemas/Pet"};
+  arr_mt.schema = arr_schema;
+  post_op.requestBody->content =
+      std::map<std::string, openapi::MediaType>{{"application/json", arr_mt}};
   pi.post = post_op;
 
-  openapi::Operation skip_op1 = get_op;
-  skip_op1.operationId = "findPetsByStatus";
-  openapi::Operation skip_op2 = get_op;
-  skip_op2.operationId = "getInventory";
-  openapi::Operation list_op = get_op;
-  list_op.operationId = "ListItems";
-  list_op.requestBody->content = std::map<std::string, openapi::MediaType>{
-      {"application/json", openapi::MediaType{}}};
+  openapi::Operation enum_param_op;
+  enum_param_op.operationId = "findByStatus";
+  openapi::Parameter p_enum;
+  p_enum.name = "status";
+  p_enum.in = "query";
+  openapi::Schema s_enum;
+  s_enum.type = "string";
+  s_enum.enum_values = std::vector<std::string>{"available", "pending"};
+  p_enum.schema = s_enum;
+  openapi::Parameter p_enum_empty;
+  p_enum_empty.name = "empty_enum";
+  p_enum_empty.in = "query";
+  openapi::Schema s_enum_empty;
+  s_enum_empty.type = "string";
+  s_enum_empty.enum_values = std::vector<std::string>{};
+  p_enum_empty.schema = s_enum_empty;
+  enum_param_op.parameters =
+      std::vector<openapi::Parameter>{p_enum, p_enum_empty};
+  openapi::Response resp_arr_200;
+  resp_arr_200.description = "Array of Pets";
+  resp_arr_200.content =
+      std::map<std::string, openapi::MediaType>{{"application/json", arr_mt}};
+  enum_param_op.responses =
+      std::map<std::string, openapi::Response>{{"200", resp_arr_200}};
 
-  openapi::Operation body_only_op;
-  body_only_op.operationId = "bodyOnlyOp";
-  body_only_op.requestBody = openapi::RequestBody{};
-  body_only_op.responses =
-      std::map<std::string, openapi::Response>{{"default", resp_200}};
+  openapi::Operation map_resp_op;
+  map_resp_op.operationId = "getMap";
+  openapi::MediaType obj_mt;
+  openapi::Schema map_obj_schema;
+  map_obj_schema.type = "object";
+  obj_mt.schema = map_obj_schema;
+  openapi::Response resp_obj_200;
+  resp_obj_200.description = "Object response";
+  resp_obj_200.content =
+      std::map<std::string, openapi::MediaType>{{"application/json", obj_mt}};
+  map_resp_op.responses =
+      std::map<std::string, openapi::Response>{{"200", resp_obj_200}};
+
+  openapi::Operation prim_resp_op;
+  prim_resp_op.operationId = "getCount";
+  openapi::MediaType int_mt;
+  openapi::Schema int_schema;
+  int_schema.type = "integer";
+  int_mt.schema = int_schema;
+  openapi::Response resp_int_200;
+  resp_int_200.description = "Int response";
+  resp_int_200.content =
+      std::map<std::string, openapi::MediaType>{{"application/json", int_mt}};
+  prim_resp_op.responses =
+      std::map<std::string, openapi::Response>{{"200", resp_int_200}};
+
+  openapi::Operation void_resp_op;
+  void_resp_op.operationId = "deleteItem";
+  openapi::RequestBody obj_rb;
+  obj_rb.content =
+      std::map<std::string, openapi::MediaType>{{"application/json", obj_mt}};
+  void_resp_op.requestBody = obj_rb;
+  openapi::Response resp_204;
+  resp_204.description = "No Content";
+  void_resp_op.responses = std::map<std::string, openapi::Response>{
+      {"201", openapi::Response{}}, {"204", resp_204}};
+
+  openapi::Operation def_only_op;
+  def_only_op.operationId = "defaultOnly";
+  def_only_op.requestBody = openapi::RequestBody{};
+  openapi::MediaType str_mt;
+  str_mt.schema = openapi::Schema{};
+  str_mt.schema->type = "string";
+  openapi::Response resp_str_def;
+  resp_str_def.content =
+      std::map<std::string, openapi::MediaType>{{"application/json", str_mt}};
+  def_only_op.responses =
+      std::map<std::string, openapi::Response>{{"default", resp_str_def}};
 
   openapi::PathItem pi_extra;
-  pi_extra.get = skip_op1;
-  pi_extra.post = skip_op2;
-  pi_extra.put = list_op;
-  pi_extra.delete_op = body_only_op;
+  pi_extra.get = enum_param_op;
+  pi_extra.post = map_resp_op;
+  pi_extra.put = prim_resp_op;
+  pi_extra.delete_op = void_resp_op;
+  pi_extra.patch = def_only_op;
+
+  openapi::PathItem pi_more_types;
+  openapi::Operation num_op;
+  num_op.operationId = "getScore";
+  openapi::MediaType num_mt;
+  num_mt.schema = openapi::Schema{};
+  num_mt.schema->type = "number";
+  openapi::Response r_num;
+  r_num.content =
+      std::map<std::string, openapi::MediaType>{{"application/json", num_mt}};
+  num_op.responses = std::map<std::string, openapi::Response>{{"200", r_num}};
+  pi_more_types.get = num_op;
+
+  openapi::Operation bool_op;
+  bool_op.operationId = "getFlag";
+  openapi::MediaType bool_mt;
+  bool_mt.schema = openapi::Schema{};
+  bool_mt.schema->type = "boolean";
+  openapi::Response r_bool;
+  r_bool.content =
+      std::map<std::string, openapi::MediaType>{{"application/json", bool_mt}};
+  bool_op.responses = std::map<std::string, openapi::Response>{{"200", r_bool}};
+  pi_more_types.post = bool_op;
+
+  openapi::Operation untyped_arr_op;
+  untyped_arr_op.operationId = "getRawArr";
+  openapi::MediaType uarr_mt;
+  uarr_mt.schema = openapi::Schema{};
+  uarr_mt.schema->type = "array";
+  openapi::Response r_uarr;
+  r_uarr.content =
+      std::map<std::string, openapi::MediaType>{{"application/json", uarr_mt}};
+  untyped_arr_op.responses =
+      std::map<std::string, openapi::Response>{{"200", r_uarr}};
+  pi_more_types.put = untyped_arr_op;
+
+  openapi::Operation direct_ref_op;
+  direct_ref_op.operationId = "getDirectRef";
+  openapi::MediaType dref_mt;
+  dref_mt.schema = openapi::Schema{};
+  dref_mt.schema->ref = openapi::Reference{"DirectModel"};
+  openapi::Response r_dref;
+  r_dref.content =
+      std::map<std::string, openapi::MediaType>{{"application/json", dref_mt}};
+  direct_ref_op.responses =
+      std::map<std::string, openapi::Response>{{"200", r_dref}};
+  pi_more_types.delete_op = direct_ref_op;
 
   std::map<std::string, openapi::PathItem> paths;
   paths["/pet/{id}"] = pi;
   paths["/extra"] = pi_extra;
+  paths["/more"] = pi_more_types;
   spec.paths = paths;
 
   auto generated_files = emit_client(spec);
@@ -213,18 +327,36 @@ void test_emit_client() {
 
   std::string generated = "";
   for (const auto &[name, content] : generated_files) {
-    generated += content + "\\n";
+    generated += content + "\n";
   }
 
   std::string generated2 = "";
   for (const auto &[name, content] : generated_files_with_tests) {
-    generated2 += name + "\\n" + content + "\\n";
+    generated2 += name + "\n" + content + "\n";
   }
 
   std::string generated3 = "";
   for (const auto &[name, content] : generated_files_with_options) {
-    generated3 += content + "\\n";
+    generated3 += content + "\n";
   }
+  assert(!generated_files_with_options.contains(".github/workflows/ci.yml"));
+  assert(!generated_files_with_options.contains("CMakeLists.txt"));
+  assert(!generated3.empty());
+  assert(generated.find("@response_cpp_type std::vector<cdd_models::Pet>") !=
+         std::string::npos);
+  assert(
+      generated.find("@response_cpp_type std::map<std::string, std::string>") !=
+      std::string::npos);
+  assert(generated.find("@response_cpp_type int64_t") != std::string::npos);
+  assert(generated.find("@response_cpp_type double") != std::string::npos);
+  assert(generated.find("@response_cpp_type bool") != std::string::npos);
+  assert(generated.find("@response_cpp_type std::vector<std::string>") !=
+         std::string::npos);
+  assert(generated.find("@response_cpp_type cdd_models::DirectModel") !=
+         std::string::npos);
+  assert(generated.find("@response_cpp_type void") != std::string::npos);
+  assert(generated2.find("client.findByStatus(\"available\"") !=
+         std::string::npos);
 
   assert(generated.find("/// @title Test API") != std::string::npos);
   assert(generated.find("/// @version 1.0.0") != std::string::npos);
@@ -281,22 +413,26 @@ void test_emit_client() {
   assert(generated2.find("cd tests && ./client_test") != std::string::npos);
 
   openapi::OpenAPI spec_empty;
-  emit_client(spec_empty, false, false, true);
+  auto empty1 = emit_client(spec_empty, false, false, true);
+  assert(empty1.contains("src/client.hpp"));
   spec_empty.servers = std::vector<openapi::Server>{};
   spec_empty.paths = std::map<std::string, openapi::PathItem>{};
-  emit_client(spec_empty, false, false, true);
+  auto empty2 = emit_client(spec_empty, false, false, true);
+  assert(empty2.contains("tests/client_test.cpp"));
 
   spec_empty.paths =
       std::map<std::string, openapi::PathItem>{{"/{id}", openapi::PathItem{}}};
   openapi::Operation get_op_empty;
   get_op_empty.operationId = "getEmpty";
   spec_empty.paths->at("/{id}").get = get_op_empty;
-  emit_client(spec_empty, false, false, true);
+  auto empty3 = emit_client(spec_empty, false, false, true);
+  assert(empty3.at("src/client.hpp").find("getEmpty()") != std::string::npos);
 
   openapi::OpenAPI spec_str;
   spec_str.paths = std::map<std::string, openapi::PathItem>{
       {"/\"\\\n\r", openapi::PathItem{}}};
-  emit_client(spec_str);
+  auto str_files = emit_client(spec_str);
+  assert(str_files.contains("src/client.cpp"));
   assert(
       generated.find("content-type: multipart/form-data; boundary=boundary") !=
       std::string::npos);
@@ -325,8 +461,9 @@ void test_emit_client() {
   auto generated4_files = emit_client(spec);
   std::string generated4 = "";
   for (const auto &[name, content] : generated4_files) {
-    generated4 += content + "\\n";
+    generated4 += content + "\n";
   }
+  assert(generated4.find("request(") != std::string::npos);
 
   std::cout << "client_sdk::test_emit_client passed.\n";
 }

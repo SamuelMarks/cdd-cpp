@@ -10,6 +10,7 @@
 #include "../models/parse.hpp"
 #include "../server/parse.hpp"
 #include "cpp_ast.hpp"
+#include "version.hpp"
 #include <cctype>
 #include <filesystem>
 #include <fstream>
@@ -259,7 +260,7 @@ try_parse_cpp_project(const std::string &folder_path) noexcept {
   openapi::OpenAPI spec;
   spec.openapi = "3.2.0";
   spec.info.title = "Generated API from C++";
-  spec.info.version = "0.0.4";
+  spec.info.version = std::string(CDD_CPP_VERSION);
   spec.components = openapi::Components{};
   spec.components->schemas = std::map<std::string, openapi::Schema>{};
   spec.paths = std::map<std::string, openapi::PathItem>{};
@@ -297,7 +298,7 @@ openapi::OpenAPI parse_cpp_project(const std::string &folder_path) noexcept {
   openapi::OpenAPI fallback;
   fallback.openapi = "3.2.0";
   fallback.info.title = "Generated API from C++";
-  fallback.info.version = "0.0.4";
+  fallback.info.version = std::string(CDD_CPP_VERSION);
   fallback.components = openapi::Components{};
   fallback.components->schemas = std::map<std::string, openapi::Schema>{};
   fallback.paths = std::map<std::string, openapi::PathItem>{};
@@ -337,7 +338,7 @@ try_parse_cpp_project_arazzo(const std::string &folder_path) noexcept {
   arazzo::Arazzo spec;
   spec.arazzo = "1.1.0";
   spec.info.title = "Generated Arazzo from C++";
-  spec.info.version = "0.0.4";
+  spec.info.version = std::string(CDD_CPP_VERSION);
   arazzo::SourceDescription sd;
   sd.name = "default";
   sd.url = "./openapi.json";
@@ -380,7 +381,7 @@ parse_cpp_project_arazzo(const std::string &folder_path) noexcept {
   arazzo::Arazzo fallback;
   fallback.arazzo = "1.1.0";
   fallback.info.title = "Generated Arazzo from C++";
-  fallback.info.version = "0.0.4";
+  fallback.info.version = std::string(CDD_CPP_VERSION);
   arazzo::SourceDescription sd;
   sd.name = "default";
   sd.url = "./openapi.json";
