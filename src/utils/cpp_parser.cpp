@@ -99,7 +99,7 @@ static void scan_httplib_routes(std::string_view content,
         c = '_';
     }
     op.operationId = op_id;
-    op.parameters = std::vector<openapi::Parameter>{};
+    op.parameters.emplace();
 
     for (const auto &pname :
          extract_call_string_args(body_sv, "req.path_params.at")) {
@@ -107,7 +107,7 @@ static void scan_httplib_routes(std::string_view content,
       p.name = pname;
       p.in = "path";
       p.required = true;
-      p.schema = openapi::Schema{};
+      p.schema.emplace();
       p.schema->type = "string";
       op.parameters->push_back(p);
     }
@@ -117,7 +117,7 @@ static void scan_httplib_routes(std::string_view content,
       p.name = qname;
       p.in = "query";
       p.required = false;
-      p.schema = openapi::Schema{};
+      p.schema.emplace();
       p.schema->type = "string";
       op.parameters->push_back(p);
     }
@@ -127,7 +127,7 @@ static void scan_httplib_routes(std::string_view content,
       p.name = hname;
       p.in = "header";
       p.required = false;
-      p.schema = openapi::Schema{};
+      p.schema.emplace();
       p.schema->type = "string";
       op.parameters->push_back(p);
     }
@@ -139,7 +139,7 @@ static void scan_httplib_routes(std::string_view content,
       openapi::RequestBody req_body;
       req_body.required = true;
       openapi::MediaType mt;
-      mt.schema = openapi::Schema{};
+      mt.schema.emplace();
       mt.schema->ref = openapi::Reference{"#/components/schemas/" + model_type,
                                           std::nullopt, std::nullopt};
       req_body.content["application/json"] = mt;
@@ -217,7 +217,7 @@ static void scan_cli_handler_calls(std::string_view content,
           openapi::RequestBody req_body;
           req_body.required = true;
           openapi::MediaType mt;
-          mt.schema = openapi::Schema{};
+          mt.schema.emplace();
           mt.schema->type = "string";
           req_body.content["application/json"] = mt;
           op.requestBody = req_body;
@@ -233,7 +233,7 @@ static void scan_cli_handler_calls(std::string_view content,
           p.name = pname;
           p.in = is_path ? "path" : "query";
           p.required = is_path;
-          p.schema = openapi::Schema{};
+          p.schema.emplace();
           p.schema->type = "string";
           op.parameters->push_back(p);
         }
@@ -261,9 +261,9 @@ try_parse_cpp_project(const std::string &folder_path) noexcept {
   spec.openapi = "3.2.0";
   spec.info.title = "Generated API from C++";
   spec.info.version = std::string(CDD_CPP_VERSION);
-  spec.components = openapi::Components{};
-  spec.components->schemas = std::map<std::string, openapi::Schema>{};
-  spec.paths = std::map<std::string, openapi::PathItem>{};
+  spec.components.emplace();
+  spec.components->schemas.emplace();
+  spec.paths.emplace();
 
   for (fs::recursive_directory_iterator end; it != end; it.increment(ec)) {
     if (it->is_regular_file(ec)) {
@@ -292,17 +292,17 @@ try_parse_cpp_project(const std::string &folder_path) noexcept {
 /// @brief Scan and extract C++ project specifications via `parse_cpp_project`.
 openapi::OpenAPI parse_cpp_project(const std::string &folder_path) noexcept {
   auto res = try_parse_cpp_project(folder_path);
-  if (res.has_value()) {
-    return *res;
+  if (!res.has_value()) {
+    openapi::OpenAPI fallback;
+    fallback.openapi = "3.2.0";
+    fallback.info.title = "Generated API from C++";
+    fallback.info.version = std::string(CDD_CPP_VERSION);
+    fallback.components.emplace();
+    fallback.components->schemas.emplace();
+    fallback.paths.emplace();
+    res = std::move(fallback);
   }
-  openapi::OpenAPI fallback;
-  fallback.openapi = "3.2.0";
-  fallback.info.title = "Generated API from C++";
-  fallback.info.version = std::string(CDD_CPP_VERSION);
-  fallback.components = openapi::Components{};
-  fallback.components->schemas = std::map<std::string, openapi::Schema>{};
-  fallback.paths = std::map<std::string, openapi::PathItem>{};
-  return fallback;
+  return *res;
 }
 
 /// @brief Merge workflows from a candidate Arazzo spec into a destination
@@ -375,19 +375,19 @@ try_parse_cpp_project_arazzo(const std::string &folder_path) noexcept {
 arazzo::Arazzo
 parse_cpp_project_arazzo(const std::string &folder_path) noexcept {
   auto res = try_parse_cpp_project_arazzo(folder_path);
-  if (res.has_value()) {
-    return *res;
+  if (!res.has_value()) {
+    arazzo::Arazzo fallback;
+    fallback.arazzo = "1.1.0";
+    fallback.info.title = "Generated Arazzo from C++";
+    fallback.info.version = std::string(CDD_CPP_VERSION);
+    arazzo::SourceDescription sd;
+    sd.name = "default";
+    sd.url = "./openapi.json";
+    sd.type = arazzo::SourceDescriptionType::OpenApi;
+    fallback.sourceDescriptions.push_back(std::move(sd));
+    res = std::move(fallback);
   }
-  arazzo::Arazzo fallback;
-  fallback.arazzo = "1.1.0";
-  fallback.info.title = "Generated Arazzo from C++";
-  fallback.info.version = std::string(CDD_CPP_VERSION);
-  arazzo::SourceDescription sd;
-  sd.name = "default";
-  sd.url = "./openapi.json";
-  sd.type = arazzo::SourceDescriptionType::OpenApi;
-  fallback.sourceDescriptions.push_back(std::move(sd));
-  return fallback;
+  return *res;
 }
 
 } // namespace cdd_cpp::utils
