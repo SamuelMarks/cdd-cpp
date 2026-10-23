@@ -176,6 +176,7 @@ void emit_Discriminator(utils::JsonWriter &jw,
 /// @brief Serialize OpenAPI model element via `emit_XML`.
 void emit_XML(utils::JsonWriter &jw, const XML &obj) noexcept {
   jw.start_object();
+  jw.key_optional("nodeType", obj.nodeType);
   jw.key_optional("name", obj.name);
   jw.key_optional("namespace", obj.namespace_url);
   jw.key_optional("prefix", obj.prefix);
@@ -339,6 +340,11 @@ void emit_Example(utils::JsonWriter &jw, const Example &obj) noexcept {
   jw.start_object();
   jw.key_optional("summary", obj.summary);
   jw.key_optional("description", obj.description);
+  if (obj.dataValue.has_value()) {
+    jw.key("dataValue");
+    arazzo::emit_json_value(jw, *obj.dataValue);
+  }
+  jw.key_optional("serializedValue", obj.serializedValue);
   jw.key_optional("value", obj.value);
   jw.key_optional("externalValue", obj.externalValue);
   if (obj.ref.has_value()) {

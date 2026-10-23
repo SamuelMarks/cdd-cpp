@@ -342,6 +342,7 @@ static Discriminator parse_Discriminator(simdjson::dom::object obj) noexcept {
 /// @brief Deserialize OpenAPI JSON element via `parse_XML`.
 static XML parse_XML(simdjson::dom::object obj) noexcept {
   XML res;
+  res.nodeType = get_optional_string(obj, "nodeType");
   res.name = get_optional_string(obj, "name");
   res.namespace_url = get_optional_string(obj, "namespace");
   res.prefix = get_optional_string(obj, "prefix");
@@ -508,6 +509,11 @@ static Example parse_Example(simdjson::dom::object obj) noexcept {
   Example res;
   res.summary = get_optional_string(obj, "summary");
   res.description = get_optional_string(obj, "description");
+  simdjson::dom::element el_dv;
+  if (obj["dataValue"].get(el_dv) == simdjson::SUCCESS) {
+    res.dataValue = parse_json_value(el_dv);
+  }
+  res.serializedValue = get_optional_string(obj, "serializedValue");
   res.value = get_optional_string(obj, "value");
   res.externalValue = get_optional_string(obj, "externalValue");
   simdjson::dom::element el_ref;

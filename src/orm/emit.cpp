@@ -54,7 +54,7 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
 
 std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
                                                 bool with_postgres,
-                                                bool /*with_faker*/) noexcept {
+                                                bool with_faker) noexcept {
   std::map<std::string, std::string> files;
 
   // Error Enum
@@ -139,10 +139,12 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
         c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
 
       std::stringstream ss;
-      ss << "#pragma once\n#include <array>\n#include <cstdlib>\n#include "
-            "<expected>\n#include <vector>\n#include "
+      ss << "#pragma once\n#include <array>\n#include <cstdint>\n#include "
+            "<cstdlib>\n#include <expected>\n#include <vector>\n#include "
             "\"error.hpp\"\n#include \"../models/"
          << name << ".hpp\"\n";
+      if (with_faker)
+        ss << "#include \"../mocks/" << name << "Mock.hpp\"\n";
       if (with_postgres)
         ss << "#include <libpq-fe.h>\n";
       ss << "\nnamespace cdd_orm {\n";
@@ -155,23 +157,54 @@ std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
          << name
          << "& item) noexcept = 0;\n        virtual "
             "std::expected<std::vector<cdd_models::"
-         << name << ">, Error> get_all() noexcept = 0;\n    };\n\n";
+         << name << ">, Error> get_all() noexcept = 0;\n";
+      ss << "        virtual std::expected<void, Error> seed(std::size_t "
+            "count = 1, uint64_t rng_seed = 42) noexcept {\n"
+         << "            (void)count; (void)rng_seed;\n"
+         << "            return std::unexpected(Error::NotImplemented);\n"
+         << "        }\n    };\n\n";
       ss << "    class Stub" << name << "Dao : public I" << name
-         << "Dao {\n    public:\n";
+         << "Dao {\n        std::vector<cdd_models::" << name
+         << "> store_;\n    public:\n";
       ss << "        std::expected<void, Error> create_table() noexcept "
             "override { return std::unexpected(Error::NotImplemented); }\n";
       ss << "        std::expected<void, Error> insert(const cdd_models::"
-         << name
-         << "&) noexcept override { return "
-            "std::unexpected(Error::NotImplemented); }\n        "
-            "std::expected<std::vector<cdd_models::"
-         << name
-         << ">, Error> get_all() noexcept override { return "
-            "std::unexpected(Error::NotImplemented); }\n    };\n\n";
+         << name << "& item) noexcept override {\n"
+         << "            store_.push_back(item);\n"
+         << "            return std::unexpected(Error::NotImplemented);\n"
+         << "        }\n        std::expected<std::vector<cdd_models::" << name
+         << ">, Error> get_all() noexcept override {\n"
+         << "            if (!store_.empty()) return store_;\n"
+         << "            return std::unexpected(Error::NotImplemented);\n"
+         << "        }\n";
+      if (with_faker) {
+        ss << "        std::expected<void, Error> seed(std::size_t count = 1, "
+              "uint64_t rng_seed = 42) noexcept override {\n"
+           << "            for (std::size_t i = 0; i < count; ++i) {\n"
+           << "                store_.push_back(cdd_mocks::" << name
+           << "Mock::generate(rng_seed + i));\n"
+           << "            }\n"
+           << "            return {};\n"
+           << "        }\n";
+      }
+      ss << "    };\n\n";
       if (with_postgres) {
         ss << "    class Concrete" << name << "Dao : public I" << name
            << "Dao {\n        PGconn* conn;\n    public:\n        Concrete"
            << name << "Dao(PGconn* c) noexcept : conn(c) {}\n";
+        if (with_faker) {
+          ss << "        std::expected<void, Error> seed(std::size_t count = "
+                "1, uint64_t rng_seed = 42) noexcept override {\n"
+             << "            auto tbl = create_table();\n"
+             << "            if (!tbl) return tbl;\n"
+             << "            for (std::size_t i = 0; i < count; ++i) {\n"
+             << "                auto ins = insert(cdd_mocks::" << name
+             << "Mock::generate(rng_seed + i));\n"
+             << "                if (!ins) return ins;\n"
+             << "            }\n"
+             << "            return {};\n"
+             << "        }\n";
+        }
         ss << "        std::expected<void, Error> create_table() noexcept "
               "override {\n";
         ss << "            if (!conn) return "

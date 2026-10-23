@@ -356,6 +356,10 @@ void parse_schema_docstrings(const std::string &docstring,
       schema.xml = openapi::XML{};
     return *schema.xml;
   };
+  if (auto v = extract_tag(docstring, "xml_nodeType"))
+    ensure_xml().nodeType = *v;
+  if (auto v = extract_tag(docstring, "xml.nodeType"))
+    ensure_xml().nodeType = *v;
   if (auto v = extract_tag(docstring, "xml_name"))
     ensure_xml().name = *v;
   if (auto v = extract_tag(docstring, "xml.name"))

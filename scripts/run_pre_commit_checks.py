@@ -457,6 +457,13 @@ def wait_for_url(url, timeout=150):
     return False
 
 
+def ensure_spec_file(spec_path, filename):
+    if not os.path.exists(spec_path):
+        url = f"https://raw.githubusercontent.com/SamuelMarks/cdd-openapi-test-harness/master/{filename}"
+        print(f"Downloading {url} to {spec_path}...")
+        urllib.request.urlretrieve(url, spec_path)
+
+
 def main():
     try:
         build_project()
@@ -507,6 +514,7 @@ def main():
             shutil.rmtree(v2_out_dir)
 
         petstore_json = os.path.abspath(os.path.join("..", "petstore.json"))
+        ensure_spec_file(petstore_json, "petstore.json")
         run_cmd(
             [
                 cdd_cpp_bin,
@@ -559,6 +567,7 @@ def main():
             shutil.rmtree(v3_out_dir)
 
         petstore_oas3_json = os.path.abspath(os.path.join("..", "petstore_oas3.json"))
+        ensure_spec_file(petstore_oas3_json, "petstore_oas3.json")
         run_cmd(
             [
                 cdd_cpp_bin,

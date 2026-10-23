@@ -62,7 +62,8 @@ void test_structs_openapi() {
       Discriminator{"type", std::map<std::string, std::string>{{"a", "A"}},
                     "defaultA"},
       Discriminator{"kind", {}, {}});
-  verify_value_semantics(XML{"item", "http://ns", "p", true, false}, XML{});
+  verify_value_semantics(XML{"element", "item", "http://ns", "p", true, false},
+                         XML{});
 
   // Deep equality across separately allocated shared_ptr trees on Schema
   Schema s1;
@@ -90,9 +91,15 @@ void test_structs_openapi() {
       std::map<std::string, Schema>{{"id", Schema{"string"}}});
   verify_value_semantics(s1, s2);
 
-  verify_value_semantics(
-      Example{"sum", "desc", "val", JsonValue(42), "http://ext", {}},
-      Example{});
+  verify_value_semantics(Example{"sum",
+                                 "desc",
+                                 JsonValue(42),
+                                 "42",
+                                 "val",
+                                 JsonValue(42),
+                                 "http://ext",
+                                 {}},
+                         Example{});
 
   // Deep equality across separately allocated shared_ptr on Encoding &
   // MediaType

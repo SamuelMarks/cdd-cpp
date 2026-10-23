@@ -587,6 +587,9 @@ struct Discriminator {
 /// definitions.
 struct XML {
   std::optional<std::string>
+      nodeType; ///< The XML node type ("element", "attribute", "text", "cdata",
+                ///< "none", OpenAPI 3.2).
+  std::optional<std::string>
       name; ///< Replaces the name of the element/attribute used for the
             ///< described schema property.
   std::optional<std::string>
@@ -760,7 +763,13 @@ struct Schema {
 struct Example {
   std::optional<std::string> summary; ///< Short description for the example.
   std::optional<std::string> description; ///< Long description for the example.
-  std::optional<std::string> value;       ///< Embedded literal example.
+  std::optional<JsonValue>
+      dataValue; ///< Embedded example of the data structure MUST be valid
+                 ///< according to the schema (OpenAPI 3.2).
+  std::optional<std::string>
+      serializedValue; ///< Embedded example of the serialized form of the value
+                       ///< (OpenAPI 3.2).
+  std::optional<std::string> value; ///< Embedded literal example.
   std::optional<JsonValue>
       typed_value; ///< Strongly typed JSON value for non-string examples.
   std::optional<std::string>

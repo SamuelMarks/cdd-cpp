@@ -104,6 +104,7 @@ void test_parse() {
 /// @description User object
 /// @example {"id": 1}
 /// @format int64
+/// @xml_nodeType element
 /// @xml_name UserNode
 /// @xml_namespace https://example.com/ns
 /// @xml_prefix usr

@@ -15,6 +15,7 @@ void test_parse() {
                    "/// @example my_example\n"
                    "/// @externalDocs.description More info\n"
                    "/// @externalDocs.url https://docs\n"
+                   "/// @xml.nodeType element\n"
                    "/// @xml.name name\n"
                    "/// @xml.namespace_url https://xml\n"
                    "/// @xml.prefix prefix\n"
@@ -97,7 +98,7 @@ void test_emit() {
   s.description = "Test description\r\nline2";
   s.example = "{\"name\": \"test\"}";
   s.externalDocs = openapi::ExternalDocumentation{"More info", "https://docs"};
-  s.xml = openapi::XML{"name", "https://xml", "prefix", true, false};
+  s.xml = openapi::XML{"element", "name", "https://xml", "prefix", true, false};
   s.discriminator = openapi::Discriminator{
       "prop", std::map<std::string, std::string>{{"k1", "v1"}}};
   s.properties = std::make_shared<std::map<std::string, openapi::Schema>>();

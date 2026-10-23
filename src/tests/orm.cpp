@@ -55,6 +55,11 @@ void test_emit() {
   assert(rf_code_no_pg.find("RepositoryFactory() noexcept {}") !=
          std::string::npos);
 
+  auto files_faker = emit_modular(*spec, true, true);
+  assert(files_faker.count("src/orm/UserDao.hpp"));
+  assert(files_faker["src/orm/UserDao.hpp"].find("UserMock::generate") !=
+         std::string::npos);
+
   std::string combined = emit(*spec);
   assert(combined.find("ConcreteUserDao") != std::string::npos);
   assert(combined.find("PQntuples") != std::string::npos);

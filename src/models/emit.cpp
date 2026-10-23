@@ -65,6 +65,8 @@ void emit_docstrings(std::stringstream &ss, const openapi::Schema &schema,
        << "\n";
   }
   if (schema.xml) {
+    if (schema.xml->nodeType)
+      ss << indent << "/// @xml.nodeType " << *schema.xml->nodeType << "\n";
     if (schema.xml->name)
       ss << indent << "/// @xml.name " << *schema.xml->name << "\n";
     if (schema.xml->namespace_url)

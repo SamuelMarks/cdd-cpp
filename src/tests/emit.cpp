@@ -580,10 +580,21 @@ void test_emit() {
           "enum": ["dog", "cat"],
           "examples": ["dog"],
           "additionalProperties": false,
+          "xml": {
+            "nodeType": "element",
+            "name": "pet"
+          },
           "discriminator": {
             "propertyName": "petType",
             "defaultMapping": "#/components/schemas/Dog"
           }
+        }
+      },
+      "examples": {
+        "PetEx": {
+          "summary": "Pet example",
+          "dataValue": {"petType": "dog"},
+          "serializedValue": "{\"petType\":\"dog\"}"
         }
       }
     }
@@ -599,6 +610,10 @@ void test_emit() {
   assert(out_3.find(R"("parent":"Core")") != std::string::npos);
   assert(out_3.find(R"("kind":"entity")") != std::string::npos);
   assert(out_3.find(R"("defaultMapping":"#/components/schemas/Dog")") !=
+         std::string::npos);
+  assert(out_3.find(R"("nodeType":"element")") != std::string::npos);
+  assert(out_3.find(R"("dataValue":{"petType":"dog"})") != std::string::npos);
+  assert(out_3.find(R"("serializedValue":"{\"petType\":\"dog\"}")") !=
          std::string::npos);
   assert_round_trip(spec_3);
 

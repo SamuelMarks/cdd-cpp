@@ -288,7 +288,10 @@ void test_emit() {
   openapi::OpenAPI empty_spec;
   assert(emit(empty_spec).find("class Router") != std::string::npos);
   empty_spec.components = openapi::Components{};
-  assert(!emit_modular(empty_spec, false, false, false, false).empty());
+  auto empty_mod_files = emit_modular(empty_spec, false, false, false, false);
+  assert(!empty_mod_files.empty());
+  assert(empty_mod_files["README.md"].find("# Generated Mock Server") !=
+         std::string::npos);
 
   auto files = emit_modular(spec, false, false, false, false);
   assert(files.contains("CMakeLists.txt"));
@@ -315,13 +318,44 @@ void test_emit() {
   auto full_files = emit_modular(spec, false, true, true, true);
   assert(full_files.count("src/mocks/TestStructMock.hpp"));
   assert(full_files.count("src/routes/TestStructRoutes.hpp"));
+  assert(full_files.count("src/seeder/Seeder.hpp"));
+  assert(full_files.count("src/middleware/CorsMiddleware.hpp"));
+  assert(full_files.count("src/middleware/ValidationMiddleware.hpp"));
+  assert(full_files.count("src/middleware/AuthMiddleware.hpp"));
+  assert(full_files.count("src/webhooks/WebhookDispatcher.hpp"));
+  assert(full_files.count("README.md"));
+  assert(full_files["README.md"].find("# Test") != std::string::npos);
+  assert(full_files["src/seeder/Seeder.hpp"].find("EntityPool") !=
+         std::string::npos);
+  assert(full_files["src/middleware/CorsMiddleware.hpp"].find(
+             "Access-Control-Allow-Origin") != std::string::npos);
+  assert(full_files["src/middleware/ValidationMiddleware.hpp"].find(
+             "Field '\" + field + \"' must match format 'email'") !=
+         std::string::npos);
+  assert(full_files["src/middleware/ValidationMiddleware.hpp"].find(
+             "Array '\" + field + \"' exceeds maximum length") !=
+         std::string::npos);
+  assert(full_files["src/middleware/AuthMiddleware.hpp"].find(
+             "mock-token-123") != std::string::npos);
+  assert(full_files["src/middleware/AuthMiddleware.hpp"].find(
+             "/auth/register") != std::string::npos);
+  assert(full_files["src/webhooks/WebhookDispatcher.hpp"].find(
+             "/_mock/trigger-webhook/:webhook_name") != std::string::npos);
   assert(full_files.count("tests/TestStructTest.cpp"));
+  assert(full_files.count("tests/MockServerMiddlewareTest.cpp"));
   assert(full_files.count("src/generated_server.cpp"));
   assert(full_files.count("CMakeLists.txt"));
   assert(full_files.count("src/CMakeLists.txt"));
   assert(full_files.count("tests/CMakeLists.txt"));
+  assert(full_files["tests/CMakeLists.txt"].find(
+             "target_link_libraries(MockServerMiddlewareTest gtest_main gmock "
+             "httplib::httplib)") != std::string::npos);
   assert(full_files["src/generated_server.cpp"].find(
              "cdd_orm::DatabaseConfig::from_env()") != std::string::npos);
+  assert(full_files["src/generated_server.cpp"].find("--seed-random") !=
+         std::string::npos);
+  assert(full_files["src/generated_server.cpp"].find("--seed-value") !=
+         std::string::npos);
 
   auto no_pg_test_files = emit_modular(spec, false, true, false, false);
   assert(no_pg_test_files.count("tests/CMakeLists.txt"));

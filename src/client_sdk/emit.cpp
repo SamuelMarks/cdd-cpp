@@ -140,7 +140,28 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
   c_hpp << "        void set_api_key(const std::string& key) noexcept { "
            "api_key_ = key; }\n";
   c_hpp << "        void set_bearer_token(const std::string& token) noexcept { "
-           "bearer_token_ = token; }\n\n";
+           "bearer_token_ = token; }\n";
+  c_hpp << "        std::expected<std::string, std::string> "
+           "fetch_oauth2_token(const std::string& token_url, const "
+           "std::string& client_id, const std::string& client_secret) "
+           "noexcept;\n";
+  c_hpp << "        std::expected<std::string, std::string> "
+           "fetch_oidc_configuration(const std::string& discovery_url) "
+           "noexcept;\n\n";
+  c_hpp << "        struct AuthAdapter {\n";
+  c_hpp << "            Client* client;\n";
+  c_hpp << "            std::expected<std::string, std::string> "
+           "register_user(const std::string& username, const std::string& "
+           "password) const noexcept;\n";
+  c_hpp << "            std::expected<std::string, std::string> "
+           "login(const std::string& username, const std::string& password) "
+           "const noexcept;\n";
+  c_hpp << "            std::expected<std::string, std::string> "
+           "refresh() const noexcept;\n";
+  c_hpp << "            std::expected<std::string, std::string> "
+           "logout() const noexcept;\n";
+  c_hpp << "        };\n";
+  c_hpp << "        AuthAdapter auth{this};\n\n";
   c_hpp << "        struct McpAdapter {\n";
   c_hpp << "            Client* client;\n";
   c_hpp << "            std::string get_tools() const noexcept;\n";
@@ -238,6 +259,101 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
 
   c_cpp << "    Client::~Client() noexcept {\n";
   c_cpp << "        if(curl) curl_easy_cleanup(curl);\n";
+  c_cpp << "    }\n\n";
+
+  c_cpp << "    std::expected<std::string, std::string> "
+           "Client::fetch_oauth2_token(const std::string& token_url, const "
+           "std::string& client_id, const std::string& client_secret) "
+           "noexcept {\n";
+  c_cpp << "        if (!curl) return std::unexpected(\"Curl not "
+           "initialized\");\n";
+  c_cpp << "        std::string readBuffer;\n";
+  c_cpp << "        std::string post_fields = "
+           "\"grant_type=client_credentials&client_id=\" + url_encode(curl, "
+           "client_id) + \"&client_secret=\" + url_encode(curl, "
+           "client_secret);\n";
+  c_cpp << "        curl_easy_setopt(curl, CURLOPT_URL, token_url.c_str());\n";
+  c_cpp << "        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "
+           "post_fields.c_str());\n";
+  c_cpp << "        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, "
+           "WriteCallback);\n";
+  c_cpp << "        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);\n";
+  c_cpp << "        CURLcode res = curl_easy_perform(curl);\n";
+  c_cpp << "        if (res != CURLE_OK) return "
+           "std::unexpected(curl_easy_strerror(res));\n";
+  c_cpp
+      << "        auto pos = readBuffer.find(\"\\\"access_token\\\":\\\"\");\n";
+  c_cpp << "        if (pos != std::string::npos) {\n";
+  c_cpp << "            auto start = pos + 16;\n";
+  c_cpp << "            auto end = readBuffer.find('\"', start);\n";
+  c_cpp << "            if (end != std::string::npos) bearer_token_ = "
+           "readBuffer.substr(start, end - start);\n";
+  c_cpp << "        }\n";
+  c_cpp << "        return bearer_token_;\n";
+  c_cpp << "    }\n\n";
+
+  c_cpp << "    std::expected<std::string, std::string> "
+           "Client::fetch_oidc_configuration(const std::string& discovery_url) "
+           "noexcept {\n";
+  c_cpp << "        if (!curl) return std::unexpected(\"Curl not "
+           "initialized\");\n";
+  c_cpp << "        std::string readBuffer;\n";
+  c_cpp << "        curl_easy_setopt(curl, CURLOPT_URL, "
+           "discovery_url.c_str());\n";
+  c_cpp << "        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, "
+           "WriteCallback);\n";
+  c_cpp << "        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);\n";
+  c_cpp << "        CURLcode res = curl_easy_perform(curl);\n";
+  c_cpp << "        if (res != CURLE_OK) return "
+           "std::unexpected(curl_easy_strerror(res));\n";
+  c_cpp << "        return readBuffer;\n";
+  c_cpp << "    }\n\n";
+
+  c_cpp << "    std::expected<std::string, std::string> "
+           "Client::AuthAdapter::register_user(const std::string& username, "
+           "const std::string& password) const noexcept {\n";
+  c_cpp << "        if (!client || !client->curl) return "
+           "std::unexpected(\"Curl not initialized\");\n";
+  c_cpp << "        std::string readBuffer;\n";
+  c_cpp << "        std::string url = client->base_url + "
+           "\"/auth/register?username=\" + url_encode(client->curl, username) "
+           "+ \"&password=\" + url_encode(client->curl, password);\n";
+  c_cpp
+      << "        curl_easy_setopt(client->curl, CURLOPT_URL, url.c_str());\n";
+  c_cpp
+      << "        curl_easy_setopt(client->curl, CURLOPT_POSTFIELDS, \"\");\n";
+  c_cpp << "        curl_easy_setopt(client->curl, CURLOPT_WRITEFUNCTION, "
+           "WriteCallback);\n";
+  c_cpp << "        curl_easy_setopt(client->curl, CURLOPT_WRITEDATA, "
+           "&readBuffer);\n";
+  c_cpp << "        CURLcode res = curl_easy_perform(client->curl);\n";
+  c_cpp << "        if (res != CURLE_OK) return "
+           "std::unexpected(curl_easy_strerror(res));\n";
+  c_cpp << "        return readBuffer;\n";
+  c_cpp << "    }\n\n";
+
+  c_cpp << "    std::expected<std::string, std::string> "
+           "Client::AuthAdapter::login(const std::string& username, const "
+           "std::string& password) const noexcept {\n";
+  c_cpp
+      << "        return client ? client->fetch_oauth2_token(client->base_url "
+         "+ \"/auth/login?username=\" + username, username, password) : "
+         "std::unexpected(\"Client null\");\n";
+  c_cpp << "    }\n\n";
+
+  c_cpp << "    std::expected<std::string, std::string> "
+           "Client::AuthAdapter::refresh() const noexcept {\n";
+  c_cpp
+      << "        return client ? client->fetch_oauth2_token(client->base_url "
+         "+ \"/auth/refresh\", \"\", \"\") : std::unexpected(\"Client "
+         "null\");\n";
+  c_cpp << "    }\n\n";
+
+  c_cpp << "    std::expected<std::string, std::string> "
+           "Client::AuthAdapter::logout() const noexcept {\n";
+  c_cpp << "        if (!client) return std::unexpected(\"Client null\");\n";
+  c_cpp << "        client->set_bearer_token(\"\");\n";
+  c_cpp << "        return \"{\\\"logged_out\\\":true}\";\n";
   c_cpp << "    }\n\n";
 
   if (spec.paths.has_value() && !spec.paths->empty()) {
