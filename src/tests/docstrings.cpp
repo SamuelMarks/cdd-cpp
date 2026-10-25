@@ -58,7 +58,8 @@ void test_parse() {
   assert(spec.servers->at(0).variables->at("env").enum_values->size() == 3);
   assert(spec.components.has_value() &&
          spec.components->securitySchemes.has_value());
-  const auto &scheme = spec.components->securitySchemes->at("bearerAuth");
+  [[maybe_unused]] const auto &scheme =
+      spec.components->securitySchemes->at("bearerAuth");
   assert(scheme.type == "http");
   assert(scheme.description == "JWT Bearer Token");
   assert(scheme.openIdConnectUrl == "https://example.com/.well-known/openid");

@@ -411,7 +411,8 @@ void test_parse() {
   assert(rt_parsed.has_value());
   assert(rt_parsed->paths->contains("/orgs/{orgId}/users"));
   assert(rt_parsed->paths->at("/orgs/{orgId}/users").post.has_value());
-  const auto &parsed_rt_op = *rt_parsed->paths->at("/orgs/{orgId}/users").post;
+  [[maybe_unused]] const auto &parsed_rt_op =
+      *rt_parsed->paths->at("/orgs/{orgId}/users").post;
   assert(parsed_rt_op.operationId == "createUser");
   assert(parsed_rt_op.requestBody.has_value());
   assert(parsed_rt_op.parameters.has_value() &&

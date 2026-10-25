@@ -16,7 +16,7 @@ namespace cdd_cpp::utils {
 
 void test_http() {
   // 1. Test Error and ErrorCode helpers
-  for (auto code :
+  for ([[maybe_unused]] auto code :
        {ErrorCode::JsonParseError, ErrorCode::InvalidOpenApiDocument,
         ErrorCode::MissingRequiredField, ErrorCode::InvalidFieldType,
         ErrorCode::UnsupportedSpecVersion, ErrorCode::HttpInitFailed,
@@ -41,7 +41,7 @@ void test_http() {
   assert(e_str == "msg1");
   assert(!(e_str == static_cast<const char *>(nullptr)));
   assert(std::string(e_str.c_str()) == "msg1");
-  const std::string &s_ref = e_str;
+  [[maybe_unused]] const std::string &s_ref = e_str;
   assert(s_ref == "msg1");
   assert(e_str.find("msg") == 0);
   assert((std::string("Error: ") + e_str) == "Error: msg1");

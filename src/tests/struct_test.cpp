@@ -313,60 +313,64 @@ void test_structs_mcp() {
   }
 
   // Test strong typing enum helpers
-  for (auto pt : {cdd_cpp::openapi::SchemaPrimitiveType::String,
-                  cdd_cpp::openapi::SchemaPrimitiveType::Number,
-                  cdd_cpp::openapi::SchemaPrimitiveType::Integer,
-                  cdd_cpp::openapi::SchemaPrimitiveType::Boolean,
-                  cdd_cpp::openapi::SchemaPrimitiveType::Array,
-                  cdd_cpp::openapi::SchemaPrimitiveType::Object,
-                  cdd_cpp::openapi::SchemaPrimitiveType::Null}) {
+  for ([[maybe_unused]] auto pt :
+       {cdd_cpp::openapi::SchemaPrimitiveType::String,
+        cdd_cpp::openapi::SchemaPrimitiveType::Number,
+        cdd_cpp::openapi::SchemaPrimitiveType::Integer,
+        cdd_cpp::openapi::SchemaPrimitiveType::Boolean,
+        cdd_cpp::openapi::SchemaPrimitiveType::Array,
+        cdd_cpp::openapi::SchemaPrimitiveType::Object,
+        cdd_cpp::openapi::SchemaPrimitiveType::Null}) {
     assert(cdd_cpp::openapi::schema_primitive_type_from_string(
                cdd_cpp::openapi::to_string(pt)) == pt);
   }
   assert(!cdd_cpp::openapi::schema_primitive_type_from_string(" bad ")
               .has_value());
 
-  for (auto loc : {cdd_cpp::openapi::ParameterLocation::Query,
-                   cdd_cpp::openapi::ParameterLocation::Header,
-                   cdd_cpp::openapi::ParameterLocation::Path,
-                   cdd_cpp::openapi::ParameterLocation::Cookie}) {
+  for ([[maybe_unused]] auto loc :
+       {cdd_cpp::openapi::ParameterLocation::Query,
+        cdd_cpp::openapi::ParameterLocation::Header,
+        cdd_cpp::openapi::ParameterLocation::Path,
+        cdd_cpp::openapi::ParameterLocation::Cookie}) {
     assert(cdd_cpp::openapi::parameter_location_from_string(
                cdd_cpp::openapi::to_string(loc)) == loc);
   }
   assert(!cdd_cpp::openapi::parameter_location_from_string("bad").has_value());
 
-  for (auto st : {cdd_cpp::openapi::ParameterStyle::Matrix,
-                  cdd_cpp::openapi::ParameterStyle::Label,
-                  cdd_cpp::openapi::ParameterStyle::Form,
-                  cdd_cpp::openapi::ParameterStyle::Simple,
-                  cdd_cpp::openapi::ParameterStyle::SpaceDelimited,
-                  cdd_cpp::openapi::ParameterStyle::PipeDelimited,
-                  cdd_cpp::openapi::ParameterStyle::DeepObject}) {
+  for ([[maybe_unused]] auto st :
+       {cdd_cpp::openapi::ParameterStyle::Matrix,
+        cdd_cpp::openapi::ParameterStyle::Label,
+        cdd_cpp::openapi::ParameterStyle::Form,
+        cdd_cpp::openapi::ParameterStyle::Simple,
+        cdd_cpp::openapi::ParameterStyle::SpaceDelimited,
+        cdd_cpp::openapi::ParameterStyle::PipeDelimited,
+        cdd_cpp::openapi::ParameterStyle::DeepObject}) {
     assert(cdd_cpp::openapi::parameter_style_from_string(
                cdd_cpp::openapi::to_string(st)) == st);
   }
   assert(!cdd_cpp::openapi::parameter_style_from_string("bad").has_value());
 
-  for (auto sst : {cdd_cpp::openapi::SecuritySchemeType::ApiKey,
-                   cdd_cpp::openapi::SecuritySchemeType::Http,
-                   cdd_cpp::openapi::SecuritySchemeType::MutualTLS,
-                   cdd_cpp::openapi::SecuritySchemeType::OAuth2,
-                   cdd_cpp::openapi::SecuritySchemeType::OpenIdConnect}) {
+  for ([[maybe_unused]] auto sst :
+       {cdd_cpp::openapi::SecuritySchemeType::ApiKey,
+        cdd_cpp::openapi::SecuritySchemeType::Http,
+        cdd_cpp::openapi::SecuritySchemeType::MutualTLS,
+        cdd_cpp::openapi::SecuritySchemeType::OAuth2,
+        cdd_cpp::openapi::SecuritySchemeType::OpenIdConnect}) {
     assert(cdd_cpp::openapi::security_scheme_type_from_string(
                cdd_cpp::openapi::to_string(sst)) == sst);
   }
   assert(
       !cdd_cpp::openapi::security_scheme_type_from_string("bad").has_value());
 
-  for (auto akl : {cdd_cpp::openapi::ApiKeyLocation::Query,
-                   cdd_cpp::openapi::ApiKeyLocation::Header,
-                   cdd_cpp::openapi::ApiKeyLocation::Cookie}) {
+  for ([[maybe_unused]] auto akl : {cdd_cpp::openapi::ApiKeyLocation::Query,
+                                    cdd_cpp::openapi::ApiKeyLocation::Header,
+                                    cdd_cpp::openapi::ApiKeyLocation::Cookie}) {
     assert(cdd_cpp::openapi::api_key_location_from_string(
                cdd_cpp::openapi::to_string(akl)) == akl);
   }
   assert(!cdd_cpp::openapi::api_key_location_from_string("bad").has_value());
 
-  for (auto hm :
+  for ([[maybe_unused]] auto hm :
        {cdd_cpp::openapi::HttpMethod::Get, cdd_cpp::openapi::HttpMethod::Put,
         cdd_cpp::openapi::HttpMethod::Post,
         cdd_cpp::openapi::HttpMethod::Delete,
@@ -386,14 +390,15 @@ void test_structs_mcp() {
   s_typed.set_typed_type(cdd_cpp::openapi::SchemaPrimitiveType::Integer);
   auto tt1 = s_typed.typed_type();
   assert(tt1.has_value());
-  auto *p_prim = std::get_if<cdd_cpp::openapi::SchemaPrimitiveType>(&*tt1);
+  [[maybe_unused]] auto *p_prim =
+      std::get_if<cdd_cpp::openapi::SchemaPrimitiveType>(&*tt1);
   assert(p_prim != nullptr &&
          *p_prim == cdd_cpp::openapi::SchemaPrimitiveType::Integer);
   s_typed.set_typed_types({cdd_cpp::openapi::SchemaPrimitiveType::String,
                            cdd_cpp::openapi::SchemaPrimitiveType::Null});
   auto tt2 = s_typed.typed_type();
   assert(tt2.has_value());
-  auto *p_vec =
+  [[maybe_unused]] auto *p_vec =
       std::get_if<std::vector<cdd_cpp::openapi::SchemaPrimitiveType>>(&*tt2);
   assert(p_vec != nullptr && p_vec->size() == 2);
 
@@ -437,28 +442,30 @@ void test_structs_mcp() {
   assert(!(jv_bool == jv_null));
   verify_value_semantics(jv_obj, jv_arr);
 
-  for (auto r :
+  for ([[maybe_unused]] auto r :
        {cdd_cpp::mcp::RoleEnum::User, cdd_cpp::mcp::RoleEnum::Assistant}) {
     assert(cdd_cpp::mcp::role_from_string(cdd_cpp::mcp::to_string(r)) == r);
   }
   assert(!cdd_cpp::mcp::role_from_string("invalid").has_value());
 
-  for (auto lvl : {cdd_cpp::mcp::LoggingLevelEnum::Debug,
-                   cdd_cpp::mcp::LoggingLevelEnum::Info,
-                   cdd_cpp::mcp::LoggingLevelEnum::Notice,
-                   cdd_cpp::mcp::LoggingLevelEnum::Warning,
-                   cdd_cpp::mcp::LoggingLevelEnum::Error,
-                   cdd_cpp::mcp::LoggingLevelEnum::Critical,
-                   cdd_cpp::mcp::LoggingLevelEnum::Alert,
-                   cdd_cpp::mcp::LoggingLevelEnum::Emergency}) {
+  for ([[maybe_unused]] auto lvl :
+       {cdd_cpp::mcp::LoggingLevelEnum::Debug,
+        cdd_cpp::mcp::LoggingLevelEnum::Info,
+        cdd_cpp::mcp::LoggingLevelEnum::Notice,
+        cdd_cpp::mcp::LoggingLevelEnum::Warning,
+        cdd_cpp::mcp::LoggingLevelEnum::Error,
+        cdd_cpp::mcp::LoggingLevelEnum::Critical,
+        cdd_cpp::mcp::LoggingLevelEnum::Alert,
+        cdd_cpp::mcp::LoggingLevelEnum::Emergency}) {
     assert(cdd_cpp::mcp::logging_level_from_string(
                cdd_cpp::mcp::to_string(lvl)) == lvl);
   }
   assert(!cdd_cpp::mcp::logging_level_from_string("invalid").has_value());
 
-  for (auto ic : {cdd_cpp::mcp::IncludeContextEnum::None,
-                  cdd_cpp::mcp::IncludeContextEnum::ThisServer,
-                  cdd_cpp::mcp::IncludeContextEnum::AllServers}) {
+  for ([[maybe_unused]] auto ic :
+       {cdd_cpp::mcp::IncludeContextEnum::None,
+        cdd_cpp::mcp::IncludeContextEnum::ThisServer,
+        cdd_cpp::mcp::IncludeContextEnum::AllServers}) {
     assert(cdd_cpp::mcp::include_context_from_string(
                cdd_cpp::mcp::to_string(ic)) == ic);
   }

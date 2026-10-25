@@ -214,6 +214,12 @@ void test_to_docs_json() noexcept {
   assert(err_file.code != 0 &&
          err_file.err.find("Could not open input file") != std::string::npos);
 
+  auto err_dir_input =
+      run_cli({"cdd-cpp", "to_docs_json", "-i", tmp.path("code")});
+  assert(err_dir_input.code != 0 &&
+         err_dir_input.err.find("Could not open input file") !=
+             std::string::npos);
+
   auto err_cmd = run_cli({"cdd-cpp", "unknown_command"});
   assert(err_cmd.code != 0 &&
          err_cmd.err.find("Unknown command") != std::string::npos);
@@ -445,7 +451,7 @@ void test_to_docs_json() noexcept {
 
   httplib::Client cli("127.0.0.1", rpc_port);
   cli.set_connection_timeout(1, 0);
-  bool ready = false;
+  [[maybe_unused]] bool ready = false;
   for (int attempt = 0; attempt < 100; ++attempt) {
     if (auto res = cli.Options("/")) {
       if (res->status == 200) {

@@ -28,7 +28,7 @@ void test_exhaustive() {
   size_t size = static_cast<size_t>(std::ftell(f));
   std::fseek(f, 0, SEEK_SET);
   std::string json(size, '\0');
-  size_t bytes_read = std::fread(&json[0], 1, size, f);
+  [[maybe_unused]] size_t bytes_read = std::fread(&json[0], 1, size, f);
   std::fclose(f);
   assert(bytes_read == size);
 

@@ -49,7 +49,7 @@ void test_sync() {
   config.input = "test_sync_dir";
   config.output = "test_sync_spec.json";
   std::ostringstream out_ss, err_ss;
-  int rc = sync(config, out_ss, err_ss);
+  [[maybe_unused]] int rc = sync(config, out_ss, err_ss);
   assert(rc == 0);
 
   std::ifstream is("test_sync_spec.json");
@@ -94,12 +94,12 @@ void test_sync() {
   SyncConfig bad_out_cfg;
   bad_out_cfg.input = "test_sync_dir";
   bad_out_cfg.output = "test_sync_dir";
-  int rc_bad = sync(bad_out_cfg, out_ss, err_ss);
+  [[maybe_unused]] int rc_bad = sync(bad_out_cfg, out_ss, err_ss);
   assert(rc_bad == 1);
 
   // 6. Test sync when output spec file does not exist yet
   std::filesystem::remove("test_sync_spec.json", ec);
-  int rc_new = sync(config, out_ss, err_ss);
+  [[maybe_unused]] int rc_new = sync(config, out_ss, err_ss);
   assert(rc_new == 0);
   assert(std::filesystem::exists("test_sync_spec.json", ec));
 
@@ -108,7 +108,7 @@ void test_sync() {
   // with EISDIR even under root/CAP_DAC_OVERRIDE in CI containers)
   std::filesystem::remove_all("test_sync_dir/src", ec);
   std::filesystem::create_directories("test_sync_dir/src/client.hpp", ec);
-  int rc_ro = sync(config, out_ss, err_ss);
+  [[maybe_unused]] int rc_ro = sync(config, out_ss, err_ss);
   assert(rc_ro == 1);
 
   std::filesystem::remove_all("test_sync_dir", ec);

@@ -92,8 +92,8 @@ void test_openapi_parse_details() {
   })";
   auto spec_res = parse(json);
   assert(spec_res.has_value());
-  const auto &comp = *spec_res->components;
-  const auto &s1 = comp.schemas->at("S1");
+  [[maybe_unused]] const auto &comp = *spec_res->components;
+  [[maybe_unused]] const auto &s1 = comp.schemas->at("S1");
   assert(s1.type == "object");
   assert(s1.allOf != nullptr && s1.allOf->size() == 1);
   assert(s1.anyOf != nullptr && s1.anyOf->size() == 1);
@@ -103,10 +103,10 @@ void test_openapi_parse_details() {
   assert(s1.xml.has_value() && s1.xml->name == "xml" &&
          s1.xml->namespace_url == "ns" && s1.xml->prefix == "pref" &&
          s1.xml->attribute == true && s1.xml->wrapped == true);
-  const auto &s2 = comp.schemas->at("S2");
+  [[maybe_unused]] const auto &s2 = comp.schemas->at("S2");
   assert(s2.ref.has_value() && s2.ref->ref == "#/components/schemas/S1" &&
          s2.ref->summary == "ref sum" && s2.ref->description == "ref desc");
-  const auto &r1 = comp.responses->at("R1");
+  [[maybe_unused]] const auto &r1 = comp.responses->at("R1");
   assert(r1.description == "r1");
   assert(r1.content->at("app/json").examples->at("ex1").ref->ref ==
          "#/components/examples/Ex1");
@@ -114,13 +114,13 @@ void test_openapi_parse_details() {
          r1.headers->at("H1").explode == true);
   assert(r1.links->at("L1").operationId == "id" &&
          r1.links->at("L1").server->url == "http");
-  const auto &p1 = comp.parameters->at("P1");
+  [[maybe_unused]] const auto &p1 = comp.parameters->at("P1");
   assert(p1.name == "p1" && p1.in == "query" && p1.style == "form" &&
          p1.explode == true && p1.allowReserved == true);
   assert(comp.examples->at("Ex1").externalValue == "http");
   assert(comp.requestBodies->at("Req1").required == true);
   assert(comp.headers->at("H1").description == "h1");
-  const auto &sec1 = comp.securitySchemes->at("Sec1");
+  [[maybe_unused]] const auto &sec1 = comp.securitySchemes->at("Sec1");
   assert(sec1.type == "oauth2" && sec1.flows.has_value());
   assert(sec1.flows->implicit->authorizationUrl == "http");
   assert(sec1.flows->password->tokenUrl == "http");
@@ -265,8 +265,8 @@ void test_openapi_parse_final_details() {
   })";
   auto spec_res = parse(json);
   assert(spec_res.has_value());
-  const auto &comp = *spec_res->components;
-  const auto &s1 = comp.schemas->at("S1");
+  [[maybe_unused]] const auto &comp = *spec_res->components;
+  [[maybe_unused]] const auto &s1 = comp.schemas->at("S1");
   assert(s1.readOnly == true && s1.writeOnly == true && s1.deprecated == true);
   assert(s1.multipleOf == 2.5 && s1.maximum == 10.0 &&
          !s1.exclusiveMaximum.has_value() && s1.minimum == 0.0 &&
@@ -283,7 +283,7 @@ void test_openapi_parse_final_details() {
          "#/components/securitySchemes/Sec1");
   assert(comp.securitySchemes->at("SecEmptyFlows").flows.has_value());
   assert(comp.links->at("L2").ref->ref == "#/components/links/L1");
-  const auto &pi1 = comp.pathItems->at("PI1");
+  [[maybe_unused]] const auto &pi1 = comp.pathItems->at("PI1");
   assert(pi1.ref == "#/components/pathItems/PI2");
   assert(
       pi1.put->operationId == "put1" && pi1.post->operationId == "post1" &&
@@ -527,7 +527,8 @@ void test_openapi_parse() {
   assert(ext_res->info.extensions.at("x-int") == JsonValue(int64_t{42}));
   assert(ext_res->info.extensions.at("x-bool") == JsonValue(true));
   assert(ext_res->info.extensions.at("x-null") == JsonValue(nullptr));
-  const auto &mt_schema = ext_res->components->schemas->at("MultiType");
+  [[maybe_unused]] const auto &mt_schema =
+      ext_res->components->schemas->at("MultiType");
   assert(mt_schema.types.has_value() && mt_schema.types->size() == 2);
   assert(mt_schema.type == "string");
   assert(mt_schema.prefixItems != nullptr &&

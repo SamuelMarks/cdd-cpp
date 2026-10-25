@@ -12,13 +12,14 @@
 namespace cdd_cpp::mcp {
 void test_mcp_meta_coverage() {
   simdjson::ondemand::parser parser;
-  auto expect_ok = [&](auto func, const std::string &j) {
+  [[maybe_unused]] auto expect_ok = [&](auto func, const std::string &j) {
     simdjson::padded_string padded(j);
     simdjson::ondemand::document doc;
-    auto err = parser.iterate(padded).get(doc);
+    [[maybe_unused]] auto err = parser.iterate(padded).get(doc);
     assert(!err);
     simdjson::ondemand::value val;
-    assert(!doc.get_value().get(val));
+    [[maybe_unused]] auto val_err = doc.get_value().get(val);
+    assert(!val_err);
     auto res = func(val);
     assert(res.has_value());
     return *res;
@@ -26,10 +27,11 @@ void test_mcp_meta_coverage() {
   auto expect_err = [&](auto func, const std::string &j) {
     simdjson::padded_string padded(j);
     simdjson::ondemand::document doc;
-    auto err = parser.iterate(padded).get(doc);
+    [[maybe_unused]] auto err = parser.iterate(padded).get(doc);
     assert(!err);
     simdjson::ondemand::value val;
-    assert(!doc.get_value().get(val));
+    [[maybe_unused]] auto val_err = doc.get_value().get(val);
+    assert(!val_err);
     auto res = func(val);
     assert(!res.has_value());
     assert(!res.error().empty());
@@ -229,10 +231,10 @@ void test_mcp_meta_coverage() {
   }
 
   auto check_emit = [](auto emit_fn, const auto &model,
-                       std::string_view expected_substr) {
+                       [[maybe_unused]] std::string_view expected_substr) {
     cdd_cpp::utils::JsonWriter jw;
     emit_fn(model, jw);
-    std::string out = jw.str();
+    [[maybe_unused]] std::string out = jw.str();
     assert(!out.empty() && out.front() == '{' && out.back() == '}');
     assert(out.find(expected_substr) != std::string::npos);
   };

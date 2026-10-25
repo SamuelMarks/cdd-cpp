@@ -1407,7 +1407,9 @@ static void test_arazzo_generators_and_cli() noexcept {
                           "--tests",
                           "--no-github-actions",
                           "--no-installable-package"};
-    assert(cli::main_impl(10, const_cast<char **>(argv), out_ss, err_ss) == 0);
+    [[maybe_unused]] int rc =
+        cli::main_impl(10, const_cast<char **>(argv), out_ss, err_ss);
+    assert(rc == 0);
   }
   {
     std::ostringstream out_ss, err_ss;
@@ -1415,7 +1417,9 @@ static void test_arazzo_generators_and_cli() noexcept {
     const char *argv[] = {
         "cdd-cpp",         "from_arazzo", "to_sdk_cli",       "-i",
         spec_file.c_str(), "-o",          out_cli_dir.c_str()};
-    assert(cli::main_impl(7, const_cast<char **>(argv), out_ss, err_ss) == 0);
+    [[maybe_unused]] int rc =
+        cli::main_impl(7, const_cast<char **>(argv), out_ss, err_ss);
+    assert(rc == 0);
   }
   {
     std::ostringstream out_ss, err_ss;
@@ -1423,22 +1427,30 @@ static void test_arazzo_generators_and_cli() noexcept {
     const char *argv[] = {
         "cdd-cpp",         "from_arazzo", "to_server",        "-i",
         spec_file.c_str(), "-o",          out_srv_dir.c_str()};
-    assert(cli::main_impl(7, const_cast<char **>(argv), out_ss, err_ss) == 0);
+    [[maybe_unused]] int rc =
+        cli::main_impl(7, const_cast<char **>(argv), out_ss, err_ss);
+    assert(rc == 0);
   }
   {
     std::ostringstream out_ss, err_ss;
     const char *argv[] = {"cdd-cpp", "from_arazzo", "--help"};
-    assert(cli::main_impl(3, const_cast<char **>(argv), out_ss, err_ss) == 0);
+    [[maybe_unused]] int rc =
+        cli::main_impl(3, const_cast<char **>(argv), out_ss, err_ss);
+    assert(rc == 0);
   }
   {
     std::ostringstream out_ss, err_ss;
     const char *argv[] = {"cdd-cpp", "from_arazzo"};
-    assert(cli::main_impl(2, const_cast<char **>(argv), out_ss, err_ss) == 1);
+    [[maybe_unused]] int rc =
+        cli::main_impl(2, const_cast<char **>(argv), out_ss, err_ss);
+    assert(rc == 1);
   }
   {
     std::ostringstream out_ss, err_ss;
     const char *argv[] = {"cdd-cpp", "to_arazzo", "--help"};
-    assert(cli::main_impl(3, const_cast<char **>(argv), out_ss, err_ss) == 0);
+    [[maybe_unused]] int rc =
+        cli::main_impl(3, const_cast<char **>(argv), out_ss, err_ss);
+    assert(rc == 0);
   }
   {
     std::ostringstream out_ss, err_ss;
@@ -1446,12 +1458,16 @@ static void test_arazzo_generators_and_cli() noexcept {
     const char *argv[] = {"cdd-cpp", "to_arazzo",
                           "-i",      out_sdk_dir.c_str(),
                           "-o",      roundtrip_file.c_str()};
-    assert(cli::main_impl(6, const_cast<char **>(argv), out_ss, err_ss) == 0);
+    [[maybe_unused]] int rc =
+        cli::main_impl(6, const_cast<char **>(argv), out_ss, err_ss);
+    assert(rc == 0);
   }
   {
     std::ostringstream out_ss, err_ss;
     const char *argv[] = {"cdd-cpp", "to_arazzo", "-i", out_sdk_dir.c_str()};
-    assert(cli::main_impl(4, const_cast<char **>(argv), out_ss, err_ss) == 0);
+    [[maybe_unused]] int rc =
+        cli::main_impl(4, const_cast<char **>(argv), out_ss, err_ss);
+    assert(rc == 0);
   }
 
   auto valid_proj = utils::parse_cpp_project_arazzo(out_sdk_dir);
@@ -1528,8 +1544,9 @@ static void test_arazzo_generators_and_cli() noexcept {
     const char *argv_unknown_flag[] = {
         "cdd-cpp", "from_arazzo",     "to_sdk", "--unknown-flag",
         "-i",      spec_file.c_str(), "-o",     out_sdk_dir.c_str()};
-    assert(cli::main_impl(8, const_cast<char **>(argv_unknown_flag), out_ss,
-                          err_ss) == 0);
+    [[maybe_unused]] int rc_unk = cli::main_impl(
+        8, const_cast<char **>(argv_unknown_flag), out_ss, err_ss);
+    assert(rc_unk == 0);
 
     cli::ToArazzoConfig to_cfg;
     assert(cli::to_arazzo(to_cfg, out_ss, err_ss) == 1);
@@ -1543,8 +1560,9 @@ static void test_arazzo_generators_and_cli() noexcept {
 
     const char *argv_to_unknown[] = {"cdd-cpp", "to_arazzo", "--unknown-flag",
                                      "-i", out_sdk_dir.c_str()};
-    assert(cli::main_impl(5, const_cast<char **>(argv_to_unknown), out_ss,
-                          err_ss) == 0);
+    [[maybe_unused]] int rc_to_unk =
+        cli::main_impl(5, const_cast<char **>(argv_to_unknown), out_ss, err_ss);
+    assert(rc_to_unk == 0);
 
     // JSON-RPC tool calls for from_arazzo and to_arazzo
     std::string rpc_from =

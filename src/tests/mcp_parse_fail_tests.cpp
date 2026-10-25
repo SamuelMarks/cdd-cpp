@@ -15,10 +15,11 @@ void test_mcp_parse_failures() {
   auto expect_fail = [&](auto func, const std::string &j) {
     simdjson::padded_string padded(j);
     simdjson::ondemand::document doc;
-    auto error = parser.iterate(padded).get(doc);
+    [[maybe_unused]] auto error = parser.iterate(padded).get(doc);
     assert(!error);
     simdjson::ondemand::value val;
-    assert(!doc.get_value().get(val));
+    [[maybe_unused]] auto val_err = doc.get_value().get(val);
+    assert(!val_err);
     auto res = func(val);
     assert(!res.has_value());
     assert(!res.error().empty());
@@ -27,10 +28,11 @@ void test_mcp_parse_failures() {
   auto expect_ok = [&](auto func, const std::string &j) {
     simdjson::padded_string padded(j);
     simdjson::ondemand::document doc;
-    auto error = parser.iterate(padded).get(doc);
+    [[maybe_unused]] auto error = parser.iterate(padded).get(doc);
     assert(!error);
     simdjson::ondemand::value val;
-    assert(!doc.get_value().get(val));
+    [[maybe_unused]] auto val_err = doc.get_value().get(val);
+    assert(!val_err);
     auto res = func(val);
     assert(res.has_value());
     return *res;

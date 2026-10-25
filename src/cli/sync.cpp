@@ -133,8 +133,9 @@ static void print_version(std::ostream &out) noexcept {
 /// @param path File path to read.
 /// @return Result containing file contents or FileReadError.
 static utils::Result<std::string> read_file(const std::string &path) noexcept {
+  std::error_code ec;
   std::ifstream fs(path);
-  if (!fs.is_open())
+  if (std::filesystem::is_directory(path, ec) || !fs.is_open())
     return utils::make_error(utils::ErrorCode::FileReadError,
                              "Could not open input file: " + path, path);
   std::string content((std::istreambuf_iterator<char>(fs)),
@@ -752,9 +753,14 @@ int sync(const SyncConfig &config, std::ostream &out,
       << "...\n";
   auto cpp_spec = utils::parse_cpp_project(config.input);
 
+  // On Linux POSIX filesystems, open(dir_path, O_RDONLY) succeeds on a
+  // directory so bool(fs) is true, and std::basic_filebuf::underflow() in GCC
+  // libstdc++ throws std::ios_base::failure (EISDIR) inside this noexcept
+  // function unless we verify config.output is not a directory first.
+  std::error_code ec;
   std::ifstream fs(config.output);
   openapi::OpenAPI merged_spec = cpp_spec;
-  if (fs) {
+  if (!std::filesystem::is_directory(config.output, ec) && fs) {
     std::string content((std::istreambuf_iterator<char>(fs)),
                         std::istreambuf_iterator<char>());
     auto file_spec_res = openapi::parse(content);

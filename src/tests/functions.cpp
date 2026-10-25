@@ -42,7 +42,7 @@ void test_parse() {
   assert(res->paths.has_value());
   assert(res->paths->contains("/users/{id}"));
   assert(res->paths->at("/users/{id}").get.has_value());
-  const auto &get_op = *res->paths->at("/users/{id}").get;
+  [[maybe_unused]] const auto &get_op = *res->paths->at("/users/{id}").get;
   assert(get_op.operationId == "get_user");
   assert(get_op.summary == "Fetch user");
   assert(get_op.parameters.has_value() && get_op.parameters->size() == 4);
