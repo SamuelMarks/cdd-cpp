@@ -675,7 +675,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
         "set(CMAKE_CXX_STANDARD 26)\n"
         "add_definitions(-DSIMDJSON_EXCEPTIONS=0)\n"
         "add_compile_options(-fno-exceptions -fno-rtti)\n"
-        "if(CMAKE_CXX_COMPILER_ID MATCHES \"Clang|GNU\")\n"
+        "if(CMAKE_CXX_COMPILER_ID MATCHES \"Clang\")\n"
         "  add_compile_options(-Wno-deprecated-literal-operator "
         "-Wno-character-conversion)\n"
         "endif()\n"
@@ -825,27 +825,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
           t_cpp << "    cdd_client::Client client(get_server_url());\n";
           t_cpp << "    auto res = client." << func_name << "(" << call_args
                 << ");\n";
-          bool has_success = false;
-          if (op->responses) {
-            for (const auto &[code, _] : *op->responses) {
-              if (code == "default" || code.starts_with('2')) {
-                has_success = true;
-                break;
-              }
-            }
-          }
-          if (has_success) {
-            t_cpp << "    if (!res.has_value()) {\n";
-            t_cpp << "        ASSERT_FALSE(res.error().empty());\n";
-            t_cpp << "        return;\n";
-            t_cpp << "    }\n";
-          } else {
-            t_cpp << "    if (res.has_value()) {\n";
-            t_cpp << "        return;\n";
-            t_cpp << "    }\n";
-            t_cpp << "    ASSERT_FALSE(res.error().empty());\n";
-            t_cpp << "    return;\n";
-          }
+          t_cpp << "    ASSERT_TRUE(res.has_value()) << res.error();\n";
           t_cpp << "    if (!res.operator*().empty()) {\n";
           t_cpp << "        simdjson::dom::parser parser;\n";
           t_cpp << "        simdjson::dom::element doc;\n";

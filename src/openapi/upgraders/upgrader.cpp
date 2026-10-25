@@ -35,7 +35,7 @@ static const std::set<std::string_view> kSwagger1Versions{"1.2", "1.1", "1.0"};
 /// @return Unwrapped `simdjson::dom::object`.
 static simdjson::dom::object unwrap_obj(simdjson::dom::element el) noexcept {
   simdjson::dom::object o;
-  (void)el.get(o);
+  [[maybe_unused]] auto err = el.get(o);
   return o;
 }
 
@@ -44,7 +44,7 @@ static simdjson::dom::object unwrap_obj(simdjson::dom::element el) noexcept {
 /// @return Unwrapped `simdjson::dom::array`.
 static simdjson::dom::array unwrap_arr(simdjson::dom::element el) noexcept {
   simdjson::dom::array a;
-  (void)el.get(a);
+  [[maybe_unused]] auto err = el.get(a);
   return a;
 }
 
@@ -53,7 +53,7 @@ static simdjson::dom::array unwrap_arr(simdjson::dom::element el) noexcept {
 /// @return Unwrapped `std::string`.
 static std::string unwrap_str(simdjson::dom::element el) noexcept {
   std::string_view sv;
-  (void)el.get(sv);
+  [[maybe_unused]] auto err = el.get(sv);
   return std::string(sv);
 }
 
@@ -73,7 +73,7 @@ static double extract_numeric_bound(simdjson::dom::object schema,
     if (el.get(u_val) == simdjson::SUCCESS)
       return static_cast<double>(u_val);
     double d_val = 0.0;
-    (void)el.get(d_val);
+    [[maybe_unused]] auto err = el.get(d_val);
     return d_val;
   }
   return 0.0;
@@ -97,8 +97,8 @@ void process_schema_3_0(simdjson::dom::object schema,
   double max_val = extract_numeric_bound(schema, "maximum");
   bool exclusive_min = false;
   bool exclusive_max = false;
-  (void)schema["exclusiveMinimum"].get(exclusive_min);
-  (void)schema["exclusiveMaximum"].get(exclusive_max);
+  [[maybe_unused]] auto err_min = schema["exclusiveMinimum"].get(exclusive_min);
+  [[maybe_unused]] auto err_max = schema["exclusiveMaximum"].get(exclusive_max);
 
   for (auto field : schema) {
     std::string key(field.key);
@@ -224,7 +224,7 @@ std::string upgrade_swagger_1_2(simdjson::dom::object root) noexcept {
     for (auto api : apis_arr) {
       auto api_obj = unwrap_obj(api);
       simdjson::dom::element path_el;
-      (void)api_obj["path"].get(path_el);
+      [[maybe_unused]] auto err_path = api_obj["path"].get(path_el);
       jw.key(unwrap_str(path_el));
       jw.start_object();
 
@@ -233,7 +233,7 @@ std::string upgrade_swagger_1_2(simdjson::dom::object root) noexcept {
         for (auto op : ops_arr) {
           auto op_obj = unwrap_obj(op);
           simdjson::dom::element m_el;
-          (void)op_obj["method"].get(m_el);
+          [[maybe_unused]] auto err_m = op_obj["method"].get(m_el);
           std::string method_str = unwrap_str(m_el);
           for (auto &c : method_str)
             c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
@@ -347,7 +347,7 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
         std::string in_val = unwrap_str(in_el);
         if (in_val == "body") {
           simdjson::dom::element sch_el;
-          (void)p_obj["schema"].get(sch_el);
+          [[maybe_unused]] auto err_sch = p_obj["schema"].get(sch_el);
           body_param_raw = simdjson::minify(sch_el);
         } else if (in_val == "formData") {
           form_params.push_back(p_obj);
@@ -502,7 +502,7 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
 
             for (const auto &obj : form_params) {
               simdjson::dom::element n_el;
-              (void)obj["name"].get(n_el);
+              [[maybe_unused]] auto err_n = obj["name"].get(n_el);
               jw.key(unwrap_str(n_el));
               jw.start_object();
               for (auto field : obj) {
@@ -603,7 +603,7 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
       jw.start_object();
       auto sfo = unwrap_obj(sf.value);
       simdjson::dom::element t_el;
-      (void)sfo["type"].get(t_el);
+      [[maybe_unused]] auto err_t = sfo["type"].get(t_el);
       std::string type_val = unwrap_str(t_el);
 
       if (type_val == "basic") {
@@ -615,7 +615,7 @@ std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
         jw.start_object();
 
         simdjson::dom::element f_el;
-        (void)sfo["flow"].get(f_el);
+        [[maybe_unused]] auto err_f = sfo["flow"].get(f_el);
         std::string flow_val = unwrap_str(f_el);
         std::string nflow = flow_val;
         if (nflow == "accessCode")

@@ -2,6 +2,20 @@ import urllib.request
 import json
 import subprocess
 import os
+import http.server
+import socketserver
+import threading
+
+
+class _MockDiscoveryHandler(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.end_headers()
+        self.wfile.write(b"{}")
+
+    def log_message(self, format, *args):
+        pass
 
 
 def run_test():
@@ -39,9 +53,20 @@ def run_test():
     subprocess.run(["cmake", "--build", build_dir], check=True)
 
     print("Running generated tests...")
-    subprocess.run(
-        ["ctest", "--test-dir", build_dir, "--output-on-failure"], check=True
-    )
+    with socketserver.TCPServer(("127.0.0.1", 0), _MockDiscoveryHandler) as httpd:
+        port = httpd.server_address[1]
+        server_thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+        server_thread.start()
+        try:
+            env = os.environ.copy()
+            env["PETSTORE_URL"] = f"http://127.0.0.1:{port}"
+            subprocess.run(
+                ["ctest", "--test-dir", build_dir, "--output-on-failure"],
+                check=True,
+                env=env,
+            )
+        finally:
+            httpd.shutdown()
 
     print("Generating CLI...")
     cli_output_dir = "generated_discovery_cli"

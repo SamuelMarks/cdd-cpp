@@ -22,7 +22,7 @@ try_get_object(simdjson::dom::element el) noexcept {
 static std::optional<int64_t>
 try_get_int64(simdjson::dom::element el) noexcept {
   int64_t val = 0;
-  (void)el.get(val);
+  [[maybe_unused]] auto err = el.get(val);
   return val;
 }
 
@@ -72,7 +72,7 @@ parse_vector_string(simdjson::dom::object obj, std::string_view key) noexcept {
     std::vector<std::string> vec;
     for (auto item : arr) {
       std::string_view sv;
-      (void)item.get(sv);
+      [[maybe_unused]] auto err = item.get(sv);
       vec.emplace_back(sv);
     }
     return vec;
@@ -91,7 +91,7 @@ parse_map_string(simdjson::dom::object obj, std::string_view key) noexcept {
     std::map<std::string, std::string> m;
     for (auto field : sub_obj) {
       std::string_view sv;
-      (void)field.value.get(sv);
+      [[maybe_unused]] auto err = field.value.get(sv);
       m[std::string(field.key)] = std::string(sv);
     }
     return m;
@@ -110,15 +110,15 @@ parse_security(simdjson::dom::object obj, std::string_view key) noexcept {
     std::vector<SecurityRequirement> security;
     for (auto item : sec_arr) {
       simdjson::dom::object req_obj;
-      (void)item.get(req_obj);
+      [[maybe_unused]] auto err1 = item.get(req_obj);
       SecurityRequirement req;
       for (auto field : req_obj) {
         std::vector<std::string> scopes;
         simdjson::dom::array s_arr;
-        (void)field.value.get(s_arr);
+        [[maybe_unused]] auto err2 = field.value.get(s_arr);
         for (auto scope : s_arr) {
           std::string_view sv;
-          (void)scope.get(sv);
+          [[maybe_unused]] auto err3 = scope.get(sv);
           scopes.emplace_back(sv);
         }
         req[std::string(field.key)] = scopes;
@@ -135,7 +135,7 @@ parse_security(simdjson::dom::object obj, std::string_view key) noexcept {
 /// @return Unwrapped `simdjson::dom::object`.
 static simdjson::dom::object unwrap_obj(simdjson::dom::element el) noexcept {
   simdjson::dom::object o;
-  (void)el.get(o);
+  [[maybe_unused]] auto err = el.get(o);
   return o;
 }
 
@@ -145,27 +145,27 @@ static simdjson::dom::object unwrap_obj(simdjson::dom::element el) noexcept {
 static JsonValue parse_json_value(simdjson::dom::element el) noexcept {
   if (el.is_string()) {
     std::string_view sv;
-    (void)el.get(sv);
+    [[maybe_unused]] auto err = el.get(sv);
     return JsonValue(std::string(sv));
   }
   if (el.is_int64()) {
     int64_t iv = 0;
-    (void)el.get(iv);
+    [[maybe_unused]] auto err = el.get(iv);
     return JsonValue(iv);
   }
   if (el.is_double()) {
     double dv = 0.0;
-    (void)el.get(dv);
+    [[maybe_unused]] auto err = el.get(dv);
     return JsonValue(dv);
   }
   if (el.is_bool()) {
     bool bv = false;
-    (void)el.get(bv);
+    [[maybe_unused]] auto err = el.get(bv);
     return JsonValue(bv);
   }
   if (el.is_array()) {
     simdjson::dom::array arr;
-    (void)el.get(arr);
+    [[maybe_unused]] auto err = el.get(arr);
     std::vector<JsonValue> vec;
     for (auto item : arr) {
       vec.push_back(parse_json_value(item));
@@ -174,7 +174,7 @@ static JsonValue parse_json_value(simdjson::dom::element el) noexcept {
   }
   if (el.is_object()) {
     simdjson::dom::object obj;
-    (void)el.get(obj);
+    [[maybe_unused]] auto err = el.get(obj);
     std::map<std::string, JsonValue> m;
     for (auto field : obj) {
       m[std::string(field.key)] = parse_json_value(field.value);

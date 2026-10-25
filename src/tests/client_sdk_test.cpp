@@ -412,6 +412,24 @@ void test_emit_client() {
   assert(generated2.find("add_subdirectory(tests)") != std::string::npos);
   assert(generated2.find("cd tests && ./client_test") != std::string::npos);
 
+  const auto &cmake_txt = generated_files_with_tests.at("CMakeLists.txt");
+  assert(cmake_txt.find("if(CMAKE_CXX_COMPILER_ID MATCHES \"Clang\")") !=
+         std::string::npos);
+  assert(cmake_txt.find("CMAKE_CXX_COMPILER_ID MATCHES \"Clang|GNU\"") ==
+         std::string::npos);
+
+  const auto &client_test_cpp =
+      generated_files_with_tests.at("tests/client_test.cpp");
+  assert(client_test_cpp.find("ASSERT_TRUE(res.has_value()) << res.error();") !=
+         std::string::npos);
+  assert(client_test_cpp.find("ASSERT_FALSE(res.error().empty());") ==
+         std::string::npos);
+  assert(
+      client_test_cpp.find("if (res.has_value()) {\n        return;\n    }") ==
+      std::string::npos);
+  assert(client_test_cpp.find("Invalid schema: sabotage detected") !=
+         std::string::npos);
+
   openapi::OpenAPI spec_empty;
   auto empty1 = emit_client(spec_empty, false, false, true);
   assert(empty1.contains("src/client.hpp"));

@@ -255,6 +255,12 @@ void test_emit_cli() {
   assert(generated2.find("add_subdirectory(tests)") != std::string::npos);
   assert(generated2.find("tests/cli_test.cpp") != std::string::npos);
   assert(generated2.find("cd tests && ./cli_test") != std::string::npos);
+  assert(generated_files.at("CMakeLists.txt")
+             .find("if(CMAKE_CXX_COMPILER_ID MATCHES \"Clang\")") !=
+         std::string::npos);
+  assert(generated_files.at("CMakeLists.txt")
+             .find("CMAKE_CXX_COMPILER_ID MATCHES \"Clang|GNU\"") ==
+         std::string::npos);
   assert(!generated_files_with_options.contains(".github/workflows/ci.yml"));
   assert(!generated_files_with_options.contains("CMakeLists.txt"));
   assert(!generated3.empty());

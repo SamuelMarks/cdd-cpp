@@ -812,7 +812,7 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
         "set(CMAKE_CXX_STANDARD 26)\n"
         "add_definitions(-DSIMDJSON_EXCEPTIONS=0)\n"
         "add_compile_options(-fno-exceptions -fno-rtti)\n"
-        "if(CMAKE_CXX_COMPILER_ID MATCHES \"Clang|GNU\")\n"
+        "if(CMAKE_CXX_COMPILER_ID MATCHES \"Clang\")\n"
         "  add_compile_options(-Wno-deprecated-literal-operator "
         "-Wno-character-conversion)\n"
         "endif()\n"

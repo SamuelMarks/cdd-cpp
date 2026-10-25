@@ -31,27 +31,27 @@ static bool is_valid_arazzo_id(std::string_view id) noexcept {
 static openapi::JsonValue parse_json_value(simdjson::dom::element el) noexcept {
   if (el.is_string()) {
     std::string_view sv;
-    (void)el.get(sv);
+    [[maybe_unused]] auto err = el.get(sv);
     return openapi::JsonValue(std::string(sv));
   }
   if (el.is_int64()) {
     int64_t iv = 0;
-    (void)el.get(iv);
+    [[maybe_unused]] auto err = el.get(iv);
     return openapi::JsonValue(iv);
   }
   if (el.is_double()) {
     double dv = 0.0;
-    (void)el.get(dv);
+    [[maybe_unused]] auto err = el.get(dv);
     return openapi::JsonValue(dv);
   }
   if (el.is_bool()) {
     bool bv = false;
-    (void)el.get(bv);
+    [[maybe_unused]] auto err = el.get(bv);
     return openapi::JsonValue(bv);
   }
   if (el.is_array()) {
     simdjson::dom::array arr;
-    (void)el.get(arr);
+    [[maybe_unused]] auto err = el.get(arr);
     std::vector<openapi::JsonValue> vec;
     for (auto item : arr) {
       vec.push_back(parse_json_value(item));
@@ -60,7 +60,7 @@ static openapi::JsonValue parse_json_value(simdjson::dom::element el) noexcept {
   }
   if (el.is_object()) {
     simdjson::dom::object obj;
-    (void)el.get(obj);
+    [[maybe_unused]] auto err = el.get(obj);
     std::map<std::string, openapi::JsonValue> map_val;
     for (auto field : obj) {
       map_val[std::string(field.key)] = parse_json_value(field.value);
@@ -115,7 +115,7 @@ static openapi::Schema parse_input_schema(simdjson::dom::object obj) noexcept {
     std::vector<std::string> reqs;
     for (auto item : req_arr) {
       std::string_view sv;
-      (void)item.get(sv);
+      [[maybe_unused]] auto err = item.get(sv);
       reqs.emplace_back(sv);
     }
     s.required = std::move(reqs);
@@ -126,7 +126,7 @@ static openapi::Schema parse_input_schema(simdjson::dom::object obj) noexcept {
     auto props = std::make_shared<std::map<std::string, openapi::Schema>>();
     for (auto field : props_obj) {
       simdjson::dom::object prop_o;
-      (void)field.value.get(prop_o);
+      [[maybe_unused]] auto err = field.value.get(prop_o);
       (*props)[std::string(field.key)] = parse_input_schema(prop_o);
     }
     s.properties = std::move(props);
@@ -163,7 +163,7 @@ static Result<Criterion> parse_criterion(simdjson::dom::object obj) noexcept {
   if (obj["type"].get(type_el) == simdjson::SUCCESS) {
     if (type_el.is_string()) {
       std::string_view t_sv;
-      (void)type_el.get(t_sv);
+      [[maybe_unused]] auto err = type_el.get(t_sv);
       auto ct = criterion_type_from_string(t_sv);
       if (!ct.has_value()) {
         return utils::make_error(utils::ErrorCode::InvalidFieldType,
@@ -173,7 +173,7 @@ static Result<Criterion> parse_criterion(simdjson::dom::object obj) noexcept {
       crit.type = *ct;
     } else if (type_el.is_object()) {
       simdjson::dom::object cet_obj;
-      (void)type_el.get(cet_obj);
+      [[maybe_unused]] auto err = type_el.get(cet_obj);
       auto t_str = get_opt_str(cet_obj, "type");
       auto v_str = get_opt_str(cet_obj, "version");
       if (!t_str.has_value()) {
@@ -631,7 +631,7 @@ static Result<Workflow> parse_workflow(simdjson::dom::object obj) noexcept {
     std::vector<std::string> deps;
     for (auto d_item : dep_arr) {
       std::string_view d_sv;
-      (void)d_item.get(d_sv);
+      [[maybe_unused]] auto err = d_item.get(d_sv);
       if (d_sv.empty()) {
         return utils::make_error(utils::ErrorCode::InvalidFieldType,
                                  "dependsOn entry must be a non-empty string");
@@ -821,7 +821,7 @@ Result<Arazzo> parse(const std::string &json_str) noexcept {
       std::map<std::string, openapi::Schema> m;
       for (auto field : cin_obj) {
         simdjson::dom::object s_obj;
-        (void)field.value.get(s_obj);
+        [[maybe_unused]] auto err = field.value.get(s_obj);
         m[std::string(field.key)] = parse_input_schema(s_obj);
       }
       comp.inputs = std::move(m);
