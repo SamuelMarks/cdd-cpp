@@ -26,6 +26,7 @@ jobs:
           - 8081:8080
         env:
           OPENAPI_BASE_PATH: "/api/v3"
+          DISABLE_OAUTH: "1"
 
     env:
       CC: clang

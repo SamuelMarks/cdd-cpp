@@ -204,6 +204,8 @@ def run_docker_petstore(base_path, port):
             f"{port}:8080",
             "-e",
             f"OPENAPI_BASE_PATH={base_path}",
+            "-e",
+            "DISABLE_OAUTH=1",
             "--name",
             container_name,
             "openapitools/openapi-petstore",

@@ -412,13 +412,14 @@ void test_emit_client() {
   assert(generated2.find("add_subdirectory(tests)") != std::string::npos);
   assert(generated2.find("cd tests && ./client_test") != std::string::npos);
 
-  const auto &cmake_txt = generated_files_with_tests.at("CMakeLists.txt");
+  [[maybe_unused]] const auto &cmake_txt =
+      generated_files_with_tests.at("CMakeLists.txt");
   assert(cmake_txt.find("if(CMAKE_CXX_COMPILER_ID MATCHES \"Clang\")") !=
          std::string::npos);
   assert(cmake_txt.find("CMAKE_CXX_COMPILER_ID MATCHES \"Clang|GNU\"") ==
          std::string::npos);
 
-  const auto &client_test_cpp =
+  [[maybe_unused]] const auto &client_test_cpp =
       generated_files_with_tests.at("tests/client_test.cpp");
   assert(client_test_cpp.find("ASSERT_TRUE(res.has_value()) << res.error();") !=
          std::string::npos);
@@ -482,6 +483,10 @@ void test_emit_client() {
     generated4 += content + "\n";
   }
   assert(generated4.find("request(") != std::string::npos);
+  assert(generated4.find("content-type: application/x-www-form-urlencoded") !=
+         std::string::npos);
+  assert(generated4.find("curl_easy_setopt(curl, CURLOPT_POSTFIELDS, \"\");") !=
+         std::string::npos);
 
   std::cout << "client_sdk::test_emit_client passed.\n";
 }

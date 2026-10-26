@@ -440,8 +440,9 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
             content_type = op->requestBody->content.begin()->first;
           }
           std::string header_val = "content-type: " + content_type;
-          if (content_type == "multipart/form-data") {
-            header_val += "; boundary=boundary";
+          if (content_type == "multipart/form-data" ||
+              content_type == "application/octet-stream") {
+            header_val = "content-type: multipart/form-data; boundary=boundary";
           }
           c_cpp << "        headers = curl_slist_append(headers, \""
                 << header_val << "\");\n";
@@ -449,6 +450,11 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
                    "headers);\n";
           c_cpp << "        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, "
                    "body.c_str());\n";
+        } else if (method == "POST") {
+          c_cpp << "        headers = curl_slist_append(headers, "
+                   "\"content-type: application/x-www-form-urlencoded\");\n";
+          c_cpp
+              << "        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, \"\");\n";
         }
 
         c_cpp
@@ -806,9 +812,8 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
 
             if (content_type == "application/x-www-form-urlencoded") {
               payload = "\"name=test&status=available\"";
-            } else if (content_type == "application/octet-stream") {
-              payload = "\"file content\"";
-            } else if (content_type == "multipart/form-data") {
+            } else if (content_type == "application/octet-stream" ||
+                       content_type == "multipart/form-data") {
               payload = "\"--boundary\\r\\nContent-Disposition: form-data; "
                         "name=\\\"additionalMetadata\\\"\\r\\n\\r\\ntest\\r\\n-"
                         "-boundary\\r\\nContent-Disposition: form-data; "
