@@ -1,5 +1,6 @@
 #include "../cli/api.hpp"
 #include "../utils/httplib.h"
+#include "../utils/version.hpp"
 #include <array>
 #include <cassert>
 #include <chrono>
@@ -164,10 +165,94 @@ void test_to_docs_json() noexcept {
     "openapi": "3.2.0",
     "paths": {
       "/test": {
+        "parameters": [
+          {"name": "pathId", "in": "path", "schema": {"type": "integer"}}
+        ],
         "get": {
-          "operationId": "getTest"
+          "operationId": "getTest",
+          "parameters": [
+            {"name": "flag", "in": "query", "schema": {"type": "boolean"}},
+            {"name": "score", "in": "query", "schema": {"type": "number"}},
+            {"name": "status", "in": "query", "schema": {"type": "string", "enum": ["active", "pending"]}},
+            {"name": "emptyEnum", "in": "query", "schema": {"type": "string", "enum": []}},
+            {"name": "tag", "in": "query", "example": "v1", "schema": {"type": "string"}},
+            {"name": "numEx", "in": "query", "example": "42", "schema": {"type": "integer"}},
+            {"name": "boolEx", "in": "query", "example": "true", "schema": {"type": "boolean"}},
+            {"name": "dblEx", "in": "query", "example": "3.14", "schema": {"type": "number"}},
+            {"name": "noTypeSchema", "in": "query", "schema": {}},
+            {"name": "untyped", "in": "query"}
+          ]
         },
-        "post": {}
+        "post": {
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {"type": "object"}
+              }
+            }
+          }
+        },
+        "options": {
+          "operationId": "emptyRbContent",
+          "requestBody": {}
+        },
+        "head": {
+          "operationId": "noSchemaMtRb",
+          "requestBody": {
+            "content": {
+              "application/json": {}
+            }
+          }
+        },
+        "put": {
+          "operationId": "putForm",
+          "requestBody": {
+            "content": {
+              "application/x-www-form-urlencoded": {
+                "schema": {"type": "object"}
+              }
+            }
+          }
+        },
+        "patch": {
+          "operationId": "patchArray",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {"type": "array"}
+              }
+            }
+          }
+        },
+        "delete": {
+          "operationId": "deleteEx",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "example": "{\"id\":1}"
+              }
+            }
+          }
+        },
+        "additionalOperations": {
+          "COPY": {
+            "operationId": "copyTest"
+          }
+        }
+      }
+    },
+    "webhooks": {
+      "newPet": {
+        "post": {
+          "operationId": "onNewPet",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {"type": "object"}
+              }
+            }
+          }
+        }
       }
     }
   })";
@@ -180,6 +265,20 @@ void test_to_docs_json() noexcept {
   assert(res_exp.out.find("\"wrapper_start\"") != std::string::npos);
   assert(res_exp.out.find("\"wrapper_end\"") != std::string::npos);
   assert(res_exp.out.find("\"snippet\"") != std::string::npos);
+  assert(res_exp.out.find("std::cout << *res") != std::string::npos);
+  assert(res_exp.out.find("client.getTest(1, true, 1.0, \\\"active\\\", "
+                          "\\\"example\\\", \\\"v1\\\", 42, true, 3.14, "
+                          "\\\"example\\\", \\\"example\\\")") !=
+         std::string::npos);
+  assert(res_exp.out.find("client.request(1, \\\"{}\\\")") !=
+         std::string::npos);
+  assert(res_exp.out.find("client.putForm(1, \\\"key=value\\\")") !=
+         std::string::npos);
+  assert(res_exp.out.find("client.patchArray(1, \\\"[{}]\\\")") !=
+         std::string::npos);
+  assert(res_exp.out.find("\"webhooks\"") != std::string::npos);
+  assert(res_exp.out.find("onNewPet") != std::string::npos);
+  assert(res_exp.out.find("copyTest") != std::string::npos);
 
   auto res_no_exp = run_cli({"cdd-cpp", "to_docs_json", "--no-imports",
                              "--no-wrapping", "-i", spec_file});
@@ -189,6 +288,44 @@ void test_to_docs_json() noexcept {
   assert(res_no_exp.out.find("\"wrapper_end\"") == std::string::npos);
   assert(res_no_exp.out.find("\"snippet\"") != std::string::npos);
 
+  std::string arazzo_spec = R"({
+    "arazzo": "1.0.1",
+    "info": {"title": "Pet Workflows", "version": "1.0.0"},
+    "sourceDescriptions": [{"name": "petstore", "url": "./openapi.json", "type": "openapi"}],
+    "workflows": [
+      {
+        "workflowId": "loginAndGetPet",
+        "summary": "Login and fetch pet",
+        "description": "Full workflow description",
+        "steps": [
+          {"stepId": "step1", "operationId": "loginUser"}
+        ]
+      },
+      {
+        "workflowId": "minimalWf",
+        "steps": [
+          {"stepId": "step1", "operationId": "getPet"}
+        ]
+      }
+    ]
+  })";
+  std::string arazzo_file = tmp.path("test_arazzo.json");
+  write_str(arazzo_file, arazzo_spec);
+
+  auto res_az = run_cli({"cdd-cpp", "to_docs_json", "-i", arazzo_file});
+  assert(res_az.code == 0);
+  assert(res_az.out.find("\"workflows\"") != std::string::npos);
+  assert(res_az.out.find("loginAndGetPet") != std::string::npos);
+  assert(res_az.out.find("workflows.loginAndGetPet(inputs)") !=
+         std::string::npos);
+
+  auto res_az_nowrap = run_cli({"cdd-cpp", "to_docs_json", "--no-imports",
+                                "--no-wrapping", "-i", arazzo_file});
+  assert(res_az_nowrap.code == 0);
+  assert(res_az_nowrap.out.find("\"imports\"") == std::string::npos);
+  assert(res_az_nowrap.out.find("\"wrapper_start\"") == std::string::npos);
+  assert(res_az_nowrap.out.find("\"wrapper_end\"") == std::string::npos);
+
   auto help_res = run_cli({"cdd-cpp", "--help"});
   assert(help_res.code == 0 &&
          help_res.out.find("Usage:") != std::string::npos);
@@ -196,7 +333,18 @@ void test_to_docs_json() noexcept {
 
   auto version_res = run_cli({"cdd-cpp", "--version"});
   assert(version_res.code == 0 &&
-         version_res.out.find("cdd-cpp version") != std::string::npos);
+         version_res.out ==
+             "cdd-cpp version " + std::string(utils::CDD_CPP_VERSION) + "\n");
+  auto git_tag = exec("git describe --tags --abbrev=0");
+  if (git_tag && !git_tag->empty() &&
+      git_tag->find("fatal:") == std::string::npos) {
+    std::string tag = *git_tag;
+    while (!tag.empty() && (tag.back() == '\n' || tag.back() == '\r'))
+      tag.pop_back();
+    if (!tag.empty() && tag.front() == 'v')
+      tag.erase(0, 1);
+    assert(tag == utils::CDD_CPP_VERSION);
+  }
   assert(run_cli({"cdd-cpp", "-v"}).code == 0);
   assert(run_cli({"cdd-cpp", "mcp", "-h"}).code == 0);
 
@@ -207,7 +355,9 @@ void test_to_docs_json() noexcept {
                             : "./build/cdd-cpp --version";
   auto bin_version = exec(bin_cmd);
   assert(bin_version &&
-         bin_version->find("cdd-cpp version") != std::string::npos);
+         bin_version->find("cdd-cpp version " +
+                           std::string(utils::CDD_CPP_VERSION)) !=
+             std::string::npos);
 
   auto err_file =
       run_cli({"cdd-cpp", "to_docs_json", "-i", tmp.path("non_existent.json")});
@@ -390,9 +540,23 @@ void test_to_docs_json() noexcept {
   assert(to_docs_out.code == 0 &&
          std::filesystem::exists(docs_out_file, fs_ec));
 
-  auto to_docs_bad_out = run_cli(
-      {"cdd-cpp", "to_docs_json", "-i", spec_file, "-o", tmp.path("code")});
+  std::string docs_out_dir = tmp.path("docs_dir_out");
+  std::filesystem::create_directories(docs_out_dir, fs_ec);
+  auto to_docs_dir_res =
+      run_cli({"cdd-cpp", "to_docs_json", "-i", spec_file, "-o", docs_out_dir});
+  assert(to_docs_dir_res.code == 0 &&
+         std::filesystem::exists(docs_out_dir + "/docs.json", fs_ec));
+
+  auto to_docs_bad_out =
+      run_cli({"cdd-cpp", "to_docs_json", "-i", spec_file, "-o",
+               tmp.path("nonexistent_parent_xyz/docs.json")});
   assert(to_docs_bad_out.code != 0);
+
+  std::string invalid_ver_file = tmp.path("invalid_ver.json");
+  write_str(invalid_ver_file, R"({"openapi": "1.0.0"})");
+  auto to_docs_invalid_ver =
+      run_cli({"cdd-cpp", "to_docs_json", "-i", invalid_ver_file});
+  assert(to_docs_invalid_ver.code != 0);
 
   std::string bad_file = tmp.path("bad.json");
   write_str(bad_file, "{bad}");

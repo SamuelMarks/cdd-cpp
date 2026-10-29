@@ -1,5 +1,19 @@
 cmake_minimum_required(VERSION 3.15)
-project(cdd_cpp VERSION 0.0.4)
+
+execute_process(
+    COMMAND git describe --tags --abbrev=0
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    OUTPUT_VARIABLE CDD_GIT_TAG
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+)
+if(CDD_GIT_TAG MATCHES "^v?([0-9]+\\.[0-9]+\\.[0-9]+)")
+    set(CDD_CPP_VERSION_STR "${CMAKE_MATCH_1}")
+else()
+    set(CDD_CPP_VERSION_STR "0.0.4")
+endif()
+
+project(cdd_cpp VERSION ${CDD_CPP_VERSION_STR})
 
 if(POLICY CMP0135)
   cmake_policy(SET CMP0135 NEW)
@@ -135,6 +149,7 @@ if(COVERAGE)
 endif()
 add_library(cdd_lib STATIC ${CDD_LIB_SRCS})
 target_include_directories(cdd_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_compile_definitions(cdd_lib PUBLIC "CDD_CPP_VERSION_STR=\"${PROJECT_VERSION}\"")
 enable_extreme_checks(cdd_lib)
 
 target_link_libraries(cdd_lib PUBLIC simdjson simdjson::simdjson)

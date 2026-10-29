@@ -5,6 +5,7 @@
 #include "../arazzo/models.hpp"
 #include "../mcp/models.hpp"
 #include "../openapi/models.hpp"
+#include "../utils/version.hpp"
 #include <cassert>
 #include <utility>
 
@@ -250,7 +251,9 @@ void test_structs_mcp() {
   root1.name = "ws";
   verify_value_semantics(root1, Root{});
 
-  verify_value_semantics(Implementation{"cdd-cpp", "0.0.4"}, Implementation{});
+  verify_value_semantics(
+      Implementation{"cdd-cpp", std::string(utils::CDD_CPP_VERSION)},
+      Implementation{});
 
   JSONRPCErrorError err1{400, "Bad Request", "details"};
   verify_value_semantics(err1, JSONRPCErrorError{});

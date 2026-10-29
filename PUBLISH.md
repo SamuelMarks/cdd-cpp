@@ -9,7 +9,7 @@ To publish `cdd-cpp` to C++ package registries, we recommend utilizing **vcpkg**
 
 ## GitHub Releases
 
-Pre-built native binaries (`cdd-cpp`, `cdd-cpp.exe`) and standalone WebAssembly modules (`cdd-cpp.wasm`) are published directly to GitHub Releases. The `.github/workflows/ci.yml` pipeline builds and uploads these artifacts automatically on pushes to `master`/`main` and tag creation.
+Pre-built native binaries (`cdd-cpp`, `cdd-cpp.exe`) and standalone WebAssembly modules (`cdd-cpp.wasm`) are published directly to GitHub Releases. The `.github/workflows/ci.yml` pipeline builds and uploads these artifacts automatically on version tag creation (`v*`).
 
 ## Coverage & Badges
 

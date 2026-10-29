@@ -619,6 +619,166 @@ int to_arazzo(const ToArazzoConfig &config, std::ostream &out,
   return 0;
 }
 
+/// @brief Map an OpenAPI Parameter to its C++ sample literal for documentation
+/// snippets.
+/// @param p The OpenAPI Parameter.
+/// @return Sample C++ literal expression string.
+static std::string
+doc_param_sample_value(const openapi::Parameter &p) noexcept {
+  if (!p.schema.has_value()) {
+    return "\"example\"";
+  }
+  const auto &s = *p.schema;
+  std::string ctype = s.type.has_value() ? openapi::openapi_type_to_cpp(*s.type)
+                                         : "std::string";
+  if (p.example.has_value()) {
+    if (ctype == "int" || ctype == "bool" || ctype == "double") {
+      return *p.example;
+    }
+    return "\"" + utils::escape_json_string(*p.example) + "\"";
+  }
+  if (s.enum_values.has_value() && !s.enum_values->empty()) {
+    return "\"" + utils::escape_json_string(s.enum_values->front()) + "\"";
+  }
+  if (ctype == "int")
+    return "1";
+  if (ctype == "bool")
+    return "true";
+  if (ctype == "double")
+    return "1.0";
+  return "\"example\"";
+}
+
+/// @brief Build a sample C++ requestBody string literal for documentation
+/// snippets.
+/// @param rb The OpenAPI RequestBody.
+/// @return Escaped C++ string literal representing the request body.
+static std::string
+doc_request_body_sample_value(const openapi::RequestBody &rb) noexcept {
+  if (!rb.content.empty()) {
+    const auto &[content_type, mt] = *rb.content.begin();
+    if (mt.example.has_value()) {
+      return "\"" + utils::escape_json_string(*mt.example) + "\"";
+    }
+    if (content_type == "application/x-www-form-urlencoded") {
+      return "\"key=value\"";
+    }
+    if (mt.schema.has_value() && mt.schema->type == "array") {
+      return "\"[{}]\"";
+    }
+  }
+  return "\"{}\"";
+}
+
+/// @brief Emit a single operation documentation entry into a JsonWriter.
+/// @param jw Target JsonWriter.
+/// @param config DocsJsonConfig controlling imports/wrapping.
+/// @param method Uppercase HTTP method or "WEBHOOK".
+/// @param path URL path or webhook name.
+/// @param pi Enclosing PathItem (for path-level parameters).
+/// @param op Operation definition.
+static void emit_doc_operation(utils::JsonWriter &jw,
+                               const DocsJsonConfig &config,
+                               const std::string &method,
+                               const std::string &path,
+                               const openapi::PathItem &pi,
+                               const openapi::Operation &op) noexcept {
+  jw.start_object();
+  jw.key_value("method", method);
+  jw.key_value("path", path);
+  if (op.operationId.has_value()) {
+    jw.key_value("operationId", *op.operationId);
+  }
+  jw.key("code");
+  jw.start_object();
+
+  if (!config.no_imports) {
+    jw.key_value("imports", "#include <iostream>\n#include \"client.hpp\"");
+  }
+  if (!config.no_wrapping) {
+    jw.key_value("wrapper_start",
+                 "int main() {\n    cdd_client::Client client;\n");
+  }
+
+  std::vector<openapi::Parameter> all_params;
+  if (pi.parameters.has_value()) {
+    for (const auto &p : *pi.parameters)
+      all_params.push_back(p);
+  }
+  if (op.parameters.has_value()) {
+    for (const auto &p : *op.parameters)
+      all_params.push_back(p);
+  }
+
+  std::string call_args;
+  for (size_t i = 0; i < all_params.size(); ++i) {
+    if (i > 0)
+      call_args += ", ";
+    call_args += doc_param_sample_value(all_params[i]);
+  }
+  if (op.requestBody.has_value()) {
+    if (!call_args.empty())
+      call_args += ", ";
+    call_args += doc_request_body_sample_value(*op.requestBody);
+  }
+
+  std::string op_name = op.operationId.value_or("request");
+  jw.key_value("snippet", "    auto res = client." + op_name + "(" + call_args +
+                              ");\n    if (res) {\n        std::cout << *res "
+                              "<< \"\\n\";\n    }");
+
+  if (!config.no_wrapping) {
+    jw.key_value("wrapper_end", "    return 0;\n}");
+  }
+  jw.end_object();
+  jw.end_object();
+}
+
+/// @brief Emit all HTTP method operations on a PathItem into a JsonWriter.
+/// @param jw Target JsonWriter.
+/// @param config DocsJsonConfig controlling imports/wrapping.
+/// @param path URL path or webhook identifier.
+/// @param pi The PathItem containing operations.
+static void emit_doc_path_item(utils::JsonWriter &jw,
+                               const DocsJsonConfig &config,
+                               const std::string &path,
+                               const openapi::PathItem &pi) noexcept {
+  auto add_op = [&](const std::string &method,
+                    const std::optional<openapi::Operation> &op) {
+    if (!op.has_value())
+      return;
+    emit_doc_operation(jw, config, method, path, pi, *op);
+  };
+
+  add_op("GET", pi.get);
+  add_op("POST", pi.post);
+  add_op("PUT", pi.put);
+  add_op("DELETE", pi.delete_op);
+  add_op("PATCH", pi.patch);
+  add_op("OPTIONS", pi.options);
+  add_op("HEAD", pi.head);
+  add_op("TRACE", pi.trace);
+  add_op("QUERY", pi.query);
+  if (pi.additionalOperations) {
+    for (const auto &[custom_method, custom_op] : *pi.additionalOperations) {
+      emit_doc_operation(jw, config, custom_method, path, pi, custom_op);
+    }
+  }
+}
+
+/// @brief Resolve output file path for `to_docs_json`, appending `/docs.json`
+/// when `output_path` refers to an existing directory.
+/// @param output_path Configured output path.
+/// @return Resolved file path string.
+static std::string
+resolve_docs_output_path(const std::string &output_path) noexcept {
+  std::error_code ec;
+  if (std::filesystem::is_directory(output_path, ec)) {
+    return (std::filesystem::path(output_path) / "docs.json").string();
+  }
+  return output_path;
+}
+
 int to_docs_json(const DocsJsonConfig &config, std::ostream &out,
                  std::ostream &err) noexcept {
   if (config.input.empty()) {
@@ -631,80 +791,100 @@ int to_docs_json(const DocsJsonConfig &config, std::ostream &out,
     err << "Error: " << content_res.error() << "\n";
     return 1;
   }
-  auto spec_res = openapi::parse(*content_res);
-  if (!spec_res) {
-    err << "Error: " << spec_res.error() << "\n";
-    return 1;
-  }
-  const auto &spec = *spec_res;
 
   utils::JsonWriter jw;
-  jw.start_array();
-  jw.start_object();
-  jw.key_value("language", "cpp");
-  jw.key("operations");
-  jw.start_array();
 
-  if (spec.paths.has_value()) {
-    for (const auto &[path, pi] : *spec.paths) {
-      auto add_op = [&](const std::string &method,
-                        const std::optional<openapi::Operation> &op) {
-        if (!op.has_value())
-          return;
-        jw.start_object();
-        jw.key_value("method", method);
-        jw.key_value("path", path);
-        if (op->operationId.has_value()) {
-          jw.key_value("operationId", *op->operationId);
-        }
-        jw.key("code");
-        jw.start_object();
-
-        if (!config.no_imports) {
-          jw.key_value("imports",
-                       "#include <iostream>\n#include <cdd_client.hpp>");
-        }
-        if (!config.no_wrapping) {
-          jw.key_value("wrapper_start",
-                       "int main() {\n    cdd_cpp::Client client;\n");
-        }
-
-        std::string op_name = op->operationId.value_or("request");
-        jw.key_value("snippet", "    auto res = client." + op_name +
-                                    "();\n    out << res << \"\\n\";");
-
-        if (!config.no_wrapping) {
-          jw.key_value("wrapper_end", "    return 0;\n}");
-        }
-        jw.end_object();
-        jw.end_object();
-      };
-
-      add_op("GET", pi.get);
-      add_op("POST", pi.post);
-      add_op("PUT", pi.put);
-      add_op("DELETE", pi.delete_op);
-      add_op("PATCH", pi.patch);
-      add_op("OPTIONS", pi.options);
-      add_op("HEAD", pi.head);
-      add_op("TRACE", pi.trace);
-      add_op("QUERY", pi.query);
+  // Check if input is an Arazzo workflow specification
+  if (auto arazzo_res = arazzo::parse(*content_res); arazzo_res.has_value()) {
+    const auto &az = *arazzo_res;
+    jw.start_array();
+    jw.start_object();
+    jw.key_value("language", "cpp");
+    jw.key("operations");
+    jw.start_array();
+    jw.end_array();
+    jw.key("workflows");
+    jw.start_array();
+    for (const auto &wf : az.workflows) {
+      jw.start_object();
+      jw.key_value("workflowId", wf.workflowId);
+      if (wf.summary.has_value()) {
+        jw.key_value("summary", *wf.summary);
+      }
+      if (wf.description.has_value()) {
+        jw.key_value("description", *wf.description);
+      }
+      jw.key("code");
+      jw.start_object();
+      if (!config.no_imports) {
+        jw.key_value("imports", "#include <iostream>\n#include \"client.hpp\"");
+      }
+      if (!config.no_wrapping) {
+        jw.key_value("wrapper_start",
+                     "int main() {\n    cdd_client::Client client;\n    "
+                     "cdd_client::Workflows workflows(&client);\n");
+      }
+      jw.key_value("snippet",
+                   "    cdd_models::" + wf.workflowId +
+                       "Inputs inputs;\n    auto res = workflows." +
+                       wf.workflowId +
+                       "(inputs);\n    if (res) {\n        std::cout << "
+                       "res->raw_json << \"\\n\";\n    }");
+      if (!config.no_wrapping) {
+        jw.key_value("wrapper_end", "    return 0;\n}");
+      }
+      jw.end_object();
+      jw.end_object();
     }
-  }
+    jw.end_array();
+    jw.end_object();
+    jw.end_array();
+  } else {
+    auto upgraded_res = openapi::upgraders::upgrade_to_latest(*content_res);
+    if (!upgraded_res) {
+      err << "Error: " << upgraded_res.error() << "\n";
+      return 1;
+    }
+    auto spec_res = openapi::parse(*upgraded_res);
+    const auto &spec = *spec_res;
 
-  jw.end_array();
-  jw.end_object();
-  jw.end_array();
+    jw.start_array();
+    jw.start_object();
+    jw.key_value("language", "cpp");
+    jw.key("operations");
+    jw.start_array();
+
+    if (spec.paths.has_value()) {
+      for (const auto &[path, pi] : *spec.paths) {
+        emit_doc_path_item(jw, config, path, pi);
+      }
+    }
+
+    jw.end_array();
+
+    if (spec.webhooks.has_value()) {
+      jw.key("webhooks");
+      jw.start_array();
+      for (const auto &[wh_name, pi] : *spec.webhooks) {
+        emit_doc_path_item(jw, config, wh_name, pi);
+      }
+      jw.end_array();
+    }
+
+    jw.end_object();
+    jw.end_array();
+  }
 
   if (config.output.empty()) {
     out << jw.str() << "\n";
   } else {
-    std::ofstream fs(config.output);
+    std::string target_path = resolve_docs_output_path(config.output);
+    std::ofstream fs(target_path);
     if (!fs.is_open()) {
       err << "Error: "
           << utils::Error(utils::ErrorCode::FileWriteError,
-                          "Could not open output file: " + config.output,
-                          config.output)
+                          "Could not open output file: " + target_path,
+                          target_path)
           << "\n";
       return 1;
     }
