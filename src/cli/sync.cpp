@@ -670,26 +670,16 @@ doc_request_body_sample_value(const openapi::RequestBody &rb) noexcept {
   return "\"{}\"";
 }
 
-/// @brief Emit a single operation documentation entry into a JsonWriter.
+/// @brief Emit the code block object (`imports`, `wrapper_start`, `snippet`,
+/// `wrapper_end`) for a single operation into a JsonWriter.
 /// @param jw Target JsonWriter.
 /// @param config DocsJsonConfig controlling imports/wrapping.
-/// @param method Uppercase HTTP method or "WEBHOOK".
-/// @param path URL path or webhook name.
 /// @param pi Enclosing PathItem (for path-level parameters).
 /// @param op Operation definition.
-static void emit_doc_operation(utils::JsonWriter &jw,
-                               const DocsJsonConfig &config,
-                               const std::string &method,
-                               const std::string &path,
-                               const openapi::PathItem &pi,
-                               const openapi::Operation &op) noexcept {
-  jw.start_object();
-  jw.key_value("method", method);
-  jw.key_value("path", path);
-  if (op.operationId.has_value()) {
-    jw.key_value("operationId", *op.operationId);
-  }
-  jw.key("code");
+static void emit_doc_operation_code(utils::JsonWriter &jw,
+                                    const DocsJsonConfig &config,
+                                    const openapi::PathItem &pi,
+                                    const openapi::Operation &op) noexcept {
   jw.start_object();
 
   if (!config.no_imports) {
@@ -723,14 +713,39 @@ static void emit_doc_operation(utils::JsonWriter &jw,
   }
 
   std::string op_name = op.operationId.value_or("request");
-  jw.key_value("snippet", "    auto res = client." + op_name + "(" + call_args +
-                              ");\n    if (res) {\n        std::cout << *res "
-                              "<< \"\\n\";\n    }");
+  std::string indent = config.no_wrapping ? "" : "    ";
+  jw.key_value("snippet", indent + "auto res = client." + op_name + "(" +
+                              call_args + ");\n" + indent + "if (res) {\n" +
+                              indent + "    std::cout << *res << \"\\n\";\n" +
+                              indent + "}");
 
   if (!config.no_wrapping) {
     jw.key_value("wrapper_end", "    return 0;\n}");
   }
   jw.end_object();
+}
+
+/// @brief Emit a single operation documentation entry into a JsonWriter.
+/// @param jw Target JsonWriter.
+/// @param config DocsJsonConfig controlling imports/wrapping.
+/// @param method Uppercase HTTP method or "WEBHOOK".
+/// @param path URL path or webhook name.
+/// @param pi Enclosing PathItem (for path-level parameters).
+/// @param op Operation definition.
+static void emit_doc_operation(utils::JsonWriter &jw,
+                               const DocsJsonConfig &config,
+                               const std::string &method,
+                               const std::string &path,
+                               const openapi::PathItem &pi,
+                               const openapi::Operation &op) noexcept {
+  jw.start_object();
+  jw.key_value("method", method);
+  jw.key_value("path", path);
+  if (op.operationId.has_value()) {
+    jw.key_value("operationId", *op.operationId);
+  }
+  jw.key("code");
+  emit_doc_operation_code(jw, config, pi, op);
   jw.end_object();
 }
 
@@ -739,30 +754,44 @@ static void emit_doc_operation(utils::JsonWriter &jw,
 /// @param config DocsJsonConfig controlling imports/wrapping.
 /// @param path URL path or webhook identifier.
 /// @param pi The PathItem containing operations.
+/// @param is_webhook If true, emits a method-keyed map of code blocks instead
+/// of operation objects.
 static void emit_doc_path_item(utils::JsonWriter &jw,
                                const DocsJsonConfig &config,
                                const std::string &path,
-                               const openapi::PathItem &pi) noexcept {
-  auto add_op = [&](const std::string &method,
+                               const openapi::PathItem &pi,
+                               bool is_webhook = false) noexcept {
+  if (is_webhook) {
+    jw.start_object();
+  }
+  auto add_op = [&](const char *method, const char *lower_method,
                     const std::optional<openapi::Operation> &op) {
     if (!op.has_value())
       return;
-    emit_doc_operation(jw, config, method, path, pi, *op);
+    if (is_webhook) {
+      jw.key(lower_method);
+      emit_doc_operation_code(jw, config, pi, *op);
+    } else {
+      emit_doc_operation(jw, config, method, path, pi, *op);
+    }
   };
 
-  add_op("GET", pi.get);
-  add_op("POST", pi.post);
-  add_op("PUT", pi.put);
-  add_op("DELETE", pi.delete_op);
-  add_op("PATCH", pi.patch);
-  add_op("OPTIONS", pi.options);
-  add_op("HEAD", pi.head);
-  add_op("TRACE", pi.trace);
-  add_op("QUERY", pi.query);
+  add_op("GET", "get", pi.get);
+  add_op("POST", "post", pi.post);
+  add_op("PUT", "put", pi.put);
+  add_op("DELETE", "delete", pi.delete_op);
+  add_op("PATCH", "patch", pi.patch);
+  add_op("OPTIONS", "options", pi.options);
+  add_op("HEAD", "head", pi.head);
+  add_op("TRACE", "trace", pi.trace);
+  add_op("QUERY", "query", pi.query);
   if (pi.additionalOperations) {
     for (const auto &[custom_method, custom_op] : *pi.additionalOperations) {
-      emit_doc_operation(jw, config, custom_method, path, pi, custom_op);
+      add_op(custom_method.c_str(), custom_method.c_str(), custom_op);
     }
+  }
+  if (is_webhook) {
+    jw.end_object();
   }
 }
 
@@ -824,12 +853,13 @@ int to_docs_json(const DocsJsonConfig &config, std::ostream &out,
                      "int main() {\n    cdd_client::Client client;\n    "
                      "cdd_client::Workflows workflows(&client);\n");
       }
-      jw.key_value("snippet",
-                   "    cdd_models::" + wf.workflowId +
-                       "Inputs inputs;\n    auto res = workflows." +
-                       wf.workflowId +
-                       "(inputs);\n    if (res) {\n        std::cout << "
-                       "res->raw_json << \"\\n\";\n    }");
+      std::string wf_indent = config.no_wrapping ? "" : "    ";
+      jw.key_value(
+          "snippet",
+          wf_indent + "cdd_models::" + wf.workflowId + "Inputs inputs;\n" +
+              wf_indent + "auto res = workflows." + wf.workflowId +
+              "(inputs);\n" + wf_indent + "if (res) {\n" + wf_indent +
+              "    std::cout << res->raw_json << \"\\n\";\n" + wf_indent + "}");
       if (!config.no_wrapping) {
         jw.key_value("wrapper_end", "    return 0;\n}");
       }
@@ -864,11 +894,12 @@ int to_docs_json(const DocsJsonConfig &config, std::ostream &out,
 
     if (spec.webhooks.has_value()) {
       jw.key("webhooks");
-      jw.start_array();
+      jw.start_object();
       for (const auto &[wh_name, pi] : *spec.webhooks) {
-        emit_doc_path_item(jw, config, wh_name, pi);
+        jw.key(wh_name);
+        emit_doc_path_item(jw, config, wh_name, pi, true);
       }
-      jw.end_array();
+      jw.end_object();
     }
 
     jw.end_object();

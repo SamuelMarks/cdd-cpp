@@ -264,7 +264,8 @@ void test_to_docs_json() noexcept {
   assert(res_exp.out.find("\"imports\"") != std::string::npos);
   assert(res_exp.out.find("\"wrapper_start\"") != std::string::npos);
   assert(res_exp.out.find("\"wrapper_end\"") != std::string::npos);
-  assert(res_exp.out.find("\"snippet\"") != std::string::npos);
+  assert(res_exp.out.find("\"snippet\":\"    auto res = client.") !=
+         std::string::npos);
   assert(res_exp.out.find("std::cout << *res") != std::string::npos);
   assert(res_exp.out.find("client.getTest(1, true, 1.0, \\\"active\\\", "
                           "\\\"example\\\", \\\"v1\\\", 42, true, 3.14, "
@@ -276,7 +277,9 @@ void test_to_docs_json() noexcept {
          std::string::npos);
   assert(res_exp.out.find("client.patchArray(1, \\\"[{}]\\\")") !=
          std::string::npos);
-  assert(res_exp.out.find("\"webhooks\"") != std::string::npos);
+  assert(res_exp.out.find("\"webhooks\":{") != std::string::npos);
+  assert(res_exp.out.find("\"newPet\":{") != std::string::npos);
+  assert(res_exp.out.find("\"post\":{") != std::string::npos);
   assert(res_exp.out.find("onNewPet") != std::string::npos);
   assert(res_exp.out.find("copyTest") != std::string::npos);
 
@@ -286,7 +289,8 @@ void test_to_docs_json() noexcept {
   assert(res_no_exp.out.find("\"imports\"") == std::string::npos);
   assert(res_no_exp.out.find("\"wrapper_start\"") == std::string::npos);
   assert(res_no_exp.out.find("\"wrapper_end\"") == std::string::npos);
-  assert(res_no_exp.out.find("\"snippet\"") != std::string::npos);
+  assert(res_no_exp.out.find("\"snippet\":\"auto res = client.") !=
+         std::string::npos);
 
   std::string arazzo_spec = R"({
     "arazzo": "1.0.1",
@@ -316,6 +320,9 @@ void test_to_docs_json() noexcept {
   assert(res_az.code == 0);
   assert(res_az.out.find("\"workflows\"") != std::string::npos);
   assert(res_az.out.find("loginAndGetPet") != std::string::npos);
+  assert(
+      res_az.out.find("\"snippet\":\"    cdd_models::loginAndGetPetInputs") !=
+      std::string::npos);
   assert(res_az.out.find("workflows.loginAndGetPet(inputs)") !=
          std::string::npos);
 
@@ -325,6 +332,9 @@ void test_to_docs_json() noexcept {
   assert(res_az_nowrap.out.find("\"imports\"") == std::string::npos);
   assert(res_az_nowrap.out.find("\"wrapper_start\"") == std::string::npos);
   assert(res_az_nowrap.out.find("\"wrapper_end\"") == std::string::npos);
+  assert(res_az_nowrap.out.find(
+             "\"snippet\":\"cdd_models::loginAndGetPetInputs") !=
+         std::string::npos);
 
   auto help_res = run_cli({"cdd-cpp", "--help"});
   assert(help_res.code == 0 &&
