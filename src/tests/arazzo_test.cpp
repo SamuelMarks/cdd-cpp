@@ -1295,7 +1295,18 @@ static void test_arazzo_generators_and_cli() noexcept {
           }
         },
         "steps": [
-          { "stepId": "s1", "operationId": "postOrder" },
+          {
+            "stepId": "s1",
+            "operationId": "postOrder",
+            "successCriteria": [
+              { "condition": "$statusCode == 200" }
+            ],
+            "onFailure": [
+              { "name": "retryOnce", "type": "retry", "retryLimit": 2, "retryAfter": 0.5 },
+              { "name": "endFail", "type": "end" },
+              { "reference": "$components.failureActions.reusableFail" }
+            ]
+          },
           { "stepId": "s2", "operationPath": "{$sourceDescriptions.api.url}#/paths/~1order/get" },
           { "stepId": "s3", "workflowId": "authWorkflow" }
         ],
@@ -1414,21 +1425,32 @@ static void test_arazzo_generators_and_cli() noexcept {
   {
     std::ostringstream out_ss, err_ss;
     std::string out_cli_dir = tmp_dir + "/cli_out";
-    const char *argv[] = {
-        "cdd-cpp",         "from_arazzo", "to_sdk_cli",       "-i",
-        spec_file.c_str(), "-o",          out_cli_dir.c_str()};
+    const char *argv[] = {"cdd-cpp",
+                          "from_arazzo",
+                          "to_sdk_cli",
+                          "-i",
+                          spec_file.c_str(),
+                          "-o",
+                          out_cli_dir.c_str(),
+                          "--github-org",
+                          "aorg",
+                          "--repo-name",
+                          "arepo",
+                          "--doc-host",
+                          "github_pages",
+                          "--mcp"};
     [[maybe_unused]] int rc =
-        cli::main_impl(7, const_cast<char **>(argv), out_ss, err_ss);
+        cli::main_impl(14, const_cast<char **>(argv), out_ss, err_ss);
     assert(rc == 0);
   }
   {
     std::ostringstream out_ss, err_ss;
     std::string out_srv_dir = tmp_dir + "/srv_out";
     const char *argv[] = {
-        "cdd-cpp",         "from_arazzo", "to_server",        "-i",
-        spec_file.c_str(), "-o",          out_srv_dir.c_str()};
+        "cdd-cpp",         "from_arazzo", "to_server",         "-i",
+        spec_file.c_str(), "-o",          out_srv_dir.c_str(), "-m"};
     [[maybe_unused]] int rc =
-        cli::main_impl(7, const_cast<char **>(argv), out_ss, err_ss);
+        cli::main_impl(8, const_cast<char **>(argv), out_ss, err_ss);
     assert(rc == 0);
   }
   {

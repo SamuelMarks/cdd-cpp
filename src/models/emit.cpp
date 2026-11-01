@@ -209,6 +209,10 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   return ss.str();
 }
 
+/// @brief Emit modular C++ header files per OpenAPI schema.
+/// @param spec The OpenAPI specification model.
+/// @return Map of `src/models/<SchemaName>.hpp` to generated C++ header
+/// content.
 std::map<std::string, std::string>
 emit_modular(const openapi::OpenAPI &spec) noexcept {
   std::map<std::string, std::string> files;

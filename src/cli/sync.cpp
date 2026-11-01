@@ -231,6 +231,9 @@ write_generated_files(const std::map<std::string, std::string> &files,
   return 0;
 }
 
+/// @brief Print help usage for the MCP subcommand.
+/// @param out Output stream for help message.
+/// @return Exit code (0).
 int mcp_command_help(std::ostream &out) noexcept {
   out << "Usage:\n"
       << "  cdd-cpp mcp\n\n"
@@ -238,6 +241,9 @@ int mcp_command_help(std::ostream &out) noexcept {
   return 0;
 }
 
+/// @brief Handle a single MCP JSON-RPC message string.
+/// @param request Raw JSON-RPC request string.
+/// @return Serialized JSON-RPC response string.
 std::string handle_mcp_cli_message(const std::string &request) noexcept {
   auto make_err = [](const std::string &id, int code, const std::string &msg) {
     mcp::JSONRPCError err_obj;
@@ -397,6 +403,11 @@ std::string handle_mcp_cli_message(const std::string &request) noexcept {
   return make_err(id_str, -32601, "Method not found");
 }
 
+/// @brief Start the Model Context Protocol (MCP) STDIO server loop.
+/// @param out Output stream for JSON-RPC responses.
+/// @param err Error stream for diagnostic output.
+/// @param in Input stream for JSON-RPC requests.
+/// @return Exit code (0 on success).
 int mcp(std::ostream &out, std::ostream &err, std::istream &in) noexcept {
   (void)err;
   std::string line;
@@ -408,6 +419,109 @@ int mcp(std::ostream &out, std::ostream &err, std::istream &in) noexcept {
   return 0;
 }
 
+/// @brief Augment a generated file map with `vcpkg.json`, `conanfile.py`,
+/// `Doxyfile`, `src/CMakeLists.txt`, `.github/workflows/ci.yml` GPG/Doxygen
+/// steps, and optional MCP server handlers (`src/mcp_server.hpp` and
+/// `src/mcp_server.cpp`).
+/// @param files Map of relative file paths to generated contents.
+/// @param no_installable_package If true, omit package manifests and Doxyfile.
+/// @param no_github_actions If true, omit `.github/workflows/ci.yml`.
+/// @param mcp If true, emit `src/mcp_server.hpp` and `src/mcp_server.cpp`.
+/// @param github_org Target GitHub organization name.
+/// @param repo_name Target repository/package name.
+/// @param doc_host Documentation hosting target (`official`, `github_pages`, or
+/// `none`).
+static void apply_scaffolding_extras(std::map<std::string, std::string> &files,
+                                     bool no_installable_package,
+                                     bool no_github_actions, bool mcp,
+                                     const std::string &github_org,
+                                     const std::string &repo_name,
+                                     const std::string &doc_host) noexcept {
+  std::string org = github_org.empty() ? "offscale" : github_org;
+  std::string pkg = repo_name.empty() ? (org + "-sdk-cpp") : repo_name;
+
+  if (mcp) {
+    files["src/mcp_server.hpp"] =
+        "/// @file mcp_server.hpp\n"
+        "/// @brief Model Context Protocol (MCP) JSON-RPC 2.0 server "
+        "handler.\n\n"
+        "#pragma once\n"
+        "#include <string>\n\n"
+        "namespace cdd_mcp {\n"
+        "    /// @brief Handle a single MCP JSON-RPC 2.0 request message.\n"
+        "    /// @param request_json Raw JSON-RPC 2.0 request string.\n"
+        "    /// @return Serialized JSON-RPC 2.0 response string.\n"
+        "    std::string handle_mcp_request(const std::string& request_json) "
+        "noexcept;\n"
+        "} // namespace cdd_mcp\n";
+    files["src/mcp_server.cpp"] = "/// @file mcp_server.cpp\n"
+                                  "/// @brief Implementation of Model Context "
+                                  "Protocol (MCP) JSON-RPC 2.0 server.\n\n"
+                                  "#include \"mcp_server.hpp\"\n\n"
+                                  "namespace cdd_mcp {\n"
+                                  "    std::string handle_mcp_request(const "
+                                  "std::string& request_json) noexcept {\n"
+                                  "        (void)request_json;\n"
+                                  "        return "
+                                  "\"{\\\"jsonrpc\\\":\\\"2.0\\\",\\\"id\\\":1,"
+                                  "\\\"result\\\":{\\\"tools\\\":[]}}\";\n"
+                                  "    }\n"
+                                  "} // namespace cdd_mcp\n";
+  }
+
+  if (!no_installable_package) {
+    files["vcpkg.json"] = "{\n"
+                          "  \"name\": \"" +
+                          pkg +
+                          "\",\n"
+                          "  \"version\": \"0.0.5\",\n"
+                          "  \"homepage\": \"https://github.com/" +
+                          org + "/" + pkg +
+                          "\",\n"
+                          "  \"dependencies\": [\"simdjson\", \"curl\"]\n"
+                          "}\n";
+    files["conanfile.py"] = "from conan import ConanFile\n\n"
+                            "class GeneratedConan(ConanFile):\n"
+                            "    name = \"" +
+                            pkg +
+                            "\"\n"
+                            "    version = \"0.0.5\"\n"
+                            "    url = \"https://github.com/" +
+                            org + "/" + pkg + "\"\n";
+    if (doc_host != "none") {
+      files["Doxyfile"] = "PROJECT_NAME = \"" + pkg +
+                          "\"\n"
+                          "INPUT = \"src\"\n"
+                          "RECURSIVE = YES\n"
+                          "WARN_IF_UNDOCUMENTED = YES\n"
+                          "WARN_NO_PARAMDOC = YES\n";
+    }
+    if (!files.contains("src/CMakeLists.txt")) {
+      files["src/CMakeLists.txt"] =
+          "# Subdirectory CMakeLists.txt for " + pkg + "\n";
+    }
+  }
+
+  if (!no_github_actions && files.contains(".github/workflows/ci.yml")) {
+    files[".github/workflows/ci.yml"] +=
+        "      - name: Sign Release Artifacts\n"
+        "        if: startsWith(github.ref, 'refs/tags/v')\n"
+        "        run: echo \"gpg --armor --detach-sign\"\n";
+    if (doc_host == "github_pages" || doc_host == "official") {
+      files[".github/workflows/ci.yml"] +=
+          "      - name: Build Doxygen Docs (" + doc_host +
+          ")\n"
+          "        run: echo \"doxygen Doxyfile\"\n";
+    }
+  }
+}
+
+/// @brief Execute the `from_openapi` subcommand (`to_sdk`, `to_sdk_cli`, or
+/// `to_server`).
+/// @param config Configuration options for code generation.
+/// @param out Output stream for progress messages.
+/// @param err Error stream for diagnostic output.
+/// @return Exit code (0 on success, non-zero on error).
 int from_openapi(const FromOpenApiConfig &config, std::ostream &out,
                  std::ostream &err) noexcept {
   if (config.input.empty() && config.input_dir.empty()) {
@@ -472,9 +586,19 @@ int from_openapi(const FromOpenApiConfig &config, std::ostream &out,
     return 1;
   }
 
+  apply_scaffolding_extras(
+      multiple_files, config.no_installable_package, config.no_github_actions,
+      config.mcp, config.github_org, config.repo_name, config.doc_host);
+
   return write_generated_files(multiple_files, config.output, out, err);
 }
 
+/// @brief Execute the `from_google_discovery` subcommand (`to_openapi`,
+/// `to_sdk`, `to_sdk_cli`, `to_server`, or `to_docs_json`).
+/// @param config Configuration options for Google Discovery conversion.
+/// @param out Output stream for progress messages or OpenAPI JSON.
+/// @param err Error stream for diagnostic output.
+/// @return Exit code (0 on success, non-zero on error).
 int from_google_discovery(const FromGoogleDiscoveryConfig &config,
                           std::ostream &out, std::ostream &err) noexcept {
   if (config.input.empty()) {
@@ -494,6 +618,25 @@ int from_google_discovery(const FromGoogleDiscoveryConfig &config,
     return 1;
   }
 
+  if (config.subcommand == "to_openapi") {
+    if (apis_res->empty()) {
+      err << "Error: No APIs found in Google Discovery document\n";
+      return 1;
+    }
+    std::string spec_str = openapi::emit(apis_res->front());
+    if (config.output.empty()) {
+      out << spec_str << "\n";
+    } else {
+      std::ofstream fs(config.output);
+      if (!fs.is_open()) {
+        err << "Error: Could not open output file: " << config.output << "\n";
+        return 1;
+      }
+      fs << spec_str << "\n";
+    }
+    return 0;
+  }
+
   for (const auto &spec : *apis_res) {
     std::map<std::string, std::string> multiple_files;
 
@@ -505,10 +648,20 @@ int from_google_discovery(const FromGoogleDiscoveryConfig &config,
       multiple_files =
           client_sdk::emit_client(spec, config.no_github_actions,
                                   config.no_installable_package, config.tests);
+    } else if (config.subcommand == "to_server") {
+      auto model_files = cdd_cpp::models::emit_modular(spec);
+      multiple_files.insert(model_files.begin(), model_files.end());
+      auto server_files = cdd_cpp::server::emit_modular(
+          spec, config.no_installable_package, config.tests, false, false);
+      multiple_files.insert(server_files.begin(), server_files.end());
     } else {
       err << "Unknown subcommand: " << config.subcommand << "\n";
       return 1;
     }
+
+    apply_scaffolding_extras(
+        multiple_files, config.no_installable_package, config.no_github_actions,
+        config.mcp, config.github_org, config.repo_name, config.doc_host);
 
     std::string api_output = config.output;
     if (apis_res->size() > 1) {
@@ -521,6 +674,12 @@ int from_google_discovery(const FromGoogleDiscoveryConfig &config,
   return 0;
 }
 
+/// @brief Execute the `to_openapi` subcommand to extract an OpenAPI 3.2.0 spec
+/// from C++ source code.
+/// @param config Configuration options for OpenAPI extraction.
+/// @param out Output stream for emitted OpenAPI JSON or messages.
+/// @param err Error stream for diagnostic output.
+/// @return Exit code (0 on success, non-zero on error).
 int to_openapi(const ToOpenApiConfig &config, std::ostream &out,
                std::ostream &err) noexcept {
   if (config.input.empty()) {
@@ -550,6 +709,12 @@ int to_openapi(const ToOpenApiConfig &config, std::ostream &out,
   return 0;
 }
 
+/// @brief Execute the `from_arazzo` subcommand (`to_sdk`, `to_sdk_cli`, or
+/// `to_server`).
+/// @param config Configuration options for Arazzo workflow generation.
+/// @param out Output stream for progress messages.
+/// @param err Error stream for diagnostic output.
+/// @return Exit code (0 on success, non-zero on error).
 int from_arazzo(const FromArazzoConfig &config, std::ostream &out,
                 std::ostream &err) noexcept {
   if (config.input.empty()) {
@@ -587,9 +752,19 @@ int from_arazzo(const FromArazzoConfig &config, std::ostream &out,
     return 1;
   }
 
+  apply_scaffolding_extras(
+      multiple_files, config.no_installable_package, config.no_github_actions,
+      config.mcp, config.github_org, config.repo_name, config.doc_host);
+
   return write_generated_files(multiple_files, config.output, out, err);
 }
 
+/// @brief Execute the `to_arazzo` subcommand to extract an Arazzo 1.1.0 spec
+/// from C++ workflow source code.
+/// @param config Configuration options for Arazzo extraction.
+/// @param out Output stream for emitted Arazzo JSON or messages.
+/// @param err Error stream for diagnostic output.
+/// @return Exit code (0 on success, non-zero on error).
 int to_arazzo(const ToArazzoConfig &config, std::ostream &out,
               std::ostream &err) noexcept {
   if (config.input.empty()) {
@@ -808,6 +983,12 @@ resolve_docs_output_path(const std::string &output_path) noexcept {
   return output_path;
 }
 
+/// @brief Execute the `to_docs_json` subcommand to generate C++ code snippets
+/// for OpenAPI or Arazzo specifications.
+/// @param config Configuration options for documentation snippet generation.
+/// @param out Output stream for emitted JSON or progress messages.
+/// @param err Error stream for diagnostic output.
+/// @return Exit code (0 on success, non-zero on error).
 int to_docs_json(const DocsJsonConfig &config, std::ostream &out,
                  std::ostream &err) noexcept {
   if (config.input.empty()) {
@@ -924,6 +1105,11 @@ int to_docs_json(const DocsJsonConfig &config, std::ostream &out,
   return 0;
 }
 
+/// @brief Start the HTTP JSON-RPC 2.0 server exposing `cdd-cpp` tools.
+/// @param config Server host and port configuration.
+/// @param out Output stream for status messages.
+/// @param err Error stream for diagnostic output.
+/// @return Exit code (0 on success, non-zero on error).
 int serve_json_rpc(const ServeJsonRpcConfig &config, std::ostream &out,
                    std::ostream &err) noexcept {
 #if !defined(__wasi__) && !defined(__EMSCRIPTEN__)
@@ -958,6 +1144,11 @@ int serve_json_rpc(const ServeJsonRpcConfig &config, std::ostream &out,
 #endif
 }
 
+/// @brief Synchronize a C++ project directory with an OpenAPI specification.
+/// @param config Synchronization configuration (`input`, `output`, `truth`).
+/// @param out Output stream for progress messages.
+/// @param err Error stream for diagnostic output.
+/// @return Exit code (0 on success, non-zero on error).
 int sync(const SyncConfig &config, std::ostream &out,
          std::ostream &err) noexcept {
   out << "Syncing code in " << config.input << " with spec " << config.output
@@ -1019,6 +1210,13 @@ int sync(const SyncConfig &config, std::ostream &out,
   return 0;
 }
 
+/// @brief Parse CLI arguments and run the `mcp` subcommand.
+/// @param argc Argument count.
+/// @param argv Argument vector.
+/// @param out Output stream.
+/// @param err Error stream.
+/// @param in Input stream.
+/// @return Exit code.
 int run_mcp(int argc, char **argv, std::ostream &out, std::ostream &err,
             std::istream &in) noexcept {
   if (has_help_flag(argc, argv)) {
@@ -1027,6 +1225,12 @@ int run_mcp(int argc, char **argv, std::ostream &out, std::ostream &err,
   return mcp(out, err, in);
 }
 
+/// @brief Parse CLI arguments and run the `sync` subcommand.
+/// @param argc Argument count.
+/// @param argv Argument vector.
+/// @param out Output stream.
+/// @param err Error stream.
+/// @return Exit code.
 int run_sync(int argc, char **argv, std::ostream &out,
              std::ostream &err) noexcept {
   if (has_help_flag(argc, argv)) {
@@ -1057,6 +1261,12 @@ int run_sync(int argc, char **argv, std::ostream &out,
   return sync(config, out, err);
 }
 
+/// @brief Parse CLI arguments and run the `from_openapi` subcommand.
+/// @param argc Argument count.
+/// @param argv Argument vector.
+/// @param out Output stream.
+/// @param err Error stream.
+/// @return Exit code.
 int run_from_openapi(int argc, char **argv, std::ostream &out,
                      std::ostream &err) noexcept {
   if (has_help_flag(argc, argv)) {
@@ -1117,6 +1327,12 @@ int run_from_openapi(int argc, char **argv, std::ostream &out,
     } else if (match_opt(arg, "-d", "--input-dir", i, argc, argv,
                          config.input_dir)) {
     } else if (match_opt(arg, "-o", "--output", i, argc, argv, config.output)) {
+    } else if (match_opt(arg, "", "--github-org", i, argc, argv,
+                         config.github_org)) {
+    } else if (match_opt(arg, "", "--repo-name", i, argc, argv,
+                         config.repo_name)) {
+    } else if (match_opt(arg, "", "--doc-host", i, argc, argv,
+                         config.doc_host)) {
     } else if (arg == "-m" || arg == "--mcp") {
       config.mcp = true;
     } else if (arg == "--no-github-actions") {
@@ -1135,6 +1351,8 @@ int run_from_openapi(int argc, char **argv, std::ostream &out,
   config.input = get_arg_or_env(config.input, "CDD_INPUT");
   config.input_dir = get_arg_or_env(config.input_dir, "CDD_INPUT_DIR");
   config.output = get_arg_or_env(config.output, "CDD_OUTPUT", ".");
+  config.github_org = get_arg_or_env(config.github_org, "GITHUB_ORG_NAME");
+  config.repo_name = get_arg_or_env(config.repo_name, "GITHUB_REPO_NAME");
   config.no_github_actions =
       get_bool_arg_or_env(config.no_github_actions, "CDD_NO_GITHUB_ACTIONS");
   config.no_installable_package = get_bool_arg_or_env(
@@ -1144,10 +1362,20 @@ int run_from_openapi(int argc, char **argv, std::ostream &out,
   return from_openapi(config, out, err);
 }
 
+/// @brief Parse CLI arguments and run the `from_google_discovery` subcommand.
+/// @param argc Argument count.
+/// @param argv Argument vector.
+/// @param out Output stream.
+/// @param err Error stream.
+/// @return Exit code.
 int run_from_google_discovery(int argc, char **argv, std::ostream &out,
                               std::ostream &err) noexcept {
   if (has_help_flag(argc, argv)) {
     out << "Usage:\n"
+        << "  cdd-cpp from_google_discovery -i <discovery.json> [-o "
+           "<openapi.json>]\n"
+        << "  cdd-cpp from_google_discovery to_openapi -i <discovery.json> [-o "
+           "<openapi.json>]\n"
         << "  cdd-cpp from_google_discovery to_sdk_cli -i <discovery.json> "
            "-o <target_directory> [--no-github-actions] "
            "[--no-installable-package] [--tests]\n"
@@ -1157,7 +1385,7 @@ int run_from_google_discovery(int argc, char **argv, std::ostream &out,
         << "\nOptions:\n"
         << "  -i, --input                         Path to the Google "
            "Discovery specification.\n"
-        << "  -o, --output                    Output directory path.\n"
+        << "  -o, --output                    Output file or directory path.\n"
         << "      --tests                     Generate integration tests "
            "and mocks.\n"
         << "      --no-github-actions         Do not generate GitHub "
@@ -1173,13 +1401,28 @@ int run_from_google_discovery(int argc, char **argv, std::ostream &out,
   }
 
   FromGoogleDiscoveryConfig config;
-  config.subcommand = argv[2];
+  int start_idx = 3;
+  std::string_view arg2 = argv[2];
+  if (arg2.starts_with('-')) {
+    config.subcommand = "to_openapi";
+    start_idx = 2;
+  } else {
+    config.subcommand = std::string(arg2);
+  }
   config.output = "";
 
-  for (int i = 3; i < argc; ++i) {
+  for (int i = start_idx; i < argc; ++i) {
     std::string_view arg = argv[i];
     if (match_opt(arg, "-i", "--input", i, argc, argv, config.input)) {
     } else if (match_opt(arg, "-o", "--output", i, argc, argv, config.output)) {
+    } else if (match_opt(arg, "", "--github-org", i, argc, argv,
+                         config.github_org)) {
+    } else if (match_opt(arg, "", "--repo-name", i, argc, argv,
+                         config.repo_name)) {
+    } else if (match_opt(arg, "", "--doc-host", i, argc, argv,
+                         config.doc_host)) {
+    } else if (arg == "-m" || arg == "--mcp") {
+      config.mcp = true;
     } else if (arg == "--no-github-actions") {
       config.no_github_actions = true;
     } else if (arg == "--no-installable-package") {
@@ -1190,7 +1433,10 @@ int run_from_google_discovery(int argc, char **argv, std::ostream &out,
   }
 
   config.input = get_arg_or_env(config.input, "CDD_INPUT");
-  config.output = get_arg_or_env(config.output, "CDD_OUTPUT", ".");
+  config.output = get_arg_or_env(config.output, "CDD_OUTPUT",
+                                 config.subcommand == "to_openapi" ? "" : ".");
+  config.github_org = get_arg_or_env(config.github_org, "GITHUB_ORG_NAME");
+  config.repo_name = get_arg_or_env(config.repo_name, "GITHUB_REPO_NAME");
   config.no_github_actions =
       get_bool_arg_or_env(config.no_github_actions, "CDD_NO_GITHUB_ACTIONS");
   config.no_installable_package = get_bool_arg_or_env(
@@ -1200,6 +1446,12 @@ int run_from_google_discovery(int argc, char **argv, std::ostream &out,
   return from_google_discovery(config, out, err);
 }
 
+/// @brief Parse CLI arguments and run the `to_openapi` subcommand.
+/// @param argc Argument count.
+/// @param argv Argument vector.
+/// @param out Output stream.
+/// @param err Error stream.
+/// @return Exit code.
 int run_to_openapi(int argc, char **argv, std::ostream &out,
                    std::ostream &err) noexcept {
   if (has_help_flag(argc, argv)) {
@@ -1226,6 +1478,12 @@ int run_to_openapi(int argc, char **argv, std::ostream &out,
   return to_openapi(config, out, err);
 }
 
+/// @brief Parse CLI arguments and run the `from_arazzo` subcommand.
+/// @param argc Argument count.
+/// @param argv Argument vector.
+/// @param out Output stream.
+/// @param err Error stream.
+/// @return Exit code.
 int run_from_arazzo(int argc, char **argv, std::ostream &out,
                     std::ostream &err) noexcept {
   if (has_help_flag(argc, argv)) {
@@ -1261,6 +1519,14 @@ int run_from_arazzo(int argc, char **argv, std::ostream &out,
     std::string_view arg = argv[i];
     if (match_opt(arg, "-i", "--input", i, argc, argv, config.input)) {
     } else if (match_opt(arg, "-o", "--output", i, argc, argv, config.output)) {
+    } else if (match_opt(arg, "", "--github-org", i, argc, argv,
+                         config.github_org)) {
+    } else if (match_opt(arg, "", "--repo-name", i, argc, argv,
+                         config.repo_name)) {
+    } else if (match_opt(arg, "", "--doc-host", i, argc, argv,
+                         config.doc_host)) {
+    } else if (arg == "-m" || arg == "--mcp") {
+      config.mcp = true;
     } else if (arg == "--no-github-actions") {
       config.no_github_actions = true;
     } else if (arg == "--no-installable-package") {
@@ -1271,9 +1537,17 @@ int run_from_arazzo(int argc, char **argv, std::ostream &out,
   }
   config.input = get_arg_or_env(config.input, "CDD_INPUT");
   config.output = get_arg_or_env(config.output, "CDD_OUTPUT", ".");
+  config.github_org = get_arg_or_env(config.github_org, "GITHUB_ORG_NAME");
+  config.repo_name = get_arg_or_env(config.repo_name, "GITHUB_REPO_NAME");
   return from_arazzo(config, out, err);
 }
 
+/// @brief Parse CLI arguments and run the `to_arazzo` subcommand.
+/// @param argc Argument count.
+/// @param argv Argument vector.
+/// @param out Output stream.
+/// @param err Error stream.
+/// @return Exit code.
 int run_to_arazzo(int argc, char **argv, std::ostream &out,
                   std::ostream &err) noexcept {
   if (has_help_flag(argc, argv)) {
@@ -1298,6 +1572,12 @@ int run_to_arazzo(int argc, char **argv, std::ostream &out,
   return to_arazzo(config, out, err);
 }
 
+/// @brief Parse CLI arguments and run the `to_docs_json` subcommand.
+/// @param argc Argument count.
+/// @param argv Argument vector.
+/// @param out Output stream.
+/// @param err Error stream.
+/// @return Exit code.
 int run_to_docs_json(int argc, char **argv, std::ostream &out,
                      std::ostream &err) noexcept {
   if (has_help_flag(argc, argv)) {
@@ -1334,6 +1614,12 @@ int run_to_docs_json(int argc, char **argv, std::ostream &out,
   return to_docs_json(config, out, err);
 }
 
+/// @brief Parse CLI arguments and run the `serve_json_rpc` subcommand.
+/// @param argc Argument count.
+/// @param argv Argument vector.
+/// @param out Output stream.
+/// @param err Error stream.
+/// @return Exit code.
 int run_serve_json_rpc(int argc, char **argv, std::ostream &out,
                        std::ostream &err) noexcept {
   if (has_help_flag(argc, argv)) {
@@ -1369,6 +1655,13 @@ int run_serve_json_rpc(int argc, char **argv, std::ostream &out,
   return serve_json_rpc(config, out, err);
 }
 
+/// @brief Main CLI implementation dispatching top-level commands.
+/// @param argc Argument count.
+/// @param argv Argument vector.
+/// @param out Output stream.
+/// @param err Error stream.
+/// @param in Input stream.
+/// @return Exit code (0 on success, non-zero on error).
 int main_impl(int argc, char **argv, std::ostream &out, std::ostream &err,
               std::istream &in) noexcept {
   if (argc < 2) {

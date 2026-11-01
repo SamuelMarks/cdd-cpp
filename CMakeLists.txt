@@ -7,12 +7,7 @@ execute_process(
     OUTPUT_STRIP_TRAILING_WHITESPACE
     ERROR_QUIET
 )
-if(CDD_GIT_TAG MATCHES "^v?([0-9]+\\.[0-9]+\\.[0-9]+)")
-    set(CDD_CPP_VERSION_STR "${CMAKE_MATCH_1}")
-else()
-    set(CDD_CPP_VERSION_STR "0.0.4")
-endif()
-
+set(CDD_CPP_VERSION_STR "0.0.5")
 project(cdd_cpp VERSION ${CDD_CPP_VERSION_STR})
 
 if(POLICY CMP0135)
@@ -148,7 +143,10 @@ if(COVERAGE)
     add_link_options(--coverage)
 endif()
 add_library(cdd_lib STATIC ${CDD_LIB_SRCS})
-target_include_directories(cdd_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(cdd_lib PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<INSTALL_INTERFACE:include/cdd-cpp>
+)
 target_compile_definitions(cdd_lib PUBLIC "CDD_CPP_VERSION_STR=\"${PROJECT_VERSION}\"")
 enable_extreme_checks(cdd_lib)
 
@@ -171,6 +169,28 @@ endif()
 add_executable(cdd-cpp src/cli/main.cpp)
 target_link_libraries(cdd-cpp PRIVATE cdd_lib)
 enable_extreme_checks(cdd-cpp)
+
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+install(TARGETS cdd_lib cdd-cpp
+    EXPORT cdd_cppTargets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+install(DIRECTORY src/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/cdd-cpp
+    FILES_MATCHING PATTERN "*.hpp" PATTERN "*.h"
+)
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/cdd_cppConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/cdd_cppConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cdd_cpp
+)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "WASI" AND NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     # Tests

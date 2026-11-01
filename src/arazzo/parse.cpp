@@ -729,6 +729,9 @@ has_workflow_cycle(const std::vector<Workflow> &workflows) noexcept {
   return false;
 }
 
+/// @brief Parse an Arazzo 1.1.0 specification from a JSON string.
+/// @param json_str The raw JSON string representing an Arazzo document.
+/// @return Result containing the parsed Arazzo model or a typed Error.
 Result<Arazzo> parse(const std::string &json_str) noexcept {
   simdjson::dom::parser parser;
   simdjson::dom::element doc;

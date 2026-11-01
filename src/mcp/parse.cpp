@@ -81,6 +81,7 @@ McpResult<Annotated> parse_annotated(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_blob_resource_contents`.
 McpResult<BlobResourceContents>
 parse_blob_resource_contents(simdjson::ondemand::value &val) noexcept {
   BlobResourceContents result;
@@ -107,6 +108,7 @@ parse_blob_resource_contents(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_call_tool_request`.
 McpResult<CallToolRequest>
 parse_call_tool_request(simdjson::ondemand::value &val) noexcept {
   CallToolRequest result;
@@ -138,6 +140,7 @@ parse_call_tool_request(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_text_content`.
 McpResult<TextContent>
 parse_text_content(simdjson::ondemand::value &val) noexcept {
   TextContent result;
@@ -156,6 +159,7 @@ parse_text_content(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_image_content`.
 McpResult<ImageContent>
 parse_image_content(simdjson::ondemand::value &val) noexcept {
   ImageContent result;
@@ -178,6 +182,7 @@ parse_image_content(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_text_resource_contents`.
 McpResult<TextResourceContents>
 parse_text_resource_contents(simdjson::ondemand::value &val) noexcept {
   TextResourceContents result;
@@ -196,6 +201,7 @@ parse_text_resource_contents(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_embedded_resource`.
 McpResult<EmbeddedResource>
 parse_embedded_resource(simdjson::ondemand::value &val) noexcept {
   EmbeddedResource result;
@@ -216,6 +222,7 @@ parse_embedded_resource(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_call_tool_result`.
 McpResult<CallToolResult>
 parse_call_tool_result(simdjson::ondemand::value &val) noexcept {
   CallToolResult result;
@@ -235,6 +242,7 @@ parse_call_tool_result(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_cancelled_notification`.
 McpResult<CancelledNotification>
 parse_cancelled_notification(simdjson::ondemand::value &val) noexcept {
   CancelledNotification result;
@@ -268,6 +276,7 @@ parse_cancelled_notification(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_client_capabilities`.
 McpResult<ClientCapabilities>
 parse_client_capabilities(simdjson::ondemand::value &val) noexcept {
   ClientCapabilities result;
@@ -289,6 +298,7 @@ parse_client_capabilities(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_complete_request`.
 McpResult<CompleteRequest>
 parse_complete_request(simdjson::ondemand::value &val) noexcept {
   CompleteRequest result;
@@ -327,6 +337,7 @@ parse_complete_request(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_complete_result`.
 McpResult<CompleteResult>
 parse_complete_result(simdjson::ondemand::value &val) noexcept {
   CompleteResult result;
@@ -367,6 +378,7 @@ McpResult<ModelHint> parse_model_hint(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_model_preferences`.
 McpResult<ModelPreferences>
 parse_model_preferences(simdjson::ondemand::value &val) noexcept {
   ModelPreferences result;
@@ -395,6 +407,7 @@ parse_model_preferences(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_create_message_request`.
 McpResult<CreateMessageRequest>
 parse_create_message_request(simdjson::ondemand::value &val) noexcept {
   CreateMessageRequest result;
@@ -445,6 +458,7 @@ parse_create_message_request(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_create_message_result`.
 McpResult<CreateMessageResult>
 parse_create_message_result(simdjson::ondemand::value &val) noexcept {
   CreateMessageResult result;
@@ -511,6 +525,8 @@ McpResult<Tool> parse_tool(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via
+/// `parse_tool_list_changed_notification`.
 McpResult<ToolListChangedNotification>
 parse_tool_list_changed_notification(simdjson::ondemand::value &val) noexcept {
   ToolListChangedNotification result;
@@ -533,6 +549,7 @@ parse_tool_list_changed_notification(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_paginated_request`.
 McpResult<PaginatedRequest>
 parse_paginated_request(simdjson::ondemand::value &val) noexcept {
   PaginatedRequest result;
@@ -553,6 +570,7 @@ parse_paginated_request(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_paginated_result`.
 McpResult<PaginatedResult>
 parse_paginated_result(simdjson::ondemand::value &val) noexcept {
   PaginatedResult result;
@@ -566,6 +584,7 @@ parse_paginated_result(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_implementation`.
 McpResult<Implementation>
 parse_implementation(simdjson::ondemand::value &val) noexcept {
   Implementation result;
@@ -583,6 +602,7 @@ parse_implementation(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_initialize_request`.
 McpResult<InitializeRequest>
 parse_initialize_request(simdjson::ondemand::value &val) noexcept {
   InitializeRequest result;
@@ -620,6 +640,7 @@ parse_initialize_request(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_server_capabilities`.
 McpResult<ServerCapabilities>
 parse_server_capabilities(simdjson::ondemand::value &val) noexcept {
   ServerCapabilities result;
@@ -659,6 +680,7 @@ parse_server_capabilities(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_initialize_result`.
 McpResult<InitializeResult>
 parse_initialize_result(simdjson::ondemand::value &val) noexcept {
   InitializeResult result;
@@ -694,6 +716,8 @@ parse_initialize_result(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via
+/// `parse_initialized_notification`.
 McpResult<InitializedNotification>
 parse_initialized_notification(simdjson::ondemand::value &val) noexcept {
   InitializedNotification result;
@@ -728,6 +752,7 @@ std::string parse_request_id(simdjson::ondemand::value &val) noexcept {
   return out;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_jsonrpc_error`.
 McpResult<JSONRPCError>
 parse_jsonrpc_error(simdjson::ondemand::value &val) noexcept {
   JSONRPCError result;
@@ -764,6 +789,7 @@ parse_jsonrpc_error(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_jsonrpc_notification`.
 McpResult<JSONRPCNotification>
 parse_jsonrpc_notification(simdjson::ondemand::value &val) noexcept {
   JSONRPCNotification result;
@@ -792,6 +818,7 @@ parse_jsonrpc_notification(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_jsonrpc_request`.
 McpResult<JSONRPCRequest>
 parse_jsonrpc_request(simdjson::ondemand::value &val) noexcept {
   JSONRPCRequest result;
@@ -825,6 +852,7 @@ parse_jsonrpc_request(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_jsonrpc_response`.
 McpResult<JSONRPCResponse>
 parse_jsonrpc_response(simdjson::ondemand::value &val) noexcept {
   JSONRPCResponse result;
@@ -850,6 +878,7 @@ parse_jsonrpc_response(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_list_prompts_request`.
 McpResult<ListPromptsRequest>
 parse_list_prompts_request(simdjson::ondemand::value &val) noexcept {
   ListPromptsRequest result;
@@ -872,6 +901,7 @@ parse_list_prompts_request(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_prompt_argument`.
 McpResult<PromptArgument>
 parse_prompt_argument(simdjson::ondemand::value &val) noexcept {
   PromptArgument result;
@@ -921,6 +951,7 @@ McpResult<Prompt> parse_prompt(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_list_prompts_result`.
 McpResult<ListPromptsResult>
 parse_list_prompts_result(simdjson::ondemand::value &val) noexcept {
   ListPromptsResult result;
@@ -947,6 +978,7 @@ parse_list_prompts_result(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_get_prompt_request`.
 McpResult<GetPromptRequest>
 parse_get_prompt_request(simdjson::ondemand::value &val) noexcept {
   GetPromptRequest result;
@@ -973,6 +1005,7 @@ parse_get_prompt_request(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_get_prompt_result`.
 McpResult<GetPromptResult>
 parse_get_prompt_result(simdjson::ondemand::value &val) noexcept {
   GetPromptResult result;
@@ -1034,6 +1067,7 @@ McpResult<PromptListChangedNotification> parse_prompt_list_changed_notification(
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_prompt_reference`.
 McpResult<PromptReference>
 parse_prompt_reference(simdjson::ondemand::value &val) noexcept {
   PromptReference result;
@@ -1054,6 +1088,7 @@ parse_prompt_reference(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_list_resources_request`.
 McpResult<ListResourcesRequest>
 parse_list_resources_request(simdjson::ondemand::value &val) noexcept {
   ListResourcesRequest result;
@@ -1093,6 +1128,7 @@ McpResult<Resource> parse_resource(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_list_resources_result`.
 McpResult<ListResourcesResult>
 parse_list_resources_result(simdjson::ondemand::value &val) noexcept {
   ListResourcesResult result;
@@ -1115,6 +1151,8 @@ parse_list_resources_result(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via
+/// `parse_list_resource_templates_request`.
 McpResult<ListResourceTemplatesRequest>
 parse_list_resource_templates_request(simdjson::ondemand::value &val) noexcept {
   ListResourceTemplatesRequest result;
@@ -1134,6 +1172,7 @@ parse_list_resource_templates_request(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_resource_template`.
 McpResult<ResourceTemplate>
 parse_resource_template(simdjson::ondemand::value &val) noexcept {
   ResourceTemplate result;
@@ -1154,6 +1193,8 @@ parse_resource_template(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via
+/// `parse_list_resource_templates_result`.
 McpResult<ListResourceTemplatesResult>
 parse_list_resource_templates_result(simdjson::ondemand::value &val) noexcept {
   ListResourceTemplatesResult result;
@@ -1176,6 +1217,7 @@ parse_list_resource_templates_result(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_read_resource_request`.
 McpResult<ReadResourceRequest>
 parse_read_resource_request(simdjson::ondemand::value &val) noexcept {
   ReadResourceRequest result;
@@ -1196,6 +1238,7 @@ parse_read_resource_request(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_read_resource_result`.
 McpResult<ReadResourceResult>
 parse_read_resource_result(simdjson::ondemand::value &val) noexcept {
   ReadResourceResult result;
@@ -1212,6 +1255,8 @@ parse_read_resource_result(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via
+/// `parse_resource_updated_notification`.
 McpResult<ResourceUpdatedNotification>
 parse_resource_updated_notification(simdjson::ondemand::value &val) noexcept {
   ResourceUpdatedNotification result;
@@ -1232,6 +1277,8 @@ parse_resource_updated_notification(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via
+/// `parse_resource_list_changed_notification`.
 McpResult<ResourceListChangedNotification>
 parse_resource_list_changed_notification(
     simdjson::ondemand::value &val) noexcept {
@@ -1252,6 +1299,7 @@ parse_resource_list_changed_notification(
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_resource_reference`.
 McpResult<ResourceReference>
 parse_resource_reference(simdjson::ondemand::value &val) noexcept {
   ResourceReference result;
@@ -1293,6 +1341,8 @@ McpResult<Root> parse_root(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via
+/// `parse_roots_list_changed_notification`.
 McpResult<RootsListChangedNotification>
 parse_roots_list_changed_notification(simdjson::ondemand::value &val) noexcept {
   RootsListChangedNotification result;
@@ -1312,6 +1362,7 @@ parse_roots_list_changed_notification(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_list_roots_request`.
 McpResult<ListRootsRequest>
 parse_list_roots_request(simdjson::ondemand::value &val) noexcept {
   ListRootsRequest result;
@@ -1331,6 +1382,7 @@ parse_list_roots_request(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_list_roots_result`.
 McpResult<ListRootsResult>
 parse_list_roots_result(simdjson::ondemand::value &val) noexcept {
   ListRootsResult result;
@@ -1352,6 +1404,7 @@ parse_list_roots_result(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_set_level_request`.
 McpResult<SetLevelRequest>
 parse_set_level_request(simdjson::ondemand::value &val) noexcept {
   SetLevelRequest result;
@@ -1372,6 +1425,8 @@ parse_set_level_request(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via
+/// `parse_logging_message_notification`.
 McpResult<LoggingMessageNotification>
 parse_logging_message_notification(simdjson::ondemand::value &val) noexcept {
   LoggingMessageNotification result;
@@ -1397,6 +1452,7 @@ parse_logging_message_notification(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_progress_notification`.
 McpResult<ProgressNotification>
 parse_progress_notification(simdjson::ondemand::value &val) noexcept {
   ProgressNotification result;
@@ -1430,6 +1486,7 @@ parse_progress_notification(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_empty_result`.
 McpResult<EmptyResult>
 parse_empty_result(simdjson::ondemand::value &val) noexcept {
   EmptyResult result;
@@ -1440,6 +1497,7 @@ parse_empty_result(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_sampling_message`.
 McpResult<SamplingMessage>
 parse_sampling_message(simdjson::ondemand::value &val) noexcept {
   SamplingMessage result;
@@ -1457,6 +1515,7 @@ parse_sampling_message(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_ping_request`.
 McpResult<PingRequest>
 parse_ping_request(simdjson::ondemand::value &val) noexcept {
   PingRequest result;
@@ -1476,6 +1535,7 @@ parse_ping_request(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_subscribe_request`.
 McpResult<SubscribeRequest>
 parse_subscribe_request(simdjson::ondemand::value &val) noexcept {
   SubscribeRequest result;
@@ -1496,6 +1556,7 @@ parse_subscribe_request(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_unsubscribe_request`.
 McpResult<UnsubscribeRequest>
 parse_unsubscribe_request(simdjson::ondemand::value &val) noexcept {
   UnsubscribeRequest result;
@@ -1516,6 +1577,7 @@ parse_unsubscribe_request(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_list_tools_request`.
 McpResult<ListToolsRequest>
 parse_list_tools_request(simdjson::ondemand::value &val) noexcept {
   ListToolsRequest result;
@@ -1535,6 +1597,7 @@ parse_list_tools_request(simdjson::ondemand::value &val) noexcept {
   return result;
 }
 
+/// @brief Deserialize MCP JSON-RPC payload via `parse_list_tools_result`.
 McpResult<ListToolsResult>
 parse_list_tools_result(simdjson::ondemand::value &val) noexcept {
   ListToolsResult result;

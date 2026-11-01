@@ -18,25 +18,25 @@ enum class RuntimeExpressionKind {
   Url,            ///< $url expression.
   Method,         ///< $method expression.
   StatusCode,     ///< $statusCode expression.
-  RequestHeader,  ///< $request.header.<name> expression.
-  RequestQuery,   ///< $request.query.<name> expression.
-  RequestPath,    ///< $request.path.<name> expression.
-  RequestBody,    ///< $request.body[#<json-pointer>] expression.
-  ResponseHeader, ///< $response.header.<name> expression.
-  ResponseQuery,  ///< $response.query.<name> expression.
-  ResponsePath,   ///< $response.path.<name> expression.
-  ResponseBody,   ///< $response.body[#<json-pointer>] expression.
-  Inputs,         ///< $inputs.<name>[#<json-pointer>] expression.
-  Outputs,        ///< $outputs.<name>[#<json-pointer>] expression.
-  Steps,     ///< $steps.<stepId>.outputs.<name>[#<json-pointer>] expression.
-  Workflows, ///< $workflows.<workflowId>.outputs.<name>[#<json-pointer>]
+  RequestHeader,  ///< $request.header.\<name\> expression.
+  RequestQuery,   ///< $request.query.\<name\> expression.
+  RequestPath,    ///< $request.path.\<name\> expression.
+  RequestBody,    ///< $request.body[#\<json-pointer\>] expression.
+  ResponseHeader, ///< $response.header.\<name\> expression.
+  ResponseQuery,  ///< $response.query.\<name\> expression.
+  ResponsePath,   ///< $response.path.\<name\> expression.
+  ResponseBody,   ///< $response.body[#\<json-pointer\>] expression.
+  Inputs,         ///< $inputs.\<name\>[#\<json-pointer\>] expression.
+  Outputs,        ///< $outputs.\<name\>[#\<json-pointer\>] expression.
+  Steps, ///< $steps.\<stepId\>.outputs.\<name\>[#\<json-pointer\>] expression.
+  Workflows, ///< $workflows.\<workflowId\>.outputs.\<name\>[#\<json-pointer\>]
              ///< expression.
-  SourceDescriptions, ///< $sourceDescriptions.<name>.(url|workflows.<id>|<operationId>)
+  SourceDescriptions, ///< $sourceDescriptions.\<name\>.(url|workflows.\<id\>|\<operationId\>)
                       ///< expression.
-  ComponentsParameters,     ///< $components.parameters.<name> expression.
-  ComponentsSuccessActions, ///< $components.successActions.<name> expression.
-  ComponentsFailureActions, ///< $components.failureActions.<name> expression.
-  ComponentsInputs,         ///< $components.inputs.<name> expression.
+  ComponentsParameters,     ///< $components.parameters.\<name\> expression.
+  ComponentsSuccessActions, ///< $components.successActions.\<name\> expression.
+  ComponentsFailureActions, ///< $components.failureActions.\<name\> expression.
+  ComponentsInputs,         ///< $components.inputs.\<name\> expression.
   Self                      ///< $self expression.
 };
 
@@ -48,7 +48,7 @@ struct ParsedRuntimeExpression {
       {}; ///< Primary identifier (stepId, workflowId, sourceDescription name,
           ///< input/output/header/query/path name).
   std::string secondary_key = {}; ///< Secondary identifier (e.g., output key
-                                  ///< under $steps.<id>.outputs.<key>).
+                                  ///< under $steps.\<id\>.outputs.\<key\>).
   std::string json_pointer =
       {}; ///< Optional RFC 6901 JSON Pointer or property path suffix.
   std::string raw = {}; ///< Original raw expression string.
@@ -88,13 +88,13 @@ struct WorkflowExecutionContext {
       {}; ///< Workflow output values ($outputs.*).
   std::map<std::string, std::map<std::string, openapi::JsonValue>>
       step_outputs = {}; ///< Step outputs indexed by stepId then output name
-                         ///< ($steps.<id>.outputs.*).
+                         ///< ($steps.\<id\>.outputs.*).
   std::map<std::string, std::map<std::string, openapi::JsonValue>>
       workflow_outputs = {}; ///< Workflow outputs indexed by workflowId then
-                             ///< output name ($workflows.<id>.outputs.*).
+                             ///< output name ($workflows.\<id\>.outputs.*).
   std::map<std::string, std::string> source_description_urls =
       {}; ///< Source description URLs indexed by name
-          ///< ($sourceDescriptions.<name>.url).
+          ///< ($sourceDescriptions.\<name\>.url).
   std::map<std::string, openapi::JsonValue> component_parameters =
       {}; ///< Reusable component parameter values ($components.parameters.*).
   std::string self_uri = {}; ///< Document self URI ($self).

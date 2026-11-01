@@ -52,6 +52,12 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   return ss.str();
 }
 
+/// @brief Emit modular C++ ORM and PostgreSQL DAO files.
+/// @param spec The OpenAPI specification model.
+/// @param with_postgres If true, generate libpq-backed `Postgres<Entity>Dao`
+/// and `DatabaseConfig`.
+/// @param with_faker If true, include `<Entity>Mock` seeder integration.
+/// @return Map of relative file paths to generated C++ source/header content.
 std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
                                                 bool with_postgres,
                                                 bool with_faker) noexcept {

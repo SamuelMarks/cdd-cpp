@@ -6,6 +6,7 @@
 #include "../docstrings/emit.hpp"
 #include "../mocks/emit.hpp"
 #include "../models/emit.hpp"
+#include "../utils/cpp_identifiers.hpp"
 #include <sstream>
 
 namespace cdd_cpp::client_sdk {
@@ -96,6 +97,12 @@ collect_params(const openapi::PathItem &item,
   return all_params;
 }
 
+/// @brief Emit a complete C++ client SDK project from an OpenAPI specification.
+/// @param spec The OpenAPI specification model.
+/// @param no_github_actions If true, omit `.github/workflows/ci.yml`.
+/// @param no_installable_package If true, omit `CMakeLists.txt`.
+/// @param tests If true, generate GoogleTest unit test suite.
+/// @return Map of relative file paths to generated C++ source/header content.
 std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
                                                bool no_github_actions,
                                                bool no_installable_package,
@@ -115,32 +122,97 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
   std::stringstream c_hpp;
   c_hpp << "#pragma once\n";
   c_hpp << "#include \"models.hpp\"\n";
+  c_hpp << "#include <chrono>\n";
+  c_hpp << "#include <cstdint>\n";
   c_hpp << "#include <expected>\n";
+  c_hpp << "#include <map>\n";
   c_hpp << "#include <string>\n";
   c_hpp << "#include <optional>\n";
   c_hpp << "#include <curl/curl.h>\n\n";
   c_hpp << "namespace cdd_client {\n\n";
-  c_hpp << docstrings::emit_api_docstrings(spec);
-  c_hpp << "    class Client {\n";
-  c_hpp << "        std::string base_url;\n";
-  c_hpp << "        std::string api_key_ = \"special-key\";\n";
-  c_hpp << "        std::string bearer_token_ = \"special-key\";\n";
-  c_hpp << "        CURL* curl;\n\n";
-  c_hpp << "        static size_t WriteCallback(void* contents, size_t size, "
-           "size_t nmemb, void* userp) noexcept;\n\n";
-  c_hpp << "    public:\n";
-
+  c_hpp << "    /// @brief Strongly typed configuration for the HTTP API "
+           "client.\n";
+  c_hpp << "    struct ApiClientConfig {\n";
   std::string default_url = "";
   if (spec.servers.has_value() && !spec.servers->empty()) {
     default_url = spec.servers.operator*().front().url;
   }
+  c_hpp << "        std::string base_url = \"" << default_url << "\";\n";
+  c_hpp << "        std::optional<std::string> bearer_token = std::nullopt;\n";
+  c_hpp << "        std::optional<std::string> api_key = std::nullopt;\n";
+  c_hpp << "        std::map<std::string, std::string> default_headers = {};\n";
+  c_hpp << "        std::chrono::milliseconds timeout{30000};\n";
+  c_hpp << "        bool verify_tls = true;\n";
+  c_hpp << "    };\n\n";
+  c_hpp << "    /// @brief Strongly typed HTTP response envelope.\n";
+  c_hpp << "    template <typename T = std::string>\n";
+  c_hpp << "    struct HttpResponse {\n";
+  c_hpp << "        int status_code = 200;\n";
+  c_hpp << "        std::map<std::string, std::string> headers = {};\n";
+  c_hpp << "        T data = {};\n";
+  c_hpp << "        std::string raw_body = {};\n";
+  c_hpp << "    };\n\n";
+  c_hpp << "    /// @brief Pure virtual interface for API client dependency "
+           "injection.\n";
+  c_hpp << "    class IApiClient {\n";
+  c_hpp << "    public:\n";
+  c_hpp << "        virtual ~IApiClient() noexcept = default;\n";
+  if (spec.paths.has_value() && !spec.paths->empty()) {
+    for (const auto &[path, item] : spec.paths.operator*()) {
+      auto emit_iface_decl = [&](const std::optional<openapi::Operation> &op) {
+        if (!op.has_value())
+          return;
+        std::string func_name =
+            utils::sanitize_cpp_identifier(op->operationId.value_or("request"));
+        std::vector<openapi::Parameter> all_params = collect_params(item, *op);
+        std::string param_list = "";
+        for (size_t i = 0; i < all_params.size(); ++i) {
+          const auto &p = all_params[i];
+          if (i > 0)
+            param_list += ", ";
+          param_list +=
+              param_cpp_type(p) + " " + utils::sanitize_cpp_identifier(p.name);
+        }
+        if (op->requestBody) {
+          if (!param_list.empty())
+            param_list += ", ";
+          param_list += "const std::string& body";
+        }
+        c_hpp << "        virtual std::expected<std::string, std::string> "
+              << func_name << "(" << param_list << ") noexcept = 0;\n";
+      };
+      emit_iface_decl(item.get);
+      emit_iface_decl(item.post);
+      emit_iface_decl(item.put);
+      emit_iface_decl(item.delete_op);
+      emit_iface_decl(item.patch);
+      emit_iface_decl(item.options);
+      emit_iface_decl(item.head);
+      emit_iface_decl(item.trace);
+      emit_iface_decl(item.query);
+    }
+  }
+  c_hpp << "    };\n\n";
+  c_hpp << docstrings::emit_api_docstrings(spec);
+  c_hpp << "    class Client : public IApiClient {\n";
+  c_hpp << "        std::string base_url;\n";
+  c_hpp << "        std::string api_key_ = \"special-key\";\n";
+  c_hpp << "        std::string bearer_token_ = \"special-key\";\n";
+  c_hpp << "        ApiClientConfig config_{};\n";
+  c_hpp << "        CURL* curl;\n\n";
+  c_hpp << "        static size_t WriteCallback(void* contents, size_t size, "
+           "size_t nmemb, void* userp) noexcept;\n\n";
+  c_hpp << "    public:\n";
   c_hpp << "        Client(const std::string& url = \"" << default_url
         << "\") noexcept;\n";
-  c_hpp << "        ~Client() noexcept;\n";
+  c_hpp << "        explicit Client(const ApiClientConfig& cfg) noexcept;\n";
+  c_hpp << "        ~Client() noexcept override;\n";
+  c_hpp << "        const ApiClientConfig& config() const noexcept { return "
+           "config_; }\n";
   c_hpp << "        void set_api_key(const std::string& key) noexcept { "
-           "api_key_ = key; }\n";
+           "api_key_ = key; config_.api_key = key; }\n";
   c_hpp << "        void set_bearer_token(const std::string& token) noexcept { "
-           "bearer_token_ = token; }\n";
+           "bearer_token_ = token; config_.bearer_token = token; }\n";
   c_hpp << "        std::expected<std::string, std::string> "
            "fetch_oauth2_token(const std::string& token_url, const "
            "std::string& client_id, const std::string& client_secret) "
@@ -176,7 +248,8 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
       auto emit_method_decl = [&](const std::optional<openapi::Operation> &op) {
         if (!op.has_value())
           return;
-        std::string func_name = op->operationId.value_or("request");
+        std::string func_name =
+            utils::sanitize_cpp_identifier(op->operationId.value_or("request"));
         std::vector<openapi::Parameter> all_params = collect_params(item, *op);
 
         openapi::Operation new_op = op.operator*();
@@ -191,7 +264,8 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
           const auto &p = all_params[i];
           if (i > 0)
             param_list += ", ";
-          param_list += param_cpp_type(p) + " " + p.name;
+          param_list +=
+              param_cpp_type(p) + " " + utils::sanitize_cpp_identifier(p.name);
         }
 
         if (op->requestBody) {
@@ -201,7 +275,7 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
         }
 
         c_hpp << "        std::expected<std::string, std::string> " << func_name
-              << "(" << param_list << ") noexcept;\n";
+              << "(" << param_list << ") noexcept override;\n";
       };
 
       emit_method_decl(item.get);
@@ -253,8 +327,24 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
 
   c_cpp << "    Client::Client(const std::string& url) noexcept : "
            "base_url(url) {\n";
+  c_cpp << "        config_.base_url = url;\n";
   c_cpp << "        (void)CurlGlobalInit::instance();\n";
   c_cpp << "        curl = curl_easy_init();\n";
+  c_cpp << "    }\n\n";
+
+  c_cpp << "    Client::Client(const ApiClientConfig& cfg) noexcept : "
+           "base_url(cfg.base_url), config_(cfg) {\n";
+  c_cpp << "        if (cfg.api_key.has_value()) api_key_ = *cfg.api_key;\n";
+  c_cpp << "        if (cfg.bearer_token.has_value()) bearer_token_ = "
+           "*cfg.bearer_token;\n";
+  c_cpp << "        (void)CurlGlobalInit::instance();\n";
+  c_cpp << "        curl = curl_easy_init();\n";
+  c_cpp << "        if (curl) {\n";
+  c_cpp << "            curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, "
+           "static_cast<long>(cfg.timeout.count()));\n";
+  c_cpp << "            curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, "
+           "cfg.verify_tls ? 1L : 0L);\n";
+  c_cpp << "        }\n";
   c_cpp << "    }\n\n";
 
   c_cpp << "    Client::~Client() noexcept {\n";
@@ -362,7 +452,8 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
                                   const std::optional<openapi::Operation> &op) {
         if (!op.has_value())
           return;
-        std::string func_name = op->operationId.value_or("request");
+        std::string func_name =
+            utils::sanitize_cpp_identifier(op->operationId.value_or("request"));
         std::vector<openapi::Parameter> all_params = collect_params(item, *op);
 
         std::string param_list = "";
@@ -370,7 +461,8 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
           const auto &p = all_params[i];
           if (i > 0)
             param_list += ", ";
-          param_list += param_cpp_type(p) + " " + p.name;
+          param_list +=
+              param_cpp_type(p) + " " + utils::sanitize_cpp_identifier(p.name);
         }
 
         if (op->requestBody) {
@@ -396,10 +488,11 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
                  "bearer_token_).c_str());\n";
 
         for (const auto &p : all_params) {
-          std::string to_str = p.name;
+          std::string safe_pname = utils::sanitize_cpp_identifier(p.name);
+          std::string to_str = safe_pname;
           std::string type = param_cpp_type(p);
           if (type != "std::string") {
-            to_str = "std::to_string(" + p.name + ")";
+            to_str = "std::to_string(" + safe_pname + ")";
           }
 
           if (p.in == "path") {
@@ -594,8 +687,10 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
       auto emit_exec = [&](const std::optional<openapi::Operation> &op) {
         if (!op.has_value())
           return;
-        std::string func_name = op->operationId.value_or("request");
-        c_cpp << "        if (name == \"" << func_name << "\") {\n";
+        std::string raw_name = op->operationId.value_or("request");
+        std::string func_name = utils::sanitize_cpp_identifier(raw_name);
+        c_cpp << "        if (name == \"" << raw_name << "\" || name == \""
+              << func_name << "\") {\n";
 
         std::vector<openapi::Parameter> all_params = collect_params(item, *op);
 
@@ -765,7 +860,8 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
                              const std::optional<openapi::Operation> &op) {
           if (!op.has_value())
             return;
-          std::string func_name = op->operationId.value_or("request");
+          std::string func_name = utils::sanitize_cpp_identifier(
+              op->operationId.value_or("request"));
           t_cpp << "TEST(ClientTest, " << func_name << "Test) {\n";
           std::vector<openapi::Parameter> all_params =
               collect_params(item, *op);
@@ -949,11 +1045,16 @@ emit_arazzo_client(const arazzo::Arazzo &spec,
 
   std::stringstream h_ss;
   h_ss << result["src/client.hpp"] << "\n";
+  h_ss << "#include <set>\n";
+  h_ss << "#include <thread>\n";
   h_ss << docstrings::emit_arazzo_docstrings(spec);
   h_ss << "namespace cdd_client {\n";
   h_ss << "    class Workflows {\n";
   h_ss << "        Client* client_;\n";
+  h_ss << "        std::set<std::string> executed_workflows_{};\n";
   h_ss << "    public:\n";
+  h_ss << "        explicit Workflows(Client* client) noexcept : "
+          "client_(client) {}\n";
   for (const auto &wf : spec.workflows) {
     h_ss << docstrings::emit_workflow_docstrings(wf);
     h_ss << "        std::expected<cdd_models::" << wf.workflowId
@@ -979,30 +1080,68 @@ emit_arazzo_client(const arazzo::Arazzo &spec,
               "std::unexpected(\"Client pointer is null\");\n";
     if (wf.dependsOn.has_value()) {
       for (const auto &dep : *wf.dependsOn) {
-        cpp_ss << "        auto dep_" << dep << " = this->" << dep << "();\n";
-        cpp_ss << "        if (!dep_" << dep
+        cpp_ss << "        if (!executed_workflows_.contains(\"" << dep
+               << "\")) {\n";
+        cpp_ss << "            auto dep_" << dep << " = this->" << dep
+               << "();\n";
+        cpp_ss << "            if (!dep_" << dep
                << ".has_value()) return std::unexpected(dep_" << dep
                << ".error());\n";
+        cpp_ss << "            executed_workflows_.insert(\"" << dep
+               << "\");\n";
+        cpp_ss << "        }\n";
       }
     }
     for (const auto &step : wf.steps) {
       cpp_ss << "        // stepId: " << step.stepId << "\n";
+      int64_t retry_limit = 0;
+      double retry_after = 0.0;
+      if (step.onFailure.has_value()) {
+        for (const auto &fa_or_ref : *step.onFailure) {
+          if (const auto *fa = std::get_if<arazzo::FailureAction>(&fa_or_ref)) {
+            if (fa->type == arazzo::FailureActionType::Retry) {
+              retry_limit = fa->retryLimit.value_or(1);
+              retry_after = fa->retryAfter.value_or(0.0);
+            }
+          }
+        }
+      }
+      cpp_ss << "        for (int64_t attempt = 0; attempt <= " << retry_limit
+             << "; ++attempt) {\n";
+      cpp_ss << "            bool step_ok = true;\n";
       if (step.operationId.has_value()) {
-        cpp_ss << "        std::string step_" << step.stepId << "_op = \""
+        cpp_ss << "            std::string step_" << step.stepId << "_op = \""
                << *step.operationId << "\"; (void)step_" << step.stepId
                << "_op;\n";
       } else if (step.operationPath.has_value()) {
-        cpp_ss << "        std::string step_" << step.stepId << "_path = \""
+        cpp_ss << "            std::string step_" << step.stepId << "_path = \""
                << *step.operationPath << "\"; (void)step_" << step.stepId
                << "_path;\n";
       } else {
-        cpp_ss << "        auto step_" << step.stepId << "_res = this->"
+        cpp_ss << "            auto step_" << step.stepId << "_res = this->"
                << step.workflowId.value_or("") << "();\n";
-        cpp_ss << "        if (!step_" << step.stepId
-               << "_res.has_value()) return std::unexpected(step_"
-               << step.stepId << "_res.error());\n";
+        cpp_ss << "            if (!step_" << step.stepId
+               << "_res.has_value()) step_ok = false;\n";
       }
+      if (step.successCriteria.has_value()) {
+        for (size_t ci = 0; ci < step.successCriteria->size(); ++ci) {
+          cpp_ss << "            // criterion[" << ci
+                 << "]: " << (*step.successCriteria)[ci].condition << "\n";
+        }
+      }
+      cpp_ss << "            if (step_ok) break;\n";
+      if (retry_after > 0.0) {
+        cpp_ss << "            if (attempt < " << retry_limit
+               << ") std::this_thread::sleep_for(std::chrono::milliseconds("
+               << static_cast<int64_t>(retry_after * 1000.0) << "));\n";
+      }
+      cpp_ss << "            if (attempt == " << retry_limit
+             << ") return std::unexpected(\"Step failed: " << step.stepId
+             << "\");\n";
+      cpp_ss << "        }\n";
     }
+    cpp_ss << "        executed_workflows_.insert(\"" << wf.workflowId
+           << "\");\n";
     cpp_ss << "        cdd_models::" << wf.workflowId << "Outputs out;\n";
     cpp_ss << "        return out;\n";
     cpp_ss << "    }\n";

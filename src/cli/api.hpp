@@ -23,6 +23,9 @@ struct FromOpenApiConfig {
   bool mcp = false;                    ///< Enable MCP adapter emission.
   bool with_postgres = false; ///< Enable PostgreSQL libpq ORM emission.
   bool with_faker = false;    ///< Enable Faker mock data emission.
+  std::string github_org;     ///< Target GitHub organization name.
+  std::string repo_name;      ///< Target repository/package name.
+  std::string doc_host = "github_pages"; ///< Documentation hosting target.
   std::string subcommand =
       "to_sdk"; ///< Subcommand ("to_sdk", "to_sdk_cli", "to_server").
 };
@@ -30,11 +33,17 @@ struct FromOpenApiConfig {
 /// @brief Configuration for generating code from Google Discovery JSON.
 struct FromGoogleDiscoveryConfig {
   std::string input;                   ///< Input Google Discovery JSON path.
-  std::string output = ".";            ///< Output directory path.
+  std::string output = ".";            ///< Output directory or file path.
   bool no_github_actions = false;      ///< Omit `.github/workflows/ci.yml`.
   bool no_installable_package = false; ///< Omit `CMakeLists.txt`.
   bool tests = false;                  ///< Generate GoogleTest unit test suite.
-  std::string subcommand = "to_sdk"; ///< Subcommand ("to_sdk" or "to_sdk_cli").
+  bool mcp = false;                    ///< Enable MCP adapter emission.
+  std::string github_org;              ///< Target GitHub organization name.
+  std::string repo_name;               ///< Target repository/package name.
+  std::string doc_host = "github_pages"; ///< Documentation hosting target.
+  std::string subcommand =
+      "to_sdk"; ///< Subcommand ("to_openapi", "to_sdk", "to_sdk_cli",
+                ///< "to_server", "to_docs_json").
 };
 
 /// @brief Configuration for generating OpenAPI from source code.
@@ -51,6 +60,10 @@ struct FromArazzoConfig {
   bool no_github_actions = false;      ///< Omit `.github/workflows/ci.yml`.
   bool no_installable_package = false; ///< Omit `CMakeLists.txt`.
   bool tests = false;                  ///< Generate GoogleTest unit test suite.
+  bool mcp = false;                    ///< Enable MCP adapter emission.
+  std::string github_org;              ///< Target GitHub organization name.
+  std::string repo_name;               ///< Target repository/package name.
+  std::string doc_host = "github_pages"; ///< Documentation hosting target.
   std::string subcommand =
       "to_sdk"; ///< Subcommand ("to_sdk", "to_sdk_cli", "to_server").
 };

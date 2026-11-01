@@ -8,10 +8,14 @@
 
 namespace cdd_cpp::utils {
 
+/// @brief Construct the global libcurl initializer and invoke
+/// `curl_global_init`.
 CurlGlobalInitializer::CurlGlobalInitializer() noexcept {
   curl_global_init(CURL_GLOBAL_DEFAULT);
 }
 
+/// @brief Destroy the global libcurl initializer and invoke
+/// `curl_global_cleanup`.
 CurlGlobalInitializer::~CurlGlobalInitializer() noexcept {
   curl_global_cleanup();
 }
@@ -19,6 +23,8 @@ CurlGlobalInitializer::~CurlGlobalInitializer() noexcept {
 /// @brief Process-wide libcurl RAII singleton instance.
 static const CurlGlobalInitializer global_curl_init;
 
+/// @brief Ensure the process-wide libcurl singleton has been initialized.
+/// @return Reference to the global CurlGlobalInitializer instance.
 const CurlGlobalInitializer &
 CurlGlobalInitializer::ensure_initialized() noexcept {
   return global_curl_init;
@@ -59,10 +65,14 @@ Result<std::string> http_get(const std::string &url) noexcept {
 #else
 namespace cdd_cpp::utils {
 
+/// @brief Construct no-op WASI CurlGlobalInitializer.
 CurlGlobalInitializer::CurlGlobalInitializer() noexcept {}
 
+/// @brief Destroy no-op WASI CurlGlobalInitializer.
 CurlGlobalInitializer::~CurlGlobalInitializer() noexcept {}
 
+/// @brief Return the no-op WASI CurlGlobalInitializer singleton.
+/// @return Reference to the static CurlGlobalInitializer instance.
 const CurlGlobalInitializer &
 CurlGlobalInitializer::ensure_initialized() noexcept {
   static const CurlGlobalInitializer instance;

@@ -1,0 +1,12 @@
+{
+  "name": "cdd-cpp",
+  "version": "0.0.5",
+  "description": "Bidirectional C++23 <-> OpenAPI 3.2.0, Arazzo 1.1.0, Google Discovery, and MCP compiler and code generator.",
+  "homepage": "https://github.com/offscale/cdd-cpp",
+  "license": "Apache-2.0 OR MIT",
+  "dependencies": [
+    "simdjson",
+    "curl",
+    "libpq"
+  ]
+}

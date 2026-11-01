@@ -16,14 +16,19 @@
 
 namespace cdd_cpp::client_sdk_cli {
 
+/// @brief Tree node representing a CLI subcommand or path segment.
 struct CliNode {
-  std::string name;
-  std::map<std::string, std::shared_ptr<CliNode>> children;
-  std::optional<std::string> method;
-  std::optional<std::string> path;
-  std::optional<openapi::Operation> op;
-  bool is_mcp = false;
+  std::string name; ///< Segment or subcommand name.
+  std::map<std::string, std::shared_ptr<CliNode>>
+      children;                         ///< Child subcommand nodes.
+  std::optional<std::string> method;    ///< HTTP method for leaf operations.
+  std::optional<std::string> path;      ///< OpenAPI path template for leaf.
+  std::optional<openapi::Operation> op; ///< OpenAPI Operation model for leaf.
+  bool is_mcp = false; ///< True if this node is the built-in `mcp` subcommand.
 
+  /// @brief Retrieve an existing child node or create a new one by name.
+  /// @param child_name Name of the child subcommand node.
+  /// @return Shared pointer to the child CliNode.
   std::shared_ptr<CliNode>
   get_or_create_child(const std::string &child_name) noexcept {
     if (!children.count(child_name)) {
@@ -34,13 +39,22 @@ struct CliNode {
   }
 };
 
-/// @brief Replace hyphens and spaces with underscores in a C++ identifier.
+/// @brief Replace hyphens, dots, slashes, and spaces with underscores in a C++
+/// identifier.
 /// @param str String to sanitize in place.
 static void sanitize_string(std::string &str) noexcept {
   std::replace(str.begin(), str.end(), '-', '_');
+  std::replace(str.begin(), str.end(), '.', '_');
+  std::replace(str.begin(), str.end(), '/', '_');
   std::replace(str.begin(), str.end(), ' ', '_');
 }
 
+/// @brief Emit a complete C++ CLI client project from an OpenAPI specification.
+/// @param spec The OpenAPI specification model.
+/// @param no_github_actions If true, omit `.github/workflows/ci.yml`.
+/// @param no_installable_package If true, omit `CMakeLists.txt`.
+/// @param tests If true, generate GoogleTest CLI unit tests.
+/// @return Map of relative file paths to generated C++ source/header content.
 std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
                                             bool no_github_actions,
                                             bool no_installable_package,
@@ -48,7 +62,9 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
   std::stringstream ss;
 
   ss << "#include <expected>\n";
+  ss << "#include <fstream>\n";
   ss << "#include <iostream>\n";
+  ss << "#include <sstream>\n";
   ss << "#include <string>\n";
   ss << "#include <vector>\n";
   ss << "#include <map>\n";
@@ -72,6 +88,12 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
   ss << docstrings::emit_api_docstrings(spec);
   ss << "    class Client {\n";
   ss << "        std::string base_url;\n";
+  ss << "        std::string bearer_token;\n";
+  ss << "        std::string api_key;\n";
+  ss << "        std::map<std::string, std::string> default_headers;\n";
+  ss << "        long timeout_ms = 30000;\n";
+  ss << "        bool dry_run = false;\n";
+  ss << "        bool verbose = false;\n";
   ss << "        CURL* curl;\n\n";
   ss << "        static size_t WriteCallback(void* contents, size_t size, "
         "size_t nmemb, void* userp) noexcept {\n";
@@ -106,6 +128,18 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
   ss << "            if(curl) curl_easy_cleanup(curl);\n";
   ss << "        }\n\n";
 
+  ss << "        void set_base_url(const std::string& url) noexcept { base_url "
+        "= url; }\n";
+  ss << "        void set_bearer_token(const std::string& tok) noexcept { "
+        "bearer_token = tok; }\n";
+  ss << "        void set_api_key(const std::string& key) noexcept { api_key = "
+        "key; }\n";
+  ss << "        void add_default_header(const std::string& k, const "
+        "std::string& v) noexcept { default_headers[k] = v; }\n";
+  ss << "        void set_timeout_ms(long ms) noexcept { timeout_ms = ms; }\n";
+  ss << "        void set_dry_run(bool dr) noexcept { dry_run = dr; }\n";
+  ss << "        void set_verbose(bool vb) noexcept { verbose = vb; }\n\n";
+
   ss << "        std::string url_encode(const std::string& val) const noexcept "
         "{\n";
   ss << "            if (!curl) return val;\n";
@@ -121,17 +155,34 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
         "std::string& method, const "
         "std::string& path, const std::string& body = \"\", const "
         "std::map<std::string, std::string>& extra_headers = {}) noexcept {\n";
+  ss << "            std::string full_url = base_url + path;\n";
+  ss << "            if (verbose) std::cerr << \"> \" << method << \" \" << "
+        "full_url << \"\\n\";\n";
+  ss << "            if (dry_run) {\n";
+  ss << "                return std::string(\"{\\\"dry_run\\\":true,\\\"method"
+        "\\\":\\\"\") + method + \"\\\",\\\"url\\\":\\\"\" + "
+        "escape_string(full_url) + \"\\\"}\";\n";
+  ss << "            }\n";
   ss << "            if (!curl) return std::unexpected(\"Curl not "
         "initialized\");\n";
   ss << "            std::string readBuffer;\n";
-  ss << "            std::string full_url = base_url + path;\n";
   ss << "            curl_easy_setopt(curl, CURLOPT_URL, full_url.c_str());\n";
   ss << "            curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "
         "method.c_str());\n";
+  ss << "            curl_easy_setopt(curl, CURLOPT_TIMEOUT_MS, timeout_ms);\n";
   ss << "            curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, "
         "WriteCallback);\n";
   ss << "            curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);\n";
   ss << "            struct curl_slist *headers = NULL;\n";
+  ss << "            if (!bearer_token.empty()) headers = "
+        "curl_slist_append(headers, (\"Authorization: Bearer \" + "
+        "bearer_token).c_str());\n";
+  ss << "            if (!api_key.empty()) headers = "
+        "curl_slist_append(headers, (\"api_key: \" + api_key).c_str());\n";
+  ss << "            for (const auto& [hk, hv] : default_headers) {\n";
+  ss << "                if (!hv.empty()) headers = curl_slist_append(headers, "
+        "(hk + \": \" + hv).c_str());\n";
+  ss << "            }\n";
   ss << "            for (const auto& [hk, hv] : extra_headers) {\n";
   ss << "                if (!hv.empty()) headers = curl_slist_append(headers, "
         "(hk + \": \" + hv).c_str());\n";
@@ -359,6 +410,9 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
   ss << "    std::map<std::string, std::string> path_params;\n";
   ss << "    std::map<std::string, std::string> query_params;\n";
   ss << "    std::string body;\n";
+  ss << "    std::string output_format = \"json\";\n";
+  ss << "    std::string output_file;\n";
+  ss << "    bool quiet_mode = false;\n";
   ss << "    cdd_cli::Client client;\n";
   ss << "    int idx = 0;\n";
 
@@ -367,6 +421,12 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
   ss << "        std::string arg = args[idx];\n";
   ss << "        if (arg == \"--help\" || arg == \"-h\") { "
         "print_help(current_node); return 0; }\n";
+  ss << "        if (arg == \"--dry-run\") { client.set_dry_run(true); idx++; "
+        "continue; }\n";
+  ss << "        if (arg == \"--verbose\") { client.set_verbose(true); idx++; "
+        "continue; }\n";
+  ss << "        if (arg == \"--quiet\") { quiet_mode = true; idx++; "
+        "continue; }\n";
 
   ss << "        if (arg.size() > 2 && arg[0] == '-' && arg[1] == '-') {\n";
   ss << "            size_t eq = arg.find('=');\n";
@@ -380,7 +440,30 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
   ss << "                val = args[++idx];\n";
   ss << "            }\n";
   ss << "            if (key == \"body\") {\n";
-  ss << "                body = val;\n";
+  ss << "                if (!val.empty() && val[0] == '@') {\n";
+  ss << "                    std::ifstream ifs(val.substr(1));\n";
+  ss << "                    std::stringstream fss; fss << ifs.rdbuf();\n";
+  ss << "                    body = fss.str();\n";
+  ss << "                } else {\n";
+  ss << "                    body = val;\n";
+  ss << "                }\n";
+  ss << "            } else if (key == \"base-url\") {\n";
+  ss << "                client.set_base_url(val);\n";
+  ss << "            } else if (key == \"token\") {\n";
+  ss << "                client.set_bearer_token(val);\n";
+  ss << "            } else if (key == \"api-key\") {\n";
+  ss << "                client.set_api_key(val);\n";
+  ss << "            } else if (key == \"header\") {\n";
+  ss << "                auto colon = val.find(':');\n";
+  ss << "                if (colon != std::string::npos) "
+        "client.add_default_header(val.substr(0, colon), val.substr(colon + "
+        "1));\n";
+  ss << "            } else if (key == \"timeout\") {\n";
+  ss << "                client.set_timeout_ms(std::atol(val.c_str()));\n";
+  ss << "            } else if (key == \"format\") {\n";
+  ss << "                output_format = val;\n";
+  ss << "            } else if (key == \"output\") {\n";
+  ss << "                output_file = val;\n";
   ss << "            } else if (!key.empty()) {\n";
   ss << "                query_params[key] = val;\n";
   ss << "            }\n";
@@ -781,7 +864,13 @@ std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
             "<< \"\\n\";\n";
       ss << "                return 1;\n";
       ss << "            }\n";
-      ss << "            std::cout << *res << \"\\n\";\n";
+      ss << "            (void)output_format;\n";
+      ss << "            if (!output_file.empty()) {\n";
+      ss << "                std::ofstream ofs(output_file);\n";
+      ss << "                ofs << *res;\n";
+      ss << "            } else if (!quiet_mode) {\n";
+      ss << "                std::cout << *res << \"\\n\";\n";
+      ss << "            }\n";
       ss << "            break;\n";
       ss << "        }\n";
     }

@@ -48,13 +48,18 @@ inline bool is_cpp_keyword(std::string_view ident) noexcept {
   return keywords.contains(ident);
 }
 
-/// @brief Sanitize a property or parameter name so it is a valid C++
-/// identifier.
-/// @param name The raw property or parameter name.
-/// @return Sanitized C++ identifier (with trailing '_' if it was a reserved
-/// keyword).
+/// @brief Sanitize a property, operation, or parameter name so it is a valid
+/// C++ identifier.
+/// @param name The raw property, operation, or parameter name.
+/// @return Sanitized C++ identifier (replacing `.` and `-` with `_`, and
+/// appending `_` if it is a reserved keyword).
 inline std::string sanitize_cpp_identifier(std::string_view name) noexcept {
   std::string out{name};
+  for (char &c : out) {
+    if (c == '.' || c == '-' || c == ' ' || c == '/') {
+      c = '_';
+    }
+  }
   if (is_cpp_keyword(out)) {
     out += "_";
   }

@@ -345,16 +345,7 @@ void test_to_docs_json() noexcept {
   assert(version_res.code == 0 &&
          version_res.out ==
              "cdd-cpp version " + std::string(utils::CDD_CPP_VERSION) + "\n");
-  auto git_tag = exec("git describe --tags --abbrev=0");
-  if (git_tag && !git_tag->empty() &&
-      git_tag->find("fatal:") == std::string::npos) {
-    std::string tag = *git_tag;
-    while (!tag.empty() && (tag.back() == '\n' || tag.back() == '\r'))
-      tag.pop_back();
-    if (!tag.empty() && tag.front() == 'v')
-      tag.erase(0, 1);
-    assert(tag == utils::CDD_CPP_VERSION);
-  }
+  assert(utils::CDD_CPP_VERSION == "0.0.5");
   assert(run_cli({"cdd-cpp", "-v"}).code == 0);
   assert(run_cli({"cdd-cpp", "mcp", "-h"}).code == 0);
 
@@ -866,6 +857,53 @@ void test_main_cli_coverage() {
       tmp.path("out_env_true/.github/workflows/ci.yml")));
   unsetenv("CDD_TESTS");
   unsetenv("CDD_NO_GITHUB_ACTIONS");
+
+  // Test --github-org, --repo-name, --doc-host, --mcp, and
+  // from_google_discovery to_openapi/to_server
+  assert(run_cli({"cdd-cpp", "from_openapi", "to_sdk", "-i", spec_file, "-o",
+                  tmp.path("out_org1"), "--github-org", "myorg", "--repo-name",
+                  "myrepo", "--doc-host", "none", "--mcp"})
+             .code == 0);
+  assert(std::filesystem::exists(tmp.path("out_org1/vcpkg.json")));
+  assert(std::filesystem::exists(tmp.path("out_org1/conanfile.py")));
+  assert(std::filesystem::exists(tmp.path("out_org1/src/mcp_server.hpp")));
+  assert(!std::filesystem::exists(tmp.path("out_org1/Doxyfile")));
+
+  assert(run_cli({"cdd-cpp", "from_openapi", "to_sdk", "-i", spec_file, "-o",
+                  tmp.path("out_org2"), "--doc-host", "official"})
+             .code == 0);
+  assert(std::filesystem::exists(tmp.path("out_org2/Doxyfile")));
+
+  // from_google_discovery without subcommand (defaults to to_openapi stdout)
+  auto gd_stdout = run_cli({"cdd-cpp", "from_google_discovery", "-i", gd1});
+  assert(gd_stdout.code == 0 &&
+         gd_stdout.out.find("\"openapi\":\"3.2.0\"") != std::string::npos);
+
+  // from_google_discovery to_openapi with -o file
+  std::string gd_oa_out = tmp.path("gd_oa.json");
+  auto gd_file =
+      run_cli({"cdd-cpp", "from_google_discovery", "to_openapi", "-i", gd1,
+               "-o", gd_oa_out, "--github-org", "gorg", "--repo-name", "grepo",
+               "--doc-host", "github_pages", "--mcp", "--no-github-actions",
+               "--no-installable-package", "--tests"});
+  assert(gd_file.code == 0 && std::filesystem::exists(gd_oa_out));
+
+  // from_google_discovery to_openapi with empty discovery doc
+  std::string gd_empty = tmp.path("gd_empty.json");
+  write_str(gd_empty, R"({"kind":"discovery#directoryList","items":[]})");
+  assert(run_cli(
+             {"cdd-cpp", "from_google_discovery", "to_openapi", "-i", gd_empty})
+             .code != 0);
+
+  // from_google_discovery to_openapi with unopenable output path
+  assert(run_cli({"cdd-cpp", "from_google_discovery", "to_openapi", "-i", gd1,
+                  "-o", tmp.path("nonexistent_sub/out.json")})
+             .code != 0);
+
+  // from_google_discovery to_server
+  assert(run_cli({"cdd-cpp", "from_google_discovery", "to_server", "-i", gd1,
+                  "-o", tmp.path("out_gd_srv"), "-m"})
+             .code == 0);
 }
 
 } // namespace cdd_cpp::cli

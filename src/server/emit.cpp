@@ -25,12 +25,33 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   ss << "#include <functional>\n";
   ss << "#include <map>\n\n";
   ss << "namespace cdd_server {\n\n";
+  ss << "    /// @brief Strongly typed HTTP server error.\n";
+  ss << "    struct HttpError {\n";
+  ss << "        int status_code = 500;\n";
+  ss << "        std::string message = \"Internal Server Error\";\n";
+  ss << "    };\n\n";
+  ss << "    /// @brief Strongly typed HTTP server response.\n";
+  ss << "    struct ServerResponse {\n";
+  ss << "        int status_code = 200;\n";
+  ss << "        std::map<std::string, std::string> headers = {};\n";
+  ss << "        std::string body = {};\n";
+  ss << "    };\n\n";
+  ss << "    /// @brief Incoming HTTP request context containing headers, "
+        "principal, and client IP.\n";
+  ss << "    struct RequestContext {\n";
+  ss << "        std::map<std::string, std::string> headers = {};\n";
+  ss << "        std::optional<std::string> principal = std::nullopt;\n";
+  ss << "        std::string remote_addr = \"127.0.0.1\";\n";
+  ss << "    };\n\n";
   ss << docstrings::emit_api_docstrings(spec);
 
   ss << "    class Router {\n";
   ss << "    public:\n";
   ss << "        using Handler = std::function<std::string(const "
-        "std::string&)>;\n\n";
+        "std::string&)>;\n";
+  ss << "        using ExpectedHandler = "
+        "std::function<std::expected<ServerResponse, HttpError>(const "
+        "RequestContext&, const std::string&)>;\n\n";
 
   if (spec.paths.has_value()) {
     for (const auto &[path, item] : *spec.paths) {
@@ -121,6 +142,13 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
   return ss.str();
 }
 
+/// @brief Emit a modular C++ server project from an OpenAPI specification.
+/// @param spec The OpenAPI specification model.
+/// @param no_installable_package If true, omit `CMakeLists.txt`.
+/// @param tests If true, generate GoogleTest server unit tests.
+/// @param with_postgres If true, generate PostgreSQL ORM models and DAOs.
+/// @param with_faker If true, generate Faker mock generators and seeders.
+/// @return Map of relative file paths to generated C++ source/header content.
 std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
                                                 bool no_installable_package,
                                                 bool tests, bool with_postgres,

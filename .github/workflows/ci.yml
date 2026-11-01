@@ -36,13 +36,16 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y cmake build-essential python3 curl git python3-pip clang llvm libc++-dev libc++abi-dev
+        run: sudo apt-get update && sudo apt-get install -y cmake build-essential python3 curl git python3-pip clang llvm libc++-dev libc++abi-dev doxygen gnupg
 
       - name: Install pre-commit
         run: pip3 install --break-system-packages pre-commit gcovr || pip3 install pre-commit gcovr
 
       - name: Check code formatting and lint
         run: pre-commit run clang-format --all-files && pre-commit run cpplint --all-files
+
+      - name: Build Doxygen Documentation
+        run: doxygen Doxyfile
 
       - name: Configure CMake
         run: cmake -B build -S . -DCMAKE_BUILD_TYPE=Debug -DCOVERAGE=ON
@@ -101,6 +104,11 @@ jobs:
           mkdir -p custom_bin
           cp build_release/cdd-cpp custom_bin/
           cp bin/cdd-cpp.wasm custom_bin/
+          if [ -n "${GPG_PRIVATE_KEY:-}" ]; then
+            echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+            gpg --batch --yes --armor --detach-sign custom_bin/cdd-cpp
+            gpg --batch --yes --armor --detach-sign custom_bin/cdd-cpp.wasm
+          fi
 
       - name: Upload Binary Release
         if: success() && github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
@@ -110,3 +118,4 @@ jobs:
           files: |
             custom_bin/cdd-cpp
             custom_bin/cdd-cpp.wasm
+            custom_bin/*.asc

@@ -3,6 +3,7 @@
 
 #include "emit.hpp"
 #include "../docstrings/emit.hpp"
+#include "../utils/cpp_identifiers.hpp"
 #include <sstream>
 
 namespace cdd_cpp::mocks {
@@ -31,7 +32,8 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
           [&](const std::optional<openapi::Operation> &op) {
             if (!op.has_value())
               return;
-            std::string func_name = op->operationId.value_or("request");
+            std::string func_name = utils::sanitize_cpp_identifier(
+                op->operationId.value_or("request"));
             ss << "        virtual std::string " << func_name << "() = 0;\n";
           };
 
@@ -57,7 +59,8 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
       auto emit_mock_method = [&](const std::optional<openapi::Operation> &op) {
         if (!op.has_value())
           return;
-        std::string func_name = op->operationId.value_or("request");
+        std::string func_name =
+            utils::sanitize_cpp_identifier(op->operationId.value_or("request"));
         ss << "        MOCK_METHOD(std::string, " << func_name
            << ", (), (override));\n";
       };

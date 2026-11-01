@@ -5,7 +5,7 @@
 #include <string_view>
 
 #ifndef CDD_CPP_VERSION_STR
-#define CDD_CPP_VERSION_STR "0.0.4"
+#define CDD_CPP_VERSION_STR "0.0.5"
 #endif
 
 namespace cdd_cpp::utils {

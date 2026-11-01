@@ -128,6 +128,7 @@ exhaustive_openapi.json
 
 # Coverage metrics and reports
 coverage_out/
+docs/
 *.info
 
 # Petstore SDK test output

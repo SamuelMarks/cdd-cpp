@@ -61,6 +61,7 @@ void test_http() {
   assert(!is_cpp_keyword("normal_field"));
   assert(sanitize_cpp_identifier("class") == "class_");
   assert(sanitize_cpp_identifier("normal_field") == "normal_field");
+  assert(sanitize_cpp_identifier("a.b-c d/e") == "a_b_c_d_e");
   assert(unsanitize_cpp_identifier("class_") == "class");
   assert(unsanitize_cpp_identifier("normal_") == "normal_");
   assert(unsanitize_cpp_identifier("_") == "_");

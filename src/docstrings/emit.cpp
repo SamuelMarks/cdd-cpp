@@ -168,6 +168,9 @@ std::string emit_operation_docstrings(const openapi::Operation &op) noexcept {
   return ss.str();
 }
 
+/// @brief Emit Doxygen docstrings for a complete Arazzo 1.1.0 specification.
+/// @param spec The Arazzo specification model.
+/// @return Formatted C++ Doxygen block containing Arazzo metadata and JSON.
 std::string emit_arazzo_docstrings(const arazzo::Arazzo &spec) noexcept {
   std::stringstream ss;
   ss << "/// @arazzo " << spec.arazzo << "\n";

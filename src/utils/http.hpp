@@ -17,7 +17,9 @@ public:
   /// @brief Clean up libcurl global state on process exit.
   ~CurlGlobalInitializer() noexcept;
 
+  /// @brief Deleted copy constructor.
   CurlGlobalInitializer(const CurlGlobalInitializer &) = delete;
+  /// @brief Deleted copy assignment operator.
   CurlGlobalInitializer &operator=(const CurlGlobalInitializer &) = delete;
 
   /// @brief Access the process-wide singleton instance.
