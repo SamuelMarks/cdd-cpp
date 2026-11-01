@@ -173,7 +173,7 @@ struct Error {
     return message == msg;
   }
 
-  /// @briefEquality comparison between an Error and a C-string (compares
+  /// @brief Equality comparison between an Error and a C-string (compares
   /// message).
   /// @param msg The C-string to compare against.
   /// @return True if the error message matches msg.

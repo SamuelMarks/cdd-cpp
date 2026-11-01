@@ -294,7 +294,7 @@ struct SourceDescription {
 struct ReusableObject {
   std::string reference =
       {}; ///< REQUIRED runtime expression referencing
-          ///< $components.(parameters|successActions|failureActions).<name>.
+          ///< `$components.(parameters|successActions|failureActions).<name>`.
   std::optional<openapi::JsonValue> value =
       std::nullopt; ///< Optional overridden value when referencing a reusable
                     ///< parameter.
@@ -468,7 +468,7 @@ struct Step {
       std::nullopt; ///< Optional description of the step.
   std::optional<std::string> operationId =
       std::nullopt; ///< Target OpenAPI operationId or
-                    ///< $sourceDescriptions.<name>.<operationId> (mutually
+                    ///< `$sourceDescriptions.<name>.<operationId>` (mutually
                     ///< exclusive with operationPath and workflowId).
   std::optional<std::string> operationPath =
       std::nullopt; ///< Target OpenAPI operation JSON Pointer (mutually

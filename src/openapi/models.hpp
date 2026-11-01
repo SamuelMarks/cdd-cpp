@@ -453,6 +453,7 @@ struct Reference {
       {}; ///< A description of what the reference refers to.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Reference &) const noexcept = default;
 };
 
@@ -468,6 +469,7 @@ struct Contact {
       {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Contact &) const noexcept = default;
 };
 
@@ -481,6 +483,7 @@ struct License {
       {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const License &) const noexcept = default;
 };
 
@@ -500,6 +503,7 @@ struct Info {
       {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Info &) const noexcept = default;
 };
 
@@ -516,6 +520,7 @@ struct ServerVariable {
       {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ServerVariable &) const noexcept = default;
 };
 
@@ -532,6 +537,7 @@ struct Server {
       {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Server &) const noexcept = default;
 };
 
@@ -544,6 +550,7 @@ struct ExternalDocumentation {
       {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ExternalDocumentation &) const noexcept = default;
 };
 
@@ -561,6 +568,7 @@ struct Tag {
       {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Tag &) const noexcept = default;
 };
 
@@ -580,6 +588,7 @@ struct Discriminator {
       {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Discriminator &) const noexcept = default;
 };
 
@@ -604,6 +613,7 @@ struct XML {
       {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const XML &) const noexcept = default;
 };
 
@@ -756,6 +766,7 @@ struct Schema {
   }
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Schema &other) const noexcept;
 };
 
@@ -779,6 +790,7 @@ struct Example {
       {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Example &) const noexcept = default;
 };
 
@@ -821,6 +833,7 @@ struct Encoding {
   }
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Encoding &other) const noexcept;
 };
 
@@ -842,6 +855,7 @@ struct MediaType {
       {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const MediaType &other) const noexcept;
 };
 
@@ -889,6 +903,7 @@ struct Header {
   }
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Header &) const noexcept = default;
 };
 
@@ -905,6 +920,7 @@ struct RequestBody {
       {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const RequestBody &) const noexcept = default;
 };
 
@@ -929,6 +945,7 @@ struct Link {
       {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Link &) const noexcept = default;
 };
 
@@ -948,6 +965,7 @@ struct Response {
       {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Response &) const noexcept = default;
 };
 
@@ -1013,6 +1031,7 @@ struct Parameter {
   }
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Parameter &) const noexcept = default;
 };
 
@@ -1033,6 +1052,7 @@ struct OAuthFlow {
       {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const OAuthFlow &) const noexcept = default;
 };
 
@@ -1052,6 +1072,7 @@ struct OAuthFlows {
       {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const OAuthFlows &) const noexcept = default;
 };
 
@@ -1112,6 +1133,7 @@ struct SecurityScheme {
   }
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const SecurityScheme &) const noexcept = default;
 };
 
@@ -1148,6 +1170,7 @@ struct Operation {
       {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Operation &) const noexcept;
 };
 
@@ -1265,6 +1288,7 @@ struct PathItem {
   }
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const PathItem &other) const noexcept;
 };
 
@@ -1296,6 +1320,7 @@ struct Components {
       {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Components &other) const noexcept;
 };
 
@@ -1328,6 +1353,7 @@ struct OpenAPI {
       {}; ///< Specification extensions (x-*).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const OpenAPI &) const noexcept = default;
 };
 

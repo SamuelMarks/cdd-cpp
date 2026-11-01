@@ -250,8 +250,6 @@ static void scan_cli_handler_calls(std::string_view content,
 
 /// @brief Scan a C++ project directory and extract an OpenAPI 3.2.0
 /// specification.
-/// @param folder_path Root directory path to scan.
-/// @return Result containing the extracted OpenAPI model or a typed Error.
 Result<openapi::OpenAPI>
 try_parse_cpp_project(const std::string &folder_path) noexcept {
   std::error_code ec;
@@ -332,8 +330,6 @@ static void merge_arazzo_workflows(arazzo::Arazzo &dest,
 
 /// @brief Scan a C++ project directory and extract an Arazzo 1.1.0
 /// specification.
-/// @param folder_path Root directory path to scan.
-/// @return Result containing the extracted Arazzo model or a typed Error.
 Result<arazzo::Arazzo>
 try_parse_cpp_project_arazzo(const std::string &folder_path) noexcept {
   std::error_code ec;
@@ -382,8 +378,6 @@ try_parse_cpp_project_arazzo(const std::string &folder_path) noexcept {
 
 /// @brief Scan a C++ project directory and extract an Arazzo 1.1.0
 /// specification with fallback on directory error.
-/// @param folder_path Root directory path to scan.
-/// @return Extracted Arazzo model.
 arazzo::Arazzo
 parse_cpp_project_arazzo(const std::string &folder_path) noexcept {
   auto res = try_parse_cpp_project_arazzo(folder_path);

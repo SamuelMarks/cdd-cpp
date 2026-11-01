@@ -79,17 +79,15 @@ static double extract_numeric_bound(simdjson::dom::object schema,
   return 0.0;
 }
 
-/// @brief Upgrade legacy OpenAPI/Swagger specification via
-/// `process_schema_3_0`.
 void process_schema_3_0(simdjson::dom::object schema,
                         utils::JsonWriter &jw) noexcept;
-/// @brief Upgrade legacy OpenAPI/Swagger specification via
-/// `process_element_3_0`.
 void process_element_3_0(simdjson::dom::element el,
                          utils::JsonWriter &jw) noexcept;
 
 /// @brief Upgrade legacy OpenAPI/Swagger specification via
 /// `process_schema_3_0`.
+/// @param schema Source OpenAPI 3.0 schema JSON object.
+/// @param jw Destination JsonWriter.
 void process_schema_3_0(simdjson::dom::object schema,
                         utils::JsonWriter &jw) noexcept {
   jw.start_object();
@@ -131,6 +129,8 @@ void process_schema_3_0(simdjson::dom::object schema,
 
 /// @brief Upgrade legacy OpenAPI/Swagger specification via
 /// `process_element_3_0`.
+/// @param el Source OpenAPI 3.0 JSON element.
+/// @param jw Destination JsonWriter.
 void process_element_3_0(simdjson::dom::element el,
                          utils::JsonWriter &jw) noexcept {
   if (el.is_array()) {
@@ -164,6 +164,9 @@ void process_element_3_0(simdjson::dom::element el,
 }
 
 /// @brief Upgrade legacy OpenAPI/Swagger specification via `upgrade_openapi_3`.
+/// @param root Root JSON object of the OpenAPI 3.0/3.1 document.
+/// @param current_version Detected OpenAPI version string.
+/// @return Upgraded OpenAPI 3.2.0 JSON string.
 std::string upgrade_openapi_3(simdjson::dom::object root,
                               std::string_view current_version) noexcept {
   utils::JsonWriter jw;
@@ -189,6 +192,8 @@ std::string upgrade_openapi_3(simdjson::dom::object root,
 
 /// @brief Upgrade legacy OpenAPI/Swagger specification via
 /// `upgrade_swagger_1_2`.
+/// @param root Root JSON object of the Swagger 1.2 document.
+/// @return Upgraded OpenAPI 3.2.0 JSON string.
 std::string upgrade_swagger_1_2(simdjson::dom::object root) noexcept {
   utils::JsonWriter jw;
   jw.start_object();
@@ -269,6 +274,8 @@ std::string upgrade_swagger_1_2(simdjson::dom::object root) noexcept {
 
 /// @brief Upgrade legacy OpenAPI/Swagger specification via
 /// `upgrade_swagger_2_0`.
+/// @param root Root JSON object of the Swagger 2.0 document.
+/// @return Upgraded OpenAPI 3.2.0 JSON string.
 std::string upgrade_swagger_2_0(simdjson::dom::object root) noexcept {
   utils::JsonWriter jw;
   jw.start_object();

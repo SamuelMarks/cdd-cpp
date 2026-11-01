@@ -152,6 +152,7 @@ struct Annotations {
       priority; ///< Importance priority between 0.0 (least) and 1.0 (most).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Annotations &) const noexcept = default;
 };
 
@@ -160,6 +161,7 @@ struct Annotated {
   std::optional<Annotations> annotations; ///< Optional annotations metadata.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Annotated &) const noexcept = default;
 };
 
@@ -170,6 +172,7 @@ struct ResourceContents {
   std::optional<std::string> mimeType; ///< Optional MIME type of the resource.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ResourceContents &) const noexcept = default;
 };
 
@@ -181,6 +184,7 @@ struct BlobResourceContents {
   std::string uri; ///< The URI of the resource.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const BlobResourceContents &) const noexcept = default;
 };
 
@@ -189,6 +193,7 @@ struct TextResourceContents : ResourceContents {
   std::string text; ///< The text content of the resource.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const TextResourceContents &) const noexcept = default;
 };
 
@@ -203,6 +208,7 @@ struct CallToolRequestParams {
       arguments; ///< Optional JSON object string of tool arguments.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const CallToolRequestParams &) const noexcept = default;
 };
 
@@ -212,6 +218,7 @@ struct CallToolRequest {
   CallToolRequestParams params; ///< Tool invocation parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const CallToolRequest &) const noexcept = default;
 };
 
@@ -222,6 +229,7 @@ struct TextContent {
   std::optional<Annotations> annotations; ///< Optional annotations.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const TextContent &) const noexcept = default;
 };
 
@@ -233,6 +241,7 @@ struct ImageContent {
   std::optional<Annotations> annotations; ///< Optional annotations.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ImageContent &) const noexcept = default;
 };
 
@@ -246,6 +255,7 @@ struct EmbeddedResource {
       typed_resource; ///< Strongly typed resource contents variant.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const EmbeddedResource &) const noexcept = default;
 };
 
@@ -295,6 +305,7 @@ struct CallToolResult {
       typed_content; ///< Strongly typed content block variants.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const CallToolResult &) const noexcept = default;
 };
 
@@ -317,6 +328,7 @@ struct CancelledNotificationParams {
   }
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const CancelledNotificationParams &) const noexcept = default;
 };
 
@@ -326,6 +338,7 @@ struct CancelledNotification {
   CancelledNotificationParams params; ///< Cancellation parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const CancelledNotification &) const noexcept = default;
 };
 
@@ -335,6 +348,7 @@ struct ClientCapabilitiesRoots {
                                    ///< notifications for root list changes.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ClientCapabilitiesRoots &) const noexcept = default;
 };
 
@@ -348,6 +362,7 @@ struct ClientCapabilities {
       sampling; ///< LLM sampling capability configuration JSON.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ClientCapabilities &) const noexcept = default;
 };
 
@@ -357,6 +372,7 @@ struct CompleteRequestArgument {
   std::string value; ///< The current partial value of the argument.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const CompleteRequestArgument &) const noexcept = default;
 };
 
@@ -366,6 +382,7 @@ struct PromptReference {
   std::string name; ///< Name of the referenced prompt.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const PromptReference &) const noexcept = default;
 };
 
@@ -375,6 +392,7 @@ struct ResourceReference {
   std::string uri;  ///< URI or URI template of the referenced resource.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ResourceReference &) const noexcept = default;
 };
 
@@ -391,6 +409,7 @@ struct CompleteRequestParams {
       typed_ref; ///< Strongly typed PromptReference or ResourceReference.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const CompleteRequestParams &) const noexcept = default;
 };
 
@@ -400,6 +419,7 @@ struct CompleteRequest {
   CompleteRequestParams params; ///< Completion request parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const CompleteRequest &) const noexcept = default;
 };
 
@@ -411,6 +431,7 @@ struct CompleteResultCompletion {
       hasMore; ///< True if additional completion options exist beyond `values`.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const CompleteResultCompletion &) const noexcept = default;
 };
 
@@ -420,6 +441,7 @@ struct CompleteResult {
   CompleteResultCompletion completion; ///< Completion candidates result.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const CompleteResult &) const noexcept = default;
 };
 
@@ -429,6 +451,7 @@ struct ModelHint {
       name; ///< Substring hint for a model name (e.g., "claude-3-5-sonnet").
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ModelHint &) const noexcept = default;
 };
 
@@ -446,6 +469,7 @@ struct ModelPreferences {
       speedPriority; ///< Priority for low latency/speed (0.0 to 1.0).
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ModelPreferences &) const noexcept = default;
 };
 
@@ -484,6 +508,7 @@ struct CreateMessageRequestParams {
   }
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const CreateMessageRequestParams &) const noexcept = default;
 };
 
@@ -493,6 +518,7 @@ struct CreateMessageRequest {
   CreateMessageRequestParams params; ///< Sampling parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const CreateMessageRequest &) const noexcept = default;
 };
 
@@ -518,6 +544,7 @@ struct CreateMessageResult {
   void set_typed_role(RoleEnum r) noexcept { role = std::string(to_string(r)); }
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const CreateMessageResult &) const noexcept = default;
 };
 
@@ -530,6 +557,7 @@ struct ToolInputSchema {
       required; ///< List of required property names.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ToolInputSchema &) const noexcept = default;
 };
 
@@ -542,6 +570,7 @@ struct Tool {
       inputSchema; ///< JSON Schema defining expected tool arguments.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Tool &) const noexcept = default;
 };
 
@@ -550,6 +579,7 @@ struct ToolListChangedNotificationParams {
   std::optional<std::string> _meta; ///< Optional protocol metadata JSON.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ToolListChangedNotificationParams &) const noexcept =
       default;
 };
@@ -562,6 +592,7 @@ struct ToolListChangedNotification {
       params; ///< Optional notification parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ToolListChangedNotification &) const noexcept = default;
 };
 
@@ -574,6 +605,7 @@ struct PaginatedRequestParams {
       cursor; ///< Opaque cursor position from a previous PaginatedResult.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const PaginatedRequestParams &) const noexcept = default;
 };
 
@@ -583,6 +615,7 @@ struct PaginatedRequest {
   PaginatedRequestParams params; ///< Pagination parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const PaginatedRequest &) const noexcept = default;
 };
 
@@ -593,6 +626,7 @@ struct PaginatedResult {
                                     ///< page if more results exist.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const PaginatedResult &) const noexcept = default;
 };
 
@@ -602,6 +636,7 @@ struct Implementation {
   std::string version; ///< Version string of the MCP implementation.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Implementation &) const noexcept = default;
 };
 
@@ -614,6 +649,7 @@ struct InitializeRequestParams {
   Implementation clientInfo; ///< Client implementation name and version.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const InitializeRequestParams &) const noexcept = default;
 };
 
@@ -624,12 +660,14 @@ struct InitializeRequest {
   InitializeRequestParams params; ///< Initialization parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const InitializeRequest &) const noexcept = default;
 };
 
 /// @brief Server capability marker for structured logging support.
 struct ServerCapabilitiesLogging {
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ServerCapabilitiesLogging &) const noexcept = default;
 };
 
@@ -639,6 +677,7 @@ struct ServerCapabilitiesPrompts {
       listChanged; ///< True if server emits prompt list change notifications.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ServerCapabilitiesPrompts &) const noexcept = default;
 };
 
@@ -650,6 +689,7 @@ struct ServerCapabilitiesResources {
       listChanged; ///< True if server emits resource list change notifications.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ServerCapabilitiesResources &) const noexcept = default;
 };
 
@@ -659,6 +699,7 @@ struct ServerCapabilitiesTools {
       listChanged; ///< True if server emits tool list change notifications.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ServerCapabilitiesTools &) const noexcept = default;
 };
 
@@ -676,6 +717,7 @@ struct ServerCapabilities {
       tools; ///< Present if server offers callable tools.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ServerCapabilities &) const noexcept = default;
 };
 
@@ -689,6 +731,7 @@ struct InitializeResult {
       instructions; ///< Optional usage instructions for the client/LLM.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const InitializeResult &) const noexcept = default;
 };
 
@@ -697,6 +740,7 @@ struct InitializedNotificationParams {
   std::optional<std::string> _meta; ///< Optional protocol metadata JSON.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool
   operator==(const InitializedNotificationParams &) const noexcept = default;
 };
@@ -708,6 +752,7 @@ struct InitializedNotification {
       params; ///< Optional notification parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const InitializedNotification &) const noexcept = default;
 };
 
@@ -726,6 +771,7 @@ struct JSONRPCErrorError {
   std::optional<std::string> data; ///< Optional additional error data JSON.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const JSONRPCErrorError &) const noexcept = default;
 };
 
@@ -748,6 +794,7 @@ struct JSONRPCError {
   }
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const JSONRPCError &) const noexcept = default;
 };
 
@@ -757,6 +804,7 @@ struct JSONRPCNotificationParams {
   std::optional<std::string> _raw;  ///< Additional raw JSON properties.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const JSONRPCNotificationParams &) const noexcept = default;
 };
 
@@ -768,6 +816,7 @@ struct JSONRPCNotification {
       params; ///< Optional notification parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const JSONRPCNotification &) const noexcept = default;
 };
 
@@ -777,6 +826,7 @@ struct JSONRPCRequestParams {
   std::optional<std::string> _raw;  ///< Additional raw JSON properties.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const JSONRPCRequestParams &) const noexcept = default;
 };
 
@@ -800,6 +850,7 @@ struct JSONRPCRequest {
   }
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const JSONRPCRequest &) const noexcept = default;
 };
 
@@ -822,6 +873,7 @@ struct JSONRPCResponse {
   }
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const JSONRPCResponse &) const noexcept = default;
 };
 
@@ -830,6 +882,7 @@ struct ListPromptsRequestParams {
   std::optional<Cursor> cursor; ///< Optional pagination cursor.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ListPromptsRequestParams &) const noexcept = default;
 };
 
@@ -841,6 +894,7 @@ struct ListPromptsRequest {
       params; ///< Optional pagination parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ListPromptsRequest &) const noexcept = default;
 };
 
@@ -852,6 +906,7 @@ struct PromptArgument {
   std::optional<bool> required; ///< Whether the argument must be provided.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const PromptArgument &) const noexcept = default;
 };
 
@@ -864,6 +919,7 @@ struct Prompt {
       arguments; ///< Optional list of template arguments.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Prompt &) const noexcept = default;
 };
 
@@ -875,6 +931,7 @@ struct ListPromptsResult {
   std::vector<Prompt> prompts; ///< List of available prompt templates.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ListPromptsResult &) const noexcept = default;
 };
 
@@ -885,6 +942,7 @@ struct GetPromptRequestParams {
       arguments; ///< Optional JSON object map of argument key/values.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const GetPromptRequestParams &) const noexcept = default;
 };
 
@@ -895,6 +953,7 @@ struct GetPromptRequest {
   GetPromptRequestParams params; ///< Prompt retrieval parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const GetPromptRequest &) const noexcept = default;
 };
 
@@ -915,6 +974,7 @@ struct PromptMessage {
   void set_typed_role(RoleEnum r) noexcept { role = std::string(to_string(r)); }
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const PromptMessage &) const noexcept = default;
 };
 
@@ -926,6 +986,7 @@ struct GetPromptResult {
   std::vector<PromptMessage> messages; ///< Rendered prompt messages.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const GetPromptResult &) const noexcept = default;
 };
 
@@ -934,6 +995,7 @@ struct PromptListChangedNotificationParams {
   std::optional<std::string> _meta; ///< Optional protocol metadata JSON.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const PromptListChangedNotificationParams &) const noexcept =
       default;
 };
@@ -946,6 +1008,7 @@ struct PromptListChangedNotification {
       params; ///< Optional notification parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool
   operator==(const PromptListChangedNotification &) const noexcept = default;
 };
@@ -955,6 +1018,7 @@ struct ListResourcesRequestParams {
   std::optional<Cursor> cursor; ///< Optional pagination cursor.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ListResourcesRequestParams &) const noexcept = default;
 };
 
@@ -966,6 +1030,7 @@ struct ListResourcesRequest {
       params; ///< Optional pagination parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ListResourcesRequest &) const noexcept = default;
 };
 
@@ -979,6 +1044,7 @@ struct Resource {
   std::optional<Annotations> annotations; ///< Optional client annotations.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Resource &) const noexcept = default;
 };
 
@@ -989,6 +1055,7 @@ struct ListResourcesResult {
   std::vector<Resource> resources;  ///< List of available resources.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ListResourcesResult &) const noexcept = default;
 };
 
@@ -997,6 +1064,7 @@ struct ListResourceTemplatesRequestParams {
   std::optional<Cursor> cursor; ///< Optional pagination cursor.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ListResourceTemplatesRequestParams &) const noexcept =
       default;
 };
@@ -1009,6 +1077,7 @@ struct ListResourceTemplatesRequest {
       params; ///< Optional pagination parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool
   operator==(const ListResourceTemplatesRequest &) const noexcept = default;
 };
@@ -1024,6 +1093,7 @@ struct ResourceTemplate {
   std::optional<Annotations> annotations; ///< Optional client annotations.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ResourceTemplate &) const noexcept = default;
 };
 
@@ -1036,6 +1106,7 @@ struct ListResourceTemplatesResult {
       resourceTemplates; ///< List of resource templates.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ListResourceTemplatesResult &) const noexcept = default;
 };
 
@@ -1044,6 +1115,7 @@ struct ReadResourceRequestParams {
   std::string uri; ///< The URI of the resource to read.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ReadResourceRequestParams &) const noexcept = default;
 };
 
@@ -1054,6 +1126,7 @@ struct ReadResourceRequest {
   ReadResourceRequestParams params; ///< Resource read parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ReadResourceRequest &) const noexcept = default;
 };
 
@@ -1067,6 +1140,7 @@ struct ReadResourceResult {
       typed_contents; ///< Strongly typed resource contents variants.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ReadResourceResult &) const noexcept = default;
 };
 
@@ -1075,6 +1149,7 @@ struct ResourceUpdatedNotificationParams {
   std::string uri; ///< The URI of the resource that was updated.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ResourceUpdatedNotificationParams &) const noexcept =
       default;
 };
@@ -1085,6 +1160,7 @@ struct ResourceUpdatedNotification {
   ResourceUpdatedNotificationParams params; ///< Updated resource parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ResourceUpdatedNotification &) const noexcept = default;
 };
 
@@ -1093,6 +1169,7 @@ struct ResourceListChangedNotificationParams {
   std::optional<std::string> _meta; ///< Optional protocol metadata JSON.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(
       const ResourceListChangedNotificationParams &) const noexcept = default;
 };
@@ -1105,6 +1182,7 @@ struct ResourceListChangedNotification {
       params; ///< Optional notification parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool
   operator==(const ResourceListChangedNotification &) const noexcept = default;
 };
@@ -1114,6 +1192,7 @@ struct Result {
   std::optional<std::string> _meta; ///< Optional protocol metadata JSON.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Result &) const noexcept = default;
 };
 
@@ -1124,6 +1203,7 @@ struct Root {
       name; ///< Optional human-readable name for the root.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const Root &) const noexcept = default;
 };
 
@@ -1132,6 +1212,7 @@ struct RootsListChangedNotificationParams {
   std::optional<std::string> _meta; ///< Optional protocol metadata JSON.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const RootsListChangedNotificationParams &) const noexcept =
       default;
 };
@@ -1143,6 +1224,7 @@ struct RootsListChangedNotification {
       params; ///< Optional notification parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool
   operator==(const RootsListChangedNotification &) const noexcept = default;
 };
@@ -1152,6 +1234,7 @@ struct ListRootsRequestParams {
   std::optional<std::string> _meta; ///< Optional protocol metadata JSON.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ListRootsRequestParams &) const noexcept = default;
 };
 
@@ -1163,6 +1246,7 @@ struct ListRootsRequest {
       params; ///< Optional request parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ListRootsRequest &) const noexcept = default;
 };
 
@@ -1172,6 +1256,7 @@ struct ListRootsResult {
   std::vector<Root> roots;          ///< List of client root directories.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ListRootsResult &) const noexcept = default;
 };
 
@@ -1195,6 +1280,7 @@ struct SetLevelRequestParams {
   }
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const SetLevelRequestParams &) const noexcept = default;
 };
 
@@ -1205,6 +1291,7 @@ struct SetLevelRequest {
   SetLevelRequestParams params; ///< Logging level parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const SetLevelRequest &) const noexcept = default;
 };
 
@@ -1228,6 +1315,7 @@ struct LoggingMessageNotificationParams {
   }
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool
   operator==(const LoggingMessageNotificationParams &) const noexcept = default;
 };
@@ -1239,6 +1327,7 @@ struct LoggingMessageNotification {
   LoggingMessageNotificationParams params; ///< Log message payload.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const LoggingMessageNotification &) const noexcept = default;
 };
 
@@ -1266,6 +1355,7 @@ struct ProgressNotificationParams {
   }
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ProgressNotificationParams &) const noexcept = default;
 };
 
@@ -1276,6 +1366,7 @@ struct ProgressNotification {
   ProgressNotificationParams params; ///< Progress notification parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ProgressNotification &) const noexcept = default;
 };
 
@@ -1305,6 +1396,7 @@ struct SamplingMessage {
   void set_typed_role(RoleEnum r) noexcept { role = std::string(to_string(r)); }
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const SamplingMessage &) const noexcept = default;
 };
 
@@ -1313,6 +1405,7 @@ struct PingRequestParams {
   std::optional<std::string> _meta; ///< Optional protocol metadata JSON.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const PingRequestParams &) const noexcept = default;
 };
 
@@ -1322,6 +1415,7 @@ struct PingRequest {
   std::optional<PingRequestParams> params; ///< Optional ping parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const PingRequest &) const noexcept = default;
 };
 
@@ -1330,6 +1424,7 @@ struct SubscribeRequestParams {
   std::string uri; ///< The URI of the resource to subscribe to.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const SubscribeRequestParams &) const noexcept = default;
 };
 
@@ -1340,6 +1435,7 @@ struct SubscribeRequest {
   SubscribeRequestParams params; ///< Subscription parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const SubscribeRequest &) const noexcept = default;
 };
 
@@ -1348,6 +1444,7 @@ struct UnsubscribeRequestParams {
   std::string uri; ///< The URI of the resource to unsubscribe from.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const UnsubscribeRequestParams &) const noexcept = default;
 };
 
@@ -1358,6 +1455,7 @@ struct UnsubscribeRequest {
   UnsubscribeRequestParams params; ///< Unsubscription parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const UnsubscribeRequest &) const noexcept = default;
 };
 
@@ -1366,6 +1464,7 @@ struct ListToolsRequestParams {
   std::optional<Cursor> cursor; ///< Optional pagination cursor.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ListToolsRequestParams &) const noexcept = default;
 };
 
@@ -1377,6 +1476,7 @@ struct ListToolsRequest {
       params; ///< Optional pagination parameters.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ListToolsRequest &) const noexcept = default;
 };
 
@@ -1388,6 +1488,7 @@ struct ListToolsResult {
   std::vector<Tool> tools; ///< List of available tools.
 
   /// @brief Equality comparison operator.
+  /// @return True if all fields are equal.
   bool operator==(const ListToolsResult &) const noexcept = default;
 };
 

@@ -5,6 +5,7 @@
 #include <string_view>
 
 #ifndef CDD_CPP_VERSION_STR
+/// @brief Default compile-time release version string macro for `cdd-cpp`.
 #define CDD_CPP_VERSION_STR "0.0.5"
 #endif
 

@@ -50,11 +50,6 @@ static void sanitize_string(std::string &str) noexcept {
 }
 
 /// @brief Emit a complete C++ CLI client project from an OpenAPI specification.
-/// @param spec The OpenAPI specification model.
-/// @param no_github_actions If true, omit `.github/workflows/ci.yml`.
-/// @param no_installable_package If true, omit `CMakeLists.txt`.
-/// @param tests If true, generate GoogleTest CLI unit tests.
-/// @return Map of relative file paths to generated C++ source/header content.
 std::map<std::string, std::string> emit_cli(const openapi::OpenAPI &spec,
                                             bool no_github_actions,
                                             bool no_installable_package,

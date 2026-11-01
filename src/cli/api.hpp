@@ -104,9 +104,9 @@ struct SyncConfig {
 int mcp_command_help(std::ostream &out = std::cout) noexcept;
 
 /// @brief Handle a single MCP JSON-RPC message string.
-/// @param request_json Raw JSON-RPC request string.
+/// @param request Raw JSON-RPC request string.
 /// @return Serialized JSON-RPC response string.
-std::string handle_mcp_cli_message(const std::string &request_json) noexcept;
+std::string handle_mcp_cli_message(const std::string &request) noexcept;
 
 /// @brief Generate code from an OpenAPI specification.
 /// @param config Configuration parameters for code generation.

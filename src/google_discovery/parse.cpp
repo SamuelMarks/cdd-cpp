@@ -612,9 +612,6 @@ parse_rest_document(simdjson::dom::object root) noexcept {
 }
 
 /// @brief Convert Google Discovery JSON to OpenAPI 3.2.0 via `parse`.
-/// @param input The raw Google Discovery document or directory list JSON.
-/// @return Result containing a vector of OpenAPI specifications or a typed
-/// Error.
 Result<std::vector<openapi::OpenAPI>> parse(const std::string &input) noexcept {
   simdjson::dom::parser parser;
   simdjson::dom::element doc;

@@ -232,8 +232,6 @@ write_generated_files(const std::map<std::string, std::string> &files,
 }
 
 /// @brief Print help usage for the MCP subcommand.
-/// @param out Output stream for help message.
-/// @return Exit code (0).
 int mcp_command_help(std::ostream &out) noexcept {
   out << "Usage:\n"
       << "  cdd-cpp mcp\n\n"
@@ -242,8 +240,6 @@ int mcp_command_help(std::ostream &out) noexcept {
 }
 
 /// @brief Handle a single MCP JSON-RPC message string.
-/// @param request Raw JSON-RPC request string.
-/// @return Serialized JSON-RPC response string.
 std::string handle_mcp_cli_message(const std::string &request) noexcept {
   auto make_err = [](const std::string &id, int code, const std::string &msg) {
     mcp::JSONRPCError err_obj;
@@ -404,10 +400,6 @@ std::string handle_mcp_cli_message(const std::string &request) noexcept {
 }
 
 /// @brief Start the Model Context Protocol (MCP) STDIO server loop.
-/// @param out Output stream for JSON-RPC responses.
-/// @param err Error stream for diagnostic output.
-/// @param in Input stream for JSON-RPC requests.
-/// @return Exit code (0 on success).
 int mcp(std::ostream &out, std::ostream &err, std::istream &in) noexcept {
   (void)err;
   std::string line;
@@ -518,10 +510,6 @@ static void apply_scaffolding_extras(std::map<std::string, std::string> &files,
 
 /// @brief Execute the `from_openapi` subcommand (`to_sdk`, `to_sdk_cli`, or
 /// `to_server`).
-/// @param config Configuration options for code generation.
-/// @param out Output stream for progress messages.
-/// @param err Error stream for diagnostic output.
-/// @return Exit code (0 on success, non-zero on error).
 int from_openapi(const FromOpenApiConfig &config, std::ostream &out,
                  std::ostream &err) noexcept {
   if (config.input.empty() && config.input_dir.empty()) {
@@ -595,10 +583,6 @@ int from_openapi(const FromOpenApiConfig &config, std::ostream &out,
 
 /// @brief Execute the `from_google_discovery` subcommand (`to_openapi`,
 /// `to_sdk`, `to_sdk_cli`, `to_server`, or `to_docs_json`).
-/// @param config Configuration options for Google Discovery conversion.
-/// @param out Output stream for progress messages or OpenAPI JSON.
-/// @param err Error stream for diagnostic output.
-/// @return Exit code (0 on success, non-zero on error).
 int from_google_discovery(const FromGoogleDiscoveryConfig &config,
                           std::ostream &out, std::ostream &err) noexcept {
   if (config.input.empty()) {
@@ -676,10 +660,6 @@ int from_google_discovery(const FromGoogleDiscoveryConfig &config,
 
 /// @brief Execute the `to_openapi` subcommand to extract an OpenAPI 3.2.0 spec
 /// from C++ source code.
-/// @param config Configuration options for OpenAPI extraction.
-/// @param out Output stream for emitted OpenAPI JSON or messages.
-/// @param err Error stream for diagnostic output.
-/// @return Exit code (0 on success, non-zero on error).
 int to_openapi(const ToOpenApiConfig &config, std::ostream &out,
                std::ostream &err) noexcept {
   if (config.input.empty()) {
@@ -711,10 +691,6 @@ int to_openapi(const ToOpenApiConfig &config, std::ostream &out,
 
 /// @brief Execute the `from_arazzo` subcommand (`to_sdk`, `to_sdk_cli`, or
 /// `to_server`).
-/// @param config Configuration options for Arazzo workflow generation.
-/// @param out Output stream for progress messages.
-/// @param err Error stream for diagnostic output.
-/// @return Exit code (0 on success, non-zero on error).
 int from_arazzo(const FromArazzoConfig &config, std::ostream &out,
                 std::ostream &err) noexcept {
   if (config.input.empty()) {
@@ -761,10 +737,6 @@ int from_arazzo(const FromArazzoConfig &config, std::ostream &out,
 
 /// @brief Execute the `to_arazzo` subcommand to extract an Arazzo 1.1.0 spec
 /// from C++ workflow source code.
-/// @param config Configuration options for Arazzo extraction.
-/// @param out Output stream for emitted Arazzo JSON or messages.
-/// @param err Error stream for diagnostic output.
-/// @return Exit code (0 on success, non-zero on error).
 int to_arazzo(const ToArazzoConfig &config, std::ostream &out,
               std::ostream &err) noexcept {
   if (config.input.empty()) {
@@ -985,10 +957,6 @@ resolve_docs_output_path(const std::string &output_path) noexcept {
 
 /// @brief Execute the `to_docs_json` subcommand to generate C++ code snippets
 /// for OpenAPI or Arazzo specifications.
-/// @param config Configuration options for documentation snippet generation.
-/// @param out Output stream for emitted JSON or progress messages.
-/// @param err Error stream for diagnostic output.
-/// @return Exit code (0 on success, non-zero on error).
 int to_docs_json(const DocsJsonConfig &config, std::ostream &out,
                  std::ostream &err) noexcept {
   if (config.input.empty()) {
@@ -1106,10 +1074,6 @@ int to_docs_json(const DocsJsonConfig &config, std::ostream &out,
 }
 
 /// @brief Start the HTTP JSON-RPC 2.0 server exposing `cdd-cpp` tools.
-/// @param config Server host and port configuration.
-/// @param out Output stream for status messages.
-/// @param err Error stream for diagnostic output.
-/// @return Exit code (0 on success, non-zero on error).
 int serve_json_rpc(const ServeJsonRpcConfig &config, std::ostream &out,
                    std::ostream &err) noexcept {
 #if !defined(__wasi__) && !defined(__EMSCRIPTEN__)
@@ -1145,10 +1109,6 @@ int serve_json_rpc(const ServeJsonRpcConfig &config, std::ostream &out,
 }
 
 /// @brief Synchronize a C++ project directory with an OpenAPI specification.
-/// @param config Synchronization configuration (`input`, `output`, `truth`).
-/// @param out Output stream for progress messages.
-/// @param err Error stream for diagnostic output.
-/// @return Exit code (0 on success, non-zero on error).
 int sync(const SyncConfig &config, std::ostream &out,
          std::ostream &err) noexcept {
   out << "Syncing code in " << config.input << " with spec " << config.output
@@ -1211,12 +1171,6 @@ int sync(const SyncConfig &config, std::ostream &out,
 }
 
 /// @brief Parse CLI arguments and run the `mcp` subcommand.
-/// @param argc Argument count.
-/// @param argv Argument vector.
-/// @param out Output stream.
-/// @param err Error stream.
-/// @param in Input stream.
-/// @return Exit code.
 int run_mcp(int argc, char **argv, std::ostream &out, std::ostream &err,
             std::istream &in) noexcept {
   if (has_help_flag(argc, argv)) {
@@ -1226,11 +1180,6 @@ int run_mcp(int argc, char **argv, std::ostream &out, std::ostream &err,
 }
 
 /// @brief Parse CLI arguments and run the `sync` subcommand.
-/// @param argc Argument count.
-/// @param argv Argument vector.
-/// @param out Output stream.
-/// @param err Error stream.
-/// @return Exit code.
 int run_sync(int argc, char **argv, std::ostream &out,
              std::ostream &err) noexcept {
   if (has_help_flag(argc, argv)) {
@@ -1262,11 +1211,6 @@ int run_sync(int argc, char **argv, std::ostream &out,
 }
 
 /// @brief Parse CLI arguments and run the `from_openapi` subcommand.
-/// @param argc Argument count.
-/// @param argv Argument vector.
-/// @param out Output stream.
-/// @param err Error stream.
-/// @return Exit code.
 int run_from_openapi(int argc, char **argv, std::ostream &out,
                      std::ostream &err) noexcept {
   if (has_help_flag(argc, argv)) {
@@ -1363,11 +1307,6 @@ int run_from_openapi(int argc, char **argv, std::ostream &out,
 }
 
 /// @brief Parse CLI arguments and run the `from_google_discovery` subcommand.
-/// @param argc Argument count.
-/// @param argv Argument vector.
-/// @param out Output stream.
-/// @param err Error stream.
-/// @return Exit code.
 int run_from_google_discovery(int argc, char **argv, std::ostream &out,
                               std::ostream &err) noexcept {
   if (has_help_flag(argc, argv)) {
@@ -1447,11 +1386,6 @@ int run_from_google_discovery(int argc, char **argv, std::ostream &out,
 }
 
 /// @brief Parse CLI arguments and run the `to_openapi` subcommand.
-/// @param argc Argument count.
-/// @param argv Argument vector.
-/// @param out Output stream.
-/// @param err Error stream.
-/// @return Exit code.
 int run_to_openapi(int argc, char **argv, std::ostream &out,
                    std::ostream &err) noexcept {
   if (has_help_flag(argc, argv)) {
@@ -1479,11 +1413,6 @@ int run_to_openapi(int argc, char **argv, std::ostream &out,
 }
 
 /// @brief Parse CLI arguments and run the `from_arazzo` subcommand.
-/// @param argc Argument count.
-/// @param argv Argument vector.
-/// @param out Output stream.
-/// @param err Error stream.
-/// @return Exit code.
 int run_from_arazzo(int argc, char **argv, std::ostream &out,
                     std::ostream &err) noexcept {
   if (has_help_flag(argc, argv)) {
@@ -1543,11 +1472,6 @@ int run_from_arazzo(int argc, char **argv, std::ostream &out,
 }
 
 /// @brief Parse CLI arguments and run the `to_arazzo` subcommand.
-/// @param argc Argument count.
-/// @param argv Argument vector.
-/// @param out Output stream.
-/// @param err Error stream.
-/// @return Exit code.
 int run_to_arazzo(int argc, char **argv, std::ostream &out,
                   std::ostream &err) noexcept {
   if (has_help_flag(argc, argv)) {
@@ -1573,11 +1497,6 @@ int run_to_arazzo(int argc, char **argv, std::ostream &out,
 }
 
 /// @brief Parse CLI arguments and run the `to_docs_json` subcommand.
-/// @param argc Argument count.
-/// @param argv Argument vector.
-/// @param out Output stream.
-/// @param err Error stream.
-/// @return Exit code.
 int run_to_docs_json(int argc, char **argv, std::ostream &out,
                      std::ostream &err) noexcept {
   if (has_help_flag(argc, argv)) {
@@ -1615,11 +1534,6 @@ int run_to_docs_json(int argc, char **argv, std::ostream &out,
 }
 
 /// @brief Parse CLI arguments and run the `serve_json_rpc` subcommand.
-/// @param argc Argument count.
-/// @param argv Argument vector.
-/// @param out Output stream.
-/// @param err Error stream.
-/// @return Exit code.
 int run_serve_json_rpc(int argc, char **argv, std::ostream &out,
                        std::ostream &err) noexcept {
   if (has_help_flag(argc, argv)) {
@@ -1656,12 +1570,6 @@ int run_serve_json_rpc(int argc, char **argv, std::ostream &out,
 }
 
 /// @brief Main CLI implementation dispatching top-level commands.
-/// @param argc Argument count.
-/// @param argv Argument vector.
-/// @param out Output stream.
-/// @param err Error stream.
-/// @param in Input stream.
-/// @return Exit code (0 on success, non-zero on error).
 int main_impl(int argc, char **argv, std::ostream &out, std::ostream &err,
               std::istream &in) noexcept {
   if (argc < 2) {

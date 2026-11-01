@@ -58,6 +58,8 @@ static void set_opt_raw(simdjson::ondemand::object &obj, std::string_view key,
 }
 
 /// @brief Deserialize MCP JSON-RPC payload via `parse_annotations`.
+/// @param obj Source JSON object.
+/// @return Optional parsed Annotations object.
 std::optional<Annotations> parse_annotations(simdjson::ondemand::object &obj) {
   simdjson::ondemand::object annotations_obj;
   if (!obj["annotations"].get_object().get(annotations_obj)) {
@@ -741,6 +743,8 @@ parse_initialized_notification(simdjson::ondemand::value &val) noexcept {
 }
 
 /// @brief Deserialize MCP JSON-RPC payload via `parse_request_id`.
+/// @param val Source JSON value representing the request ID.
+/// @return Serialized JSON string or number representing the request ID.
 std::string parse_request_id(simdjson::ondemand::value &val) noexcept {
   std::string out = "null";
   auto t = val.type().value_unsafe();

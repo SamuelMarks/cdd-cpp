@@ -54,6 +54,8 @@ void emit_call_tool_request(const CallToolRequest &req,
 }
 
 /// @brief Serialize MCP JSON-RPC payload via `emit_annotations`.
+/// @param annotations Optional Annotations metadata to serialize.
+/// @param jw Destination JsonWriter.
 void emit_annotations(const std::optional<Annotations> &annotations,
                       utils::JsonWriter &jw) noexcept {
   if (annotations.has_value()) {

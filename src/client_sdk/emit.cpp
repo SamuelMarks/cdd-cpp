@@ -98,11 +98,6 @@ collect_params(const openapi::PathItem &item,
 }
 
 /// @brief Emit a complete C++ client SDK project from an OpenAPI specification.
-/// @param spec The OpenAPI specification model.
-/// @param no_github_actions If true, omit `.github/workflows/ci.yml`.
-/// @param no_installable_package If true, omit `CMakeLists.txt`.
-/// @param tests If true, generate GoogleTest unit test suite.
-/// @return Map of relative file paths to generated C++ source/header content.
 std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
                                                bool no_github_actions,
                                                bool no_installable_package,
@@ -581,22 +576,21 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
     }
   }
 
-  c_cpp << R"(
-    static std::string escape_str(const std::string& s) noexcept {
-        std::string out;
-        for (char c : s) {
-            if (c == '"') out += "\\\"";
-            else if (c == '\\') out += "\\\\";
-            else if (c == '\n') out += "\\n";
-            else if (c == '\r') out += "\\r";
-            else out += c;
-        }
-        return out;
-    }
-
-    std::string Client::McpAdapter::get_tools() const noexcept {
-        std::string res = "[";
-)";
+  c_cpp
+      << "\n"
+         "    static std::string escape_str(const std::string& s) noexcept {\n"
+         "        std::string out;\n"
+         "        for (char c : s) {\n"
+         "            if (c == '\"') out += \"\\\\\\\"\";\n"
+         "            else if (c == '\\\\') out += \"\\\\\\\\\";\n"
+         "            else if (c == '\\n') out += \"\\\\n\";\n"
+         "            else if (c == '\\r') out += \"\\\\r\";\n"
+         "            else out += c;\n"
+         "        }\n"
+         "        return out;\n"
+         "    }\n\n"
+         "    std::string Client::McpAdapter::get_tools() const noexcept {\n"
+         "        std::string res = \"[\";\n";
   bool first_tool = true;
   if (spec.paths.has_value() && !spec.paths->empty()) {
     for (const auto &[path, item] : spec.paths.operator*()) {
@@ -669,18 +663,19 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
     }
   }
 
-  c_cpp << R"(
-        res += "]";
-        return res;
-    }
-
-    std::expected<std::string, std::string> Client::McpAdapter::execute_tool(const std::string& name, const std::string& args_json) const noexcept {
-        simdjson::ondemand::parser parser;
-        simdjson::padded_string padded(args_json);
-        simdjson::ondemand::document doc;
-        auto error = parser.iterate(padded).get(doc);
-        if (error) return std::unexpected("Invalid JSON arguments");
-)";
+  c_cpp << "\n"
+           "        res += \"]\";\n"
+           "        return res;\n"
+           "    }\n\n"
+           "    std::expected<std::string, std::string> "
+           "Client::McpAdapter::execute_tool(const std::string& name, const "
+           "std::string& args_json) const noexcept {\n"
+           "        simdjson::ondemand::parser parser;\n"
+           "        simdjson::padded_string padded(args_json);\n"
+           "        simdjson::ondemand::document doc;\n"
+           "        auto error = parser.iterate(padded).get(doc);\n"
+           "        if (error) return std::unexpected(\"Invalid JSON "
+           "arguments\");\n";
 
   if (spec.paths.has_value() && !spec.paths->empty()) {
     for (const auto &[path, item] : spec.paths.operator*()) {
@@ -759,11 +754,10 @@ std::map<std::string, std::string> emit_client(const openapi::OpenAPI &spec,
     }
   }
 
-  c_cpp << R"(
-        return std::unexpected("Unknown tool: " + name);
-    }
-}
-)";
+  c_cpp << "\n"
+           "        return std::unexpected(\"Unknown tool: \" + name);\n"
+           "    }\n"
+           "}\n";
   result["src/client.cpp"] = c_cpp.str();
 
   if (!no_installable_package) {

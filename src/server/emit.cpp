@@ -143,12 +143,6 @@ std::string emit(const openapi::OpenAPI &spec) noexcept {
 }
 
 /// @brief Emit a modular C++ server project from an OpenAPI specification.
-/// @param spec The OpenAPI specification model.
-/// @param no_installable_package If true, omit `CMakeLists.txt`.
-/// @param tests If true, generate GoogleTest server unit tests.
-/// @param with_postgres If true, generate PostgreSQL ORM models and DAOs.
-/// @param with_faker If true, generate Faker mock generators and seeders.
-/// @return Map of relative file paths to generated C++ source/header content.
 std::map<std::string, std::string> emit_modular(const openapi::OpenAPI &spec,
                                                 bool no_installable_package,
                                                 bool tests, bool with_postgres,

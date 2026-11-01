@@ -81,8 +81,6 @@ static bool split_key_and_pointer(std::string_view suffix, std::string &out_key,
 }
 
 /// @brief Parse and validate a single Arazzo 1.1.0 runtime expression.
-/// @param expr The raw runtime expression string (must start with `$`).
-/// @return Result containing the parsed expression AST or an Error.
 utils::Result<ParsedRuntimeExpression>
 parse_runtime_expression(std::string_view expr) noexcept {
   if (expr.empty() || expr.front() != '$') {
@@ -324,10 +322,6 @@ parse_runtime_expression(std::string_view expr) noexcept {
 
 /// @brief Extract and validate all embedded `{$...}` or standalone `$...`
 /// expressions in a template string.
-/// @param template_str String potentially containing embedded runtime
-/// expressions.
-/// @return Result containing a list of parsed expressions or an Error if any
-/// expression is malformed.
 utils::Result<std::vector<ParsedRuntimeExpression>>
 extract_template_expressions(std::string_view template_str) noexcept {
   std::vector<ParsedRuntimeExpression> out;
@@ -367,9 +361,6 @@ extract_template_expressions(std::string_view template_str) noexcept {
 }
 
 /// @brief Evaluate an RFC 6901 JSON Pointer against a JsonValue document tree.
-/// @param root The root JsonValue to traverse.
-/// @param pointer RFC 6901 JSON Pointer string.
-/// @return Result containing the resolved JsonValue or an Error.
 utils::Result<openapi::JsonValue>
 evaluate_json_pointer(const openapi::JsonValue &root,
                       std::string_view pointer) noexcept {
@@ -453,9 +444,6 @@ json_value_to_string(const openapi::JsonValue &val) noexcept {
 
 /// @brief Evaluate a parsed runtime expression against a
 /// WorkflowExecutionContext.
-/// @param expr The parsed runtime expression.
-/// @param ctx The active workflow execution context.
-/// @return Result containing the resolved JsonValue or an Error.
 utils::Result<openapi::JsonValue>
 evaluate_expression(const ParsedRuntimeExpression &expr,
                     const WorkflowExecutionContext &ctx) noexcept {
@@ -599,9 +587,6 @@ evaluate_expression(const ParsedRuntimeExpression &expr,
 
 /// @brief Interpolate a string containing standalone `$...` or embedded
 /// `{$...}` runtime expressions.
-/// @param tmpl The template string to interpolate.
-/// @param ctx The active workflow execution context.
-/// @return Result containing the interpolated string or an Error.
 utils::Result<std::string>
 interpolate_template(std::string_view tmpl,
                      const WorkflowExecutionContext &ctx) noexcept {
@@ -697,10 +682,6 @@ set_json_pointer_value(openapi::JsonValue &node, std::string_view pointer,
 
 /// @brief Apply an Arazzo PayloadReplacement (`target` RFC 6901 JSON Pointer +
 /// `value`) to a JSON payload.
-/// @param payload The original JSON request body value.
-/// @param replacement The PayloadReplacement specification.
-/// @param ctx The active workflow execution context.
-/// @return Result containing the mutated JsonValue or an Error.
 utils::Result<openapi::JsonValue>
 apply_payload_replacement(const openapi::JsonValue &payload,
                           const PayloadReplacement &replacement,
@@ -1029,10 +1010,6 @@ static std::string jsonpath_to_pointer(std::string_view jp) noexcept {
 
 /// @brief Evaluate an Arazzo Criterion (`simple`, `regex`, `jsonpath`, or
 /// `xpath`) against a WorkflowExecutionContext.
-/// @param criterion The Criterion object to evaluate.
-/// @param ctx The active workflow execution context.
-/// @return Result containing true if the criterion passes, false if it fails,
-/// or an Error if malformed.
 utils::Result<bool>
 evaluate_criterion(const Criterion &criterion,
                    const WorkflowExecutionContext &ctx) noexcept {
