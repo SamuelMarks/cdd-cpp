@@ -873,6 +873,12 @@ void test_main_cli_coverage() {
                   tmp.path("out_org2"), "--doc-host", "official"})
              .code == 0);
   assert(std::filesystem::exists(tmp.path("out_org2/Doxyfile")));
+  {
+    std::ifstream doxy_in(tmp.path("out_org2/Doxyfile"));
+    std::string doxy_content((std::istreambuf_iterator<char>(doxy_in)),
+                             std::istreambuf_iterator<char>());
+    assert(doxy_content.find("HAVE_DOT = NO") != std::string::npos);
+  }
 
   // from_google_discovery without subcommand (defaults to to_openapi stdout)
   auto gd_stdout = run_cli({"cdd-cpp", "from_google_discovery", "-i", gd1});

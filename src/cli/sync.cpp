@@ -486,7 +486,8 @@ static void apply_scaffolding_extras(std::map<std::string, std::string> &files,
                           "INPUT = \"src\"\n"
                           "RECURSIVE = YES\n"
                           "WARN_IF_UNDOCUMENTED = YES\n"
-                          "WARN_NO_PARAMDOC = YES\n";
+                          "WARN_NO_PARAMDOC = YES\n"
+                          "HAVE_DOT = NO\n";
     }
     if (!files.contains("src/CMakeLists.txt")) {
       files["src/CMakeLists.txt"] =

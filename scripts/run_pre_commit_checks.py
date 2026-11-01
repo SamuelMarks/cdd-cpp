@@ -468,6 +468,10 @@ def ensure_spec_file(spec_path, filename):
 
 def main():
     try:
+        if shutil.which("doxygen"):
+            print("Building Doxygen documentation...")
+            run_cmd(["doxygen", "Doxyfile"])
+
         build_project()
 
         run_tests()
