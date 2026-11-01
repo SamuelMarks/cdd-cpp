@@ -72,9 +72,9 @@ parameter_location_from_string(std::string_view str) noexcept {
 
 /// @brief Serialization style for parameters and headers.
 enum class ParameterStyle {
-  Matrix,         ///< Matrix-style parameters prefixed with ';' ("matrix").
-  Label,          ///< Label-style parameters prefixed with '.' ("label").
-  Form,           ///< Form-style parameters delimited by '&' ("form").
+  Matrix,         ///< Matrix-style parameters prefixed with `;` ("matrix").
+  Label,          ///< Label-style parameters prefixed with `.` ("label").
+  Form,           ///< Form-style parameters delimited by `&` ("form").
   Simple,         ///< Simple comma-delimited parameters ("simple").
   SpaceDelimited, ///< Space-delimited array/object values ("spaceDelimited").
   PipeDelimited,  ///< Pipe-delimited array/object values ("pipeDelimited").

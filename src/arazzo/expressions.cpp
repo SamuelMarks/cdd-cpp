@@ -944,9 +944,11 @@ static bool compare_values(std::string_view lhs, std::string_view op,
                            std::string_view rhs) noexcept {
   int64_t l_num = 0;
   int64_t r_num = 0;
-  auto [lp, lec] = std::from_chars(lhs.data(), lhs.data() + lhs.size(), l_num);
-  auto [rp, rec] = std::from_chars(rhs.data(), rhs.data() + rhs.size(), r_num);
-  bool both_numeric = (lec == std::errc{} && rec == std::errc{});
+  const auto l_res =
+      std::from_chars(lhs.data(), lhs.data() + lhs.size(), l_num);
+  const auto r_res =
+      std::from_chars(rhs.data(), rhs.data() + rhs.size(), r_num);
+  bool both_numeric = (l_res.ec == std::errc{} && r_res.ec == std::errc{});
 
   if (op == "==")
     return both_numeric ? (l_num == r_num) : (lhs == rhs);
@@ -961,7 +963,7 @@ static bool compare_values(std::string_view lhs, std::string_view op,
   return l_num < r_num;
 }
 
-/// @brief Convert a JSONPath selector (`$.a.b` or `$['a'][0]`) to an RFC 6901
+/// @brief Convert a JSONPath selector (`$.a.b` or `$["a"][0]`) to an RFC 6901
 /// JSON Pointer.
 /// @param jp The JSONPath selector starting after `$`.
 /// @return Converted RFC 6901 JSON Pointer string.
@@ -979,7 +981,7 @@ static std::string jsonpath_to_pointer(std::string_view jp) noexcept {
       }
     } else if (jp[i] == '[') {
       ++i;
-      if (jp[i] == '\'' || jp[i] == '"') {
+      if (jp[i] == static_cast<char>(39) || jp[i] == '"') {
         char quote = jp[i++];
         ptr.push_back('/');
         while (jp[i] != quote) {

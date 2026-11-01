@@ -803,7 +803,9 @@ doc_param_sample_value(const openapi::Parameter &p) noexcept {
 static std::string
 doc_request_body_sample_value(const openapi::RequestBody &rb) noexcept {
   if (!rb.content.empty()) {
-    const auto &[content_type, mt] = *rb.content.begin();
+    const auto &first_entry = *rb.content.begin();
+    const auto &content_type = first_entry.first;
+    const auto &mt = first_entry.second;
     if (mt.example.has_value()) {
       return "\"" + utils::escape_json_string(*mt.example) + "\"";
     }
@@ -1556,9 +1558,9 @@ int run_serve_json_rpc(int argc, char **argv, std::ostream &out,
   }
 
   int port_num = 8080;
-  auto [ptr, ec] =
+  const auto port_res =
       std::from_chars(port.data(), port.data() + port.size(), port_num);
-  if (ec != std::errc()) {
+  if (port_res.ec != std::errc()) {
     err << "Invalid port number: " << port << std::endl;
     return 1;
   }

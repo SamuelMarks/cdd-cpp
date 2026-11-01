@@ -152,6 +152,27 @@ def audit_source_tree(src_dir="src", verbose=False):
             else:
                 undocumented_details.append(f"{filepath}:1 (missing @file / @brief)")
 
+            # 1b. Doxygen 1.9.8 C++ scanner / commentcnv.l compatibility checks:
+            # - No escaped single-quote character literals ('\'') which desynchronize Doxygen 1.9.8 scanner.l
+            # - No non-range-for structured bindings (auto [a, b] =) which desynchronize Doxygen 1.9.8 scanner.l
+            # - No single-quoted tokens ('...') inside /// comments which desynchronize Doxygen 1.9.8 commentcnv.l
+            total_items += 1
+            has_escaped_sq = "'\\''" in content
+            has_struct_bind = bool(
+                re.search(
+                    r"(?:^|[;{}])\s*(?:const\s+)?auto\s*&?\s*\[[^\]]+\]\s*=",
+                    content,
+                    re.MULTILINE,
+                )
+            )
+            has_comment_sq = bool(re.search(r"///[^\n]*'[^'\n]+'", content))
+            if not has_escaped_sq and not has_struct_bind and not has_comment_sq:
+                documented_items += 1
+            else:
+                undocumented_details.append(
+                    f"{filepath}:1 (Doxygen 1.9.8 lexer hazard: escaped single-quote, structured binding, or single-quoted literal in /// comment)"
+                )
+
             # Track namespace docstrings across headers
             for m in re.finditer(
                 r"///\s*@namespace\s+([a-zA-Z0-9_:]+)\s*" + NL + r"///\s*@brief\s+\S+",
@@ -339,11 +360,12 @@ def audit_source_tree(src_dir="src", verbose=False):
                             sig_lines.append(lines[k].strip())
                         full_sig = " ".join(sig_lines)
                         fn_match = re.match(
-                            r"^(?:template\s*<[^>]*>\s*)?(?:inline\s+|static\s+|constexpr\s+)*(?:[A-Za-z_][\w:<>,\s\*&]*?\s+)?([A-Za-z_][\w:]*|operator\S+)\s*\([^;{}]*\)\s*(?:const\s*)?(?:noexcept\s*)?\{",
+                            r"^(?:template\s*<[^>]*>\s*)?(?:inline\s+|static\s+|constexpr\s+)*(?:[A-Za-z_][\w:<>,\s\*&]*?\s+)?([A-Za-z_][\w:]*|operator\S+)\s*\(([^;{}]*)\)\s*(?:const\s*)?(?:noexcept\s*)?\{",
                             full_sig,
                         )
                         if fn_match:
                             fn_name = fn_match.group(1)
+                            param_str = fn_match.group(2)
                             if fn_name not in ("if", "for", "while", "switch", "catch"):
                                 total_items += 1
                                 doc = _extract_preceding_docblock(lines, i)
@@ -353,6 +375,19 @@ def audit_source_tree(src_dir="src", verbose=False):
                                     undocumented_details.append(
                                         f"{filepath}:{i+1} (.cpp function {fn_name} missing @brief)"
                                     )
+                                if full_sig.startswith("static "):
+                                    params = _extract_param_names(param_str)
+                                    doc_params = set(
+                                        re.findall(r"@param(?:\[\w+\])?\s+(\w+)", doc)
+                                    )
+                                    for p in params:
+                                        total_items += 1
+                                        if p in doc_params:
+                                            documented_items += 1
+                                        else:
+                                            undocumented_details.append(
+                                                f"{filepath}:{i+1} (static .cpp function {fn_name} @param {p})"
+                                            )
                                 open_b = full_sig.count("{")
                                 close_b = full_sig.count("}")
                                 i = k

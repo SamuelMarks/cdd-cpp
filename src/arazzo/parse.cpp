@@ -11,7 +11,7 @@ namespace cdd_cpp::arazzo {
 
 /// @brief Check if an identifier matches the Arazzo `[A-Za-z0-9_\-]+` pattern.
 /// @param id The string view to check.
-/// @return True if non-empty and all characters are alphanumeric, '_', or '-'.
+/// @return True if non-empty and all characters are alphanumeric, `_`, or `-`.
 static bool is_valid_arazzo_id(std::string_view id) noexcept {
   if (id.empty())
     return false;

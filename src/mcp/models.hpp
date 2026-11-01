@@ -273,8 +273,8 @@ inline TypedRequestId parse_typed_request_id(std::string_view raw) noexcept {
     return std::string(raw.substr(1, raw.size() - 2));
   }
   int64_t val = 0;
-  auto [ptr, ec] = std::from_chars(raw.data(), raw.data() + raw.size(), val);
-  if (ec == std::errc{}) {
+  const auto res = std::from_chars(raw.data(), raw.data() + raw.size(), val);
+  if (res.ec == std::errc{}) {
     return val;
   }
   return std::string(raw);

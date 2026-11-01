@@ -38,7 +38,7 @@ static size_t find_matching_delimiter(const std::string &src, size_t open_pos,
   size_t i = open_pos;
   while (i < src.size()) {
     char c = src[i];
-    if (c == '"' || c == '\'') {
+    if (c == '"' || c == static_cast<char>(39)) {
       char quote = c;
       ++i;
       while (i < src.size() && src[i] != quote) {
@@ -295,12 +295,12 @@ parse_class_fields(const std::string &body) noexcept {
         CppField fld;
         fld.type = ftype;
         fld.name = fname;
-        auto [lead_trivia, pre_doc] = split_leading_docstring(raw_prefix);
-        fld.trivia.leading = lead_trivia;
+        auto split_fld = split_leading_docstring(raw_prefix);
+        fld.trivia.leading = split_fld.first;
         if (!inline_doc.empty()) {
           fld.docstring = inline_doc;
-        } else if (!pre_doc.empty()) {
-          fld.docstring = pre_doc;
+        } else if (!split_fld.second.empty()) {
+          fld.docstring = split_fld.second;
         }
         fields.push_back(fld);
       }
@@ -478,13 +478,13 @@ parse_functions_from_body(const std::string &source) noexcept {
 
     std::string raw_prefix =
         source.substr(fn_search_pos, match_start - fn_search_pos);
-    auto [lead_trivia, doc] = split_leading_docstring(raw_prefix);
+    auto split_fn = split_leading_docstring(raw_prefix);
 
     CppFunction fn;
     fn.return_type = ret_type;
     fn.name = fn_name;
-    fn.docstring = doc;
-    fn.trivia.leading = lead_trivia;
+    fn.docstring = split_fn.second;
+    fn.trivia.leading = split_fn.first;
     fn.params = parse_param_list(
         source.substr(open_paren + 1, close_paren - open_paren - 1));
 
@@ -524,12 +524,12 @@ CppAST parse_cpp(const std::string &source) noexcept {
 
     std::string raw_prefix =
         source.substr(search_pos, match_start - search_pos);
-    auto [lead_trivia, doc] = split_leading_docstring(raw_prefix);
+    auto split_cls = split_leading_docstring(raw_prefix);
 
     CppClass cls;
     cls.name = cls_name;
-    cls.docstring = doc;
-    cls.trivia.leading = lead_trivia;
+    cls.docstring = split_cls.second;
+    cls.trivia.leading = split_cls.first;
 
     std::string body =
         source.substr(open_brace + 1, close_brace - open_brace - 1);

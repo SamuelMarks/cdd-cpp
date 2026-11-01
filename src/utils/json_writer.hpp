@@ -67,7 +67,7 @@ class JsonWriter {
   }
 
 public:
-  /// @brief Begin a new JSON object ('{').
+  /// @brief Begin a new JSON object (`{`).
   void start_object() noexcept {
     if (!first)
       ss << ",";
@@ -75,13 +75,13 @@ public:
     first = true;
   }
 
-  /// @brief End the current JSON object ('}').
+  /// @brief End the current JSON object (`}`).
   void end_object() noexcept {
     ss << "}";
     first = false;
   }
 
-  /// @brief Begin a new JSON array ('[').
+  /// @brief Begin a new JSON array (`[`).
   void start_array() noexcept {
     if (!first)
       ss << ",";
@@ -89,7 +89,7 @@ public:
     first = true;
   }
 
-  /// @brief End the current JSON array (']').
+  /// @brief End the current JSON array (`]`).
   void end_array() noexcept {
     ss << "]";
     first = false;
@@ -137,7 +137,7 @@ public:
   /// @param v Null-terminated C-string to write.
   void value(const char *v) noexcept { value(std::string(v)); }
 
-  /// @brief Write a boolean literal ('true' or 'false').
+  /// @brief Write a boolean literal (`true` or `false`).
   /// @param v The boolean value to write.
   void value(bool v) noexcept {
     if (!first)

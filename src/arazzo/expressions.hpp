@@ -101,7 +101,7 @@ struct WorkflowExecutionContext {
 };
 
 /// @brief Parse and validate a single Arazzo 1.1.0 runtime expression string.
-/// @param expr The runtime expression string (must begin with '$').
+/// @param expr The runtime expression string (must begin with `$`).
 /// @return Result containing the ParsedRuntimeExpression or an Error.
 utils::Result<ParsedRuntimeExpression>
 parse_runtime_expression(std::string_view expr) noexcept;
